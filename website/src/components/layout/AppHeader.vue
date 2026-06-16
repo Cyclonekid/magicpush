@@ -25,6 +25,30 @@
           <a href="#deploy" class="px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
             部署文档
           </a>
+          <!-- Push Channel Dropdown -->
+          <div class="relative" @mouseenter="dropdownOpen = true" @mouseleave="dropdownOpen = false">
+            <button
+              class="px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors flex items-center gap-1"
+              @click="dropdownOpen = !dropdownOpen"
+            >
+              推送渠道配置
+              <svg :class="['w-3 h-3 transition-transform duration-200', dropdownOpen ? 'rotate-180' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+            <Transition
+              enter-active-class="transition ease-out duration-150"
+              enter-from-class="opacity-0 -translate-y-1"
+              enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition ease-in duration-100"
+              leave-from-class="opacity-100 translate-y-0"
+              leave-to-class="opacity-0 -translate-y-1"
+            >
+              <div v-if="dropdownOpen" class="absolute top-full left-0 mt-1 w-52 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl shadow-black/50 py-2 max-h-80 overflow-y-auto">
+                <a v-for="channel in channels" :key="channel.link" :href="channel.link" class="block px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors">{{ channel.text }}</a>
+              </div>
+            </Transition>
+          </div>
           <a href="#changelog" class="px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
             更新日志
           </a>
@@ -71,6 +95,19 @@
           <div class="flex flex-col gap-1">
             <a href="#features" class="px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-white/5 rounded-lg" @click="mobileMenuOpen = false">功能特性</a>
             <a href="#deploy" class="px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-white/5 rounded-lg" @click="mobileMenuOpen = false">部署文档</a>
+            <!-- Mobile Push Channel Expandable -->
+            <button
+              class="px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-white/5 rounded-lg flex items-center justify-between w-full"
+              @click="mobileDropdownOpen = !mobileDropdownOpen"
+            >
+              推送渠道配置
+              <svg :class="['w-3 h-3 transition-transform duration-200', mobileDropdownOpen ? 'rotate-180' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+            <div v-if="mobileDropdownOpen" class="pl-4 border-l border-white/10 ml-4">
+              <a v-for="channel in channels" :key="channel.link" :href="channel.link" class="block px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-white/5 rounded-lg" @click="mobileMenuOpen = false">{{ channel.text }}</a>
+            </div>
             <a href="#changelog" class="px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-white/5 rounded-lg" @click="mobileMenuOpen = false">更新日志</a>
             <a href="https://uptimeflare-ept.pages.dev/" target="_blank" class="px-4 py-3 text-sm text-purple-300 font-medium" @click="mobileMenuOpen = false">在线 Demo</a>
             <a href="https://github.com/magiccode1412/magicpush" target="_blank" class="px-4 py-3 text-sm text-slate-300" @click="mobileMenuOpen = false">GitHub</a>
@@ -86,6 +123,36 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const scrolled = ref(false)
 const mobileMenuOpen = ref(false)
+const dropdownOpen = ref(false)
+const mobileDropdownOpen = ref(false)
+
+const channels = [
+  { text: '企业微信应用', link: '/guide/channels/wecomapp' },
+  { text: '企业微信群机器人', link: '/guide/channels/wecom' },
+  { text: '钉钉', link: '/guide/channels/dingtalk' },
+  { text: '飞书', link: '/guide/channels/feishu' },
+  { text: 'Telegram', link: '/guide/channels/telegram' },
+  { text: 'SMTP 邮件', link: '/guide/channels/smtp' },
+  { text: 'Webhook', link: '/guide/channels/webhook' },
+  { text: 'PushPlus', link: '/guide/channels/pushplus' },
+  { text: 'Server酱', link: '/guide/channels/serverchan' },
+  { text: 'Bark', link: '/guide/channels/bark' },
+  { text: 'WxPusher', link: '/guide/channels/wxpusher' },
+  { text: '微信公众号', link: '/guide/channels/wechat-official' },
+  { text: '微信龙虾机器人', link: '/guide/channels/wechatclawbot' },
+  { text: 'PushDeer', link: '/guide/channels/pushdeer' },
+  { text: 'PushMe', link: '/guide/channels/pushme' },
+  { text: 'ntfy', link: '/guide/channels/ntfy' },
+  { text: 'Meow', link: '/guide/channels/meow' },
+  { text: '小爱音箱', link: '/guide/channels/misound' },
+  { text: 'iGot', link: '/guide/channels/igot' },
+  { text: 'Gotify', link: '/guide/channels/gotify' },
+  { text: '息知', link: '/guide/channels/xizhi' },
+  { text: '元宝Bot', link: '/guide/channels/yuanbaobot' },
+  { text: 'ShowDoc', link: '/guide/channels/showdoc' },
+  { text: 'Synology Chat', link: '/guide/channels/synologychat' },
+  { text: 'QQ机器人', link: '/guide/channels/qqbot' },
+]
 
 const handleScroll = () => {
   scrolled.value = window.scrollY > 50
