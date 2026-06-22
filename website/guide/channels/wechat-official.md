@@ -14,13 +14,13 @@ outline: deep
 
 通过微信公众号的**模板消息**功能，可以向关注用户主动推送结构化通知消息。需要是**服务号**（认证或测试号）才能使用。
 
-| 特点 | 说明 | | |
+| 特点 | 说明 |
 |------|------|
-| 推送目标 | 关注公众号的用户（通过 OpenID 指定） | | |
-| 鉴权方式 | AppID + AppSecret → access_token（自动管理） | | |
-| 配置复杂度 | 中，需要公众号后台配置 | | |
-| 消息格式 | 模板消息（标题 + 内容，支持颜色） | | |
-| 频率限制 | 默认为每个用户 10 次/天 | | |
+| 推送目标 | 关注公众号的用户（通过 OpenID 指定） |
+| 鉴权方式 | AppID + AppSecret → access_token（自动管理） |
+| 配置复杂度 | 中，需要公众号后台配置 |
+| 消息格式 | 模板消息（标题 + 内容，支持颜色） |
+| 频率限制 | 默认为每个用户 10 次/天 |
 
 ### 前置条件
 
@@ -73,12 +73,12 @@ outline: deep
 
 至此，你已获得配置所需的信息：
 
-| 配置项 | 示例值 | 来源 | | |
+| 配置项 | 示例值 | 来源 |
 |--------|--------|------|
-| AppID | `wxXXXXXXXXXXXXXXXX` | 基本配置 → 开发者 ID | | |
-| AppSecret | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` | 基本配置 → 开发者密码（重置后显示） | | |
-| 模板 ID | `xxxxxXXXXXXXXXXXxxxxXXXXXxX` | 模板消息 → 模板 ID | | |
-| 用户 OpenID | `oXXXXXXXXXXXXXXXXXXXXXXXXXxX` | 用户管理 → 用户详情 | | |
+| AppID | `wxXXXXXXXXXXXXXXXX` | 基本配置 → 开发者 ID |
+| AppSecret | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` | 基本配置 → 开发者密码（重置后显示） |
+| 模板 ID | `xxxxxXXXXXXXXXXXxxxxXXXXXxX` | 模板消息 → 模板 ID |
+| 用户 OpenID | `oXXXXXXXXXXXXXXXXXXXXXXXXXxX` | 用户管理 → 用户详情 |
 
 ---
 
@@ -98,12 +98,12 @@ outline: deep
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 | | |
+| 字段 | 说明 | 示例 |
 |------|------|------|
-| **AppID** | 公众号开发者 ID | `wxXXXXXXXXXXXXXXXX` | | |
-| **AppSecret** | 公众号开发者密码 | 重置后复制的值 | | |
-| **模板 ID** | 消息模板 ID | `xxxxxXXXXXXXXXXXxxxxXXXXXxX` | | |
-| **用户 OpenID** | 接收消息的用户 OpenID，多个用逗号或换行分隔 | `oXXXxX,oYYYyY` | | |
+| **AppID** | 公众号开发者 ID | `wxXXXXXXXXXXXXXXXX` |
+| **AppSecret** | 公众号开发者密码 | 重置后复制的值 |
+| **模板 ID** | 消息模板 ID | `xxxxxXXXXXXXXXXXxxxxXXXXXxX` |
+| **用户 OpenID** | 接收消息的用户 OpenID，多个用逗号或换行分隔 | `oXXXxX,oYYYyY` |
 
 > 💡 **OpenID 格式提示**：
 > - 可以**用逗号分隔**：`oXXXxX,oYYYyY,oZZZzZ`
@@ -225,11 +225,11 @@ MagicPush 自动管理 access_token 的生命周期：
 
 ### Q: 服务号和订阅号有什么区别？
 
-| 类型 | 模板消息 | 群发次数 | | |
+| 类型 | 模板消息 | 群发次数 |
 |------|----------|----------|
-| 服务号（认证） | ✅ 支持 | 不限 | | |
-| 订阅号（认证） | ❌ 不支持 | 1次/天 | | |
-| 订阅号（未认证） | ❌ 不支持 | 1次/月 | | |
+| 服务号（认证） | ✅ 支持 | 不限 |
+| 订阅号（认证） | ❌ 不支持 | 1次/天 |
+| 订阅号（未认证） | ❌ 不支持 | 1次/月 |
 
 > 💡 **推荐**：使用**认证服务号**或**测试号**来使用模板消息功能。
 

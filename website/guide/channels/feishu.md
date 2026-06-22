@@ -14,13 +14,13 @@ outline: deep
 
 飞书群机器人是飞书内置的群聊机器人功能，支持发送文本消息和交互式卡片消息，可实现丰富的消息展示和交互能力。
 
-| 特点 | 说明 | | |
+| 特点 | 说明 |
 |------|------|
-| 推送目标 | 飞书群聊 | | |
-| 鉴权方式 | Webhook URL（可选签名校验） | | |
-| 配置复杂度 | 低，仅需粘贴 Webhook 地址 | | |
-| 消息格式 | text、interactive（卡片） | | |
-| 频率限制 | 50条/分钟/机器人 | | |
+| 推送目标 | 飞书群聊 |
+| 鉴权方式 | Webhook URL（可选签名校验） |
+| 配置复杂度 | 低，仅需粘贴 Webhook 地址 |
+| 消息格式 | text、interactive（卡片） |
+| 频率限制 | 50条/分钟/机器人 |
 
 ### 前置条件
 
@@ -53,10 +53,10 @@ outline: deep
 
 > 📌 **关键信息**：
 
-| 配置项 | 示例值 | 来源 | | |
+| 配置项 | 示例值 | 来源 |
 |--------|--------|------|
-| Webhook 地址 | `https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx...` | 机器人详情页 | | |
-| Secret（可选） | `xxxxxxxxxxxxxxxxxxxx` | 机器人详情页（启用签名校验后可见） | | |
+| Webhook 地址 | `https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx...` | 机器人详情页 |
+| Secret（可选） | `xxxxxxxxxxxxxxxxxxxx` | 机器人详情页（启用签名校验后可见） |
 
 > 💡 **提示**：Webhook 地址格式为 `https://open.feishu.cn/open-apis/bot/v2/hook/<token>`，其中 `<token>` 是机器人的唯一标识。
 
@@ -78,10 +78,10 @@ outline: deep
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 | | |
+| 字段 | 说明 | 示例 |
 |------|------|------|
-| **Webhook 地址** | 飞书机器人的完整 Webhook 地址 | `https://open.feishu.cn/open-apis/bot/v2/hook/...` | | |
-| **Secret 密钥（可选）** | 签名校验密钥，留空则不校验签名 | `xxxxxxxxxxxxxxxxxxxx` | | |
+| **Webhook 地址** | 飞书机器人的完整 Webhook 地址 | `https://open.feishu.cn/open-apis/bot/v2/hook/...` |
+| **Secret 密钥（可选）** | 签名校验密钥，留空则不校验签名 | `xxxxxxxxxxxxxxxxxxxx` |
 
 > 💡 **签名校验说明**：
 > - 如果在飞书机器人设置中启用了「签名校验」，**必须**填写 Secret
@@ -116,10 +116,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 支持的消息类型（`type` 参数）：
 
-| type 值 | 说明 | | |
+| type 值 | 说明 |
 |---------|------|
-| `text` | 纯文本消息（默认） | | |
-| `markdown` | 交互式卡片消息（飞书将 Markdown 渲染为卡片） | | |
+| `text` | 纯文本消息（默认） |
+| `markdown` | 交互式卡片消息（飞书将 Markdown 渲染为卡片） |
 
 ### 3.2 卡片消息示例
 

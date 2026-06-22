@@ -14,10 +14,10 @@ outline: deep
 
 WxPusher 是一个微信推送服务，支持两种推送方式：
 
-| 推送方式 | 说明 | 适用场景 | |
+| 推送方式 | 说明 | 适用场景
 |----------|------|----------
-| **标准推送** | 通过 App Token 推送，需用户关注 | 开发者给用户推送 | |
-| **极简推送（SPT）** | 通过 SPT 推送，无需创建应用 | 自己给自己推送 | |
+| **标准推送** | 通过 App Token 推送，需用户关注 | 开发者给用户推送
+| **极简推送（SPT）** | 通过 SPT 推送，无需创建应用 | 自己给自己推送
 
 - **官网**：[wxpusher.zjiecode.com](https://wxpusher.zjiecode.com/)
 - **文档**：[WxPusher 文档](https://wxpusher.zjiecode.com/docs/)
@@ -74,11 +74,11 @@ WxPusher 是一个微信推送服务，支持两种推送方式：
 
 > 📌 **标准推送配置信息**：
 
-| 配置项 | 示例值 | 来源 | |
+| 配置项 | 示例值 | 来源
 |--------|--------|------|
-| App Token | `AT_xxxxxxxxxxxxxxxx` | 应用详情页 | |
-| UID（可选） | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | 用户关注后获取 | |
-| Topic ID（可选） | `12345` | 主题管理页面 | |
+| App Token | `AT_xxxxxxxxxxxxxxxx` | 应用详情页
+| UID（可选） | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | 用户关注后获取
+| Topic ID（可选） | `12345` | 主题管理页面
 
 ### 方式二：极简推送 SPT（适合自己给自己推送）
 
@@ -90,10 +90,10 @@ WxPusher 是一个微信推送服务，支持两种推送方式：
 
 > 📌 **极简推送配置信息**：
 
-| 配置项 | 示例值 | 来源 | |
+| 配置项 | 示例值 | 来源
 |--------|--------|------|
-| SPT | `SPT_xxxxxx` | WxPusher 小程序 | |
-| SPT 列表（可选） | `SPT_aaa,SPT_bbb` | 多个 SPT 用逗号分隔，最多 10 个 | |
+| SPT | `SPT_xxxxxx` | WxPusher 小程序
+| SPT 列表（可选） | `SPT_aaa,SPT_bbb` | 多个 SPT 用逗号分隔，最多 10 个
 
 > 💡 **提示**：SPT 和 SPT 列表二选一，请勿同时填写。
 
@@ -117,22 +117,22 @@ WxPusher 是一个微信推送服务，支持两种推送方式：
 
 #### 标准推送配置
 
-| 字段 | 说明 | 示例 | |
+| 字段 | 说明 | 示例
 |------|------|------|
-| **推送方式** | 选择「标准推送」 | `标准推送` | |
-| **App Token** | 从 WxPusher 管理后台获取 | `AT_xxxxxxxx` | |
-| **UIDs**（可选） | 关注用户的 UID，多个用逗号分隔 | `uid1,uid2` | |
-| **Topic IDs**（可选） | 主题 ID，用于群推 | `12345` 或 `12345,67890` | |
+| **推送方式** | 选择「标准推送」 | `标准推送`
+| **App Token** | 从 WxPusher 管理后台获取 | `AT_xxxxxxxx`
+| **UIDs**（可选） | 关注用户的 UID，多个用逗号分隔 | `uid1,uid2`
+| **Topic IDs**（可选） | 主题 ID，用于群推 | `12345` 或 `12345,67890`
 
 > 💡 **提示**：UIDs 和 Topic IDs 至少填写一个。如果两者都填写，消息会同时推送给指定用户和主题订阅者。
 
 #### 极简推送配置
 
-| 字段 | 说明 | 示例 | |
+| 字段 | 说明 | 示例
 |------|------|------|
-| **推送方式** | 选择「极简推送 (SPT)」 | `极简推送 (SPT)` | |
-| **SPT** | 单个 SPT，与 SPT 列表二选一 | `SPT_xxxxxx` | |
-| **SPT 列表** | 多个 SPT 用逗号分隔，最多 10 个 | `SPT_aaa,SPT_bbb` | |
+| **推送方式** | 选择「极简推送 (SPT)」 | `极简推送 (SPT)`
+| **SPT** | 单个 SPT，与 SPT 列表二选一 | `SPT_xxxxxx`
+| **SPT 列表** | 多个 SPT 用逗号分隔，最多 10 个 | `SPT_aaa,SPT_bbb`
 
 > ⚠️ **注意**：SPT 和 SPT 列表只能填写一个，请勿同时填写。
 
@@ -168,11 +168,11 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 支持的消息类型（`type` 参数）：
 
-| type 值 | 说明 | contentType 值 | |
+| type 值 | 说明 | contentType 值
 |---------|------|------------------
-| `text` | 纯文本消息（默认） | `1` | |
-| `markdown` | Markdown 格式消息 | `3` | |
-| `html` | HTML 格式消息 | `2` | |
+| `text` | 纯文本消息（默认） | `1`
+| `markdown` | Markdown 格式消息 | `3`
+| `html` | HTML 格式消息 | `2`
 
 ### 3.2 Markdown 消息示例
 

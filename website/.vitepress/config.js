@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+  base: '/magicpush/',
   ignoreDeadLinks: true,
   title: 'MagicPush 魔法推送',
   description: '支持多种消息渠道的推送服务管理平台，通过标准化 REST API 将消息推送到微信、Telegram、飞书、钉钉、邮件、小爱音箱等 20+ 通知渠道',
@@ -24,6 +25,7 @@ export default defineConfig({
         { text: '关键词过滤', link: '/guide/api/keyword-filter' }
       ]},
       { text: '推送渠道配置', items: [
+        { text: '各渠道频率限制', link: '/guide/channels/rate-limits' },
         { text: '企业微信应用', link: '/guide/channels/wecomapp' },
         { text: '企业微信群机器人', link: '/guide/channels/wecom' },
         { text: '钉钉', link: '/guide/channels/dingtalk' },
@@ -75,6 +77,7 @@ export default defineConfig({
         {
           text: '推送渠道配置',
           items: [
+            { text: '各渠道频率限制', link: '/guide/channels/rate-limits' },
             { text: '企业微信应用', link: '/guide/channels/wecomapp' },
             { text: '企业微信群机器人', link: '/guide/channels/wecom' },
             { text: '钉钉', link: '/guide/channels/dingtalk' },

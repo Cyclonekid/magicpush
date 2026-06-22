@@ -60,10 +60,10 @@ MagicPush 需要的是**完整的 Webhook URL**（包含 `token` 参数），因
 
 至此，你已获得配置所需的信息：
 
-| 配置项 | 示例值 | 来源 | |
+| 配置项 | 示例值 | 来源 |
 |--------|--------|------|
-| Webhook URL（服务地址） | `https://nas.example.com:5001` | Incoming Webhook 创建成功页面 | |
-| Token（包含在 URL 中） | `xxxxxxxxxxxxxxxx` | URL 中 `token=` 后面的值 | |
+| Webhook URL（服务地址） | `https://nas.example.com:5001` | Incoming Webhook 创建成功页面 |
+| Token（包含在 URL 中） | `xxxxxxxxxxxxxxxx` | URL 中 `token=` 后面的值 |
 
 > 💡 **提示**：MagicPush 的配置字段是「服务地址」和「Token」，你需要将完整 URL 拆分填写。
 
@@ -85,10 +85,10 @@ MagicPush 需要的是**完整的 Webhook URL**（包含 `token` 参数），因
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 | |
+| 字段 | 说明 | 示例 |
 |------|------|------|
-| **服务地址** | 群晖 DSM 的访问地址（含端口） | `https://nas.example.com:5001` | |
-| **Token** | Incoming Webhook Token | `xxxxxxxxxxxxxxxx` | |
+| **服务地址** | 群晖 DSM 的访问地址（含端口） | `https://nas.example.com:5001` |
+| **Token** | Incoming Webhook Token | `xxxxxxxxxxxxxxxx` |
 
 > 💡 **服务地址格式说明**：
 > - 如果使用 HTTPS + 默认端口：`https://nas.example.com:5001`
@@ -200,17 +200,17 @@ MagicPush 发送消息时：
 
 ### Q: 服务地址应该使用 HTTP 还是 HTTPS？#
 
-| 协议 | 端口 | 说明 | |
+| 协议 | 端口 | 说明 |
 |------|------|------|
-| HTTPS | 5001 | 推荐，加密传输 | |
-| HTTP | 5000 | 仅限内网使用 | |
+| HTTPS | 5001 | 推荐，加密传输 |
+| HTTP | 5000 | 仅限内网使用 |
 
 > 💡 **推荐**：使用 HTTPS（端口 5001），安全性更高。
 
 ### Q: 与「Webhook」渠道有什么区别？#
 
 | 场景 | 推荐渠道 |
-|------|---------
+|------|---------|
 | 推送到 Synology Chat 频道，配置简单 | **Synology Chat**（本渠道） |
 | 推送到任意 HTTP 服务，需要自定义格式 | Webhook |
 

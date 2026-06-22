@@ -14,13 +14,13 @@ outline: deep
 
 Telegram Bot 是 Telegram 官方提供的机器人平台，通过 BotFather 创建机器人后，可以主动向用户或群组发送消息。
 
-| 特点 | 说明 | | |
+| 特点 | 说明 |
 |------|------|
-| 推送目标 | Telegram 个人用户 / 群组 / 频道 | | |
-| 鉴权方式 | Bot Token（HTTPS 请求） | | |
-| 配置复杂度 | 低，仅需 Bot Token + Chat ID | | |
-| 消息格式 | text、Markdown、HTML | | |
-| 频率限制 | 无明确限制，但建议合理使用 | | |
+| 推送目标 | Telegram 个人用户 / 群组 / 频道 |
+| 鉴权方式 | Bot Token（HTTPS 请求） |
+| 配置复杂度 | 低，仅需 Bot Token + Chat ID |
+| 消息格式 | text、Markdown、HTML |
+| 频率限制 | 无明确限制，但建议合理使用 |
 
 ### 前置条件
 
@@ -69,10 +69,10 @@ Telegram Bot 是 Telegram 官方提供的机器人平台，通过 BotFather 创�
 
 至此，你已获得配置所需的信息：
 
-| 配置项 | 示例值 | 来源 | | |
+| 配置项 | 示例值 | 来源 |
 |--------|--------|------|
-| Bot Token | `123456789:ABCdef...` | BotFather 创建成功后返回 | | |
-| Chat ID | `123456789` 或 `-1001234567890` | 通过 getUpdates 或 @userinfobot 获取 | | |
+| Bot Token | `123456789:ABCdef...` | BotFather 创建成功后返回 |
+| Chat ID | `123456789` 或 `-1001234567890` | 通过 getUpdates 或 @userinfobot 获取 |
 
 ---
 
@@ -92,11 +92,11 @@ Telegram Bot 是 Telegram 官方提供的机器人平台，通过 BotFather 创�
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 | | |
+| 字段 | 说明 | 示例 |
 |------|------|------|
-| **Bot Token** | 从 BotFather 获取的 Bot Token | `123456789:ABCdefGHIJKlmNoPQRsTUVwxyZ` | | |
-| **Chat ID** | 目标聊天 ID（用户 ID 或群组 ID） | `123456789` 或 `-1001234567890` | | |
-| **代理地址**（可选） | 用于访问 Telegram API 的代理地址 | `http://127.0.0.1:7890` | | |
+| **Bot Token** | 从 BotFather 获取的 Bot Token | `123456789:ABCdefGHIJKlmNoPQRsTUVwxyZ` |
+| **Chat ID** | 目标聊天 ID（用户 ID 或群组 ID） | `123456789` 或 `-1001234567890` |
+| **代理地址**（可选） | 用于访问 Telegram API 的代理地址 | `http://127.0.0.1:7890` |
 
 > 💡 **关于代理**：
 > - 如果服务器在国内，通常无法直连 Telegram API，需要配置代理
@@ -133,11 +133,11 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 支持的消息类型（`type` 参数）：
 
-| type 值 | 说明 | | |
+| type 值 | 说明 |
 |---------|------|
-| `text` | 纯文本消息（默认），使用 HTML 格式渲染 | | |
-| `markdown` | Markdown 格式消息（使用 Telegram Markdown 格式） | | |
-| `html` | HTML 格式消息（使用 Telegram HTML 格式） | | |
+| `text` | 纯文本消息（默认），使用 HTML 格式渲染 |
+| `markdown` | Markdown 格式消息（使用 Telegram Markdown 格式） |
+| `html` | HTML 格式消息（使用 Telegram HTML 格式） |
 
 ### 3.2 Markdown 消息示例
 
@@ -184,11 +184,11 @@ MagicPush 自动处理代理配置：
 
 根据 `type` 参数，MagicPush 自动设置 `parse_mode`：
 
-| type | parse_mode | | |
+| type | parse_mode |
 |------|------------|
-| `text` | `HTML` | | |
-| `markdown` | `Markdown` | | |
-| `html` | `HTML` | | |
+| `text` | `HTML` |
+| `markdown` | `Markdown` |
+| `html` | `HTML` |
 
 ---
 

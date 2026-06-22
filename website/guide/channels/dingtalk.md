@@ -14,13 +14,13 @@ outline: deep
 
 钉钉群机器人是钉钉内置的群聊机器人功能，可以在群中自动发送消息通知。通过 Webhook 地址即可推送，无需复杂的鉴权配置。
 
-| 特点 | 说明 | | |
+| 特点 | 说明 |
 |------|------|
-| 推送目标 | 钉钉群聊 | | |
-| 鉴权方式 | Webhook URL（可选加签 Secret） | | |
-| 配置复杂度 | 低，仅需粘贴 Webhook 地址 | | |
-| 消息格式 | text、markdown | | |
-| 频率限制 | 20条/分钟/机器人 | | |
+| 推送目标 | 钉钉群聊 |
+| 鉴权方式 | Webhook URL（可选加签 Secret） |
+| 配置复杂度 | 低，仅需粘贴 Webhook 地址 |
+| 消息格式 | text、markdown |
+| 频率限制 | 20条/分钟/机器人 |
 
 ### 前置条件
 
@@ -60,10 +60,10 @@ https://oapi.dingtalk.com/robot/send?access_token=xxxxxxxxxxxxxxxxxxxx
 
 如果选择了「加签」方式，需要同时记录：
 
-| 配置项 | 示例值 | 来源 | | |
+| 配置项 | 示例值 | 来源 |
 |--------|--------|------|
-| Webhook 地址 | `https://oapi.dingtalk.com/robot/send?access_token=...` | 机器人添加成功页面 | | |
-| Secret 密钥（可选） | `SECxxxxxxxxxxxxxxxxxxxx` | 机器人详情 → 设置 → 查看 Secret | | |
+| Webhook 地址 | `https://oapi.dingtalk.com/robot/send?access_token=...` | 机器人添加成功页面 |
+| Secret 密钥（可选） | `SECxxxxxxxxxxxxxxxxxxxx` | 机器人详情 → 设置 → 查看 Secret |
 
 > 💡 **提示**：如果不需要加签验证，Secret 留空即可，但安全性较低，建议生产环境使用加签。
 
@@ -85,10 +85,10 @@ https://oapi.dingtalk.com/robot/send?access_token=xxxxxxxxxxxxxxxxxxxx
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 | | |
+| 字段 | 说明 | 示例 |
 |------|------|------|
-| **Webhook 地址** | 钉钉机器人的完整 Webhook 地址 | `https://oapi.dingtalk.com/robot/send?access_token=...` | | |
-| **Secret 密钥（可选）** | 加签方式的密钥，留空则不校验签名 | `SECxxxxxxxxxxxxxxxxxxxx` | | |
+| **Webhook 地址** | 钉钉机器人的完整 Webhook 地址 | `https://oapi.dingtalk.com/robot/send?access_token=...` |
+| **Secret 密钥（可选）** | 加签方式的密钥，留空则不校验签名 | `SECxxxxxxxxxxxxxxxxxxxx` |
 
 > 💡 **安全设置说明**：
 > - 如果钉钉机器人安全设置选择了「加签」，**必须**填写 Secret，否则消息发送会被拒绝
@@ -123,10 +123,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 支持的消息类型（`type` 参数）：
 
-| type 值 | 说明 | | |
+| type 值 | 说明 |
 |---------|------|
-| `text` | 纯文本消息（默认） | | |
-| `markdown` | Markdown 格式消息 | | |
+| `text` | 纯文本消息（默认） |
+| `markdown` | Markdown 格式消息 |
 
 ### 3.2 Markdown 消息示例
 

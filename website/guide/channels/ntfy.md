@@ -17,13 +17,13 @@ ntfy（原名 ntfy.sh）是一个轻量级的开源推送通知服务，支持 i
 - **官网**：[ntfy.sh](https://ntfy.sh/)
 - **API 文档**：[docs.ntfy.sh/publish/](https://docs.ntfy.sh/publish/)
 
-| 特点 | 说明 | | |
+| 特点 | 说明 |
 |------|------|
-| 推送目标 | iOS / Android / 桌面端（需安装 ntfy 客户端） | | |
-| 鉴权方式 | 匿名（默认）、Basic Auth、Bearer Token | | |
-| 配置复杂度 | 低，仅需 Topic 名称 | | |
-| 消息格式 | text、markdown | | |
-| 服务方式 | 官方公共云（免费）或自托管 | | |
+| 推送目标 | iOS / Android / 桌面端（需安装 ntfy 客户端） |
+| 鉴权方式 | 匿名（默认）、Basic Auth、Bearer Token |
+| 配置复杂度 | 低，仅需 Topic 名称 |
+| 消息格式 | text、markdown |
+| 服务方式 | 官方公共云（免费）或自托管 |
 
 ### 前置条件
 
@@ -82,28 +82,28 @@ ntfy 使用 **Topic**（主题）来标识消息频道，相当于频道名称�
 
 根据第一步准备的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 | | |
+| 字段 | 说明 | 示例 |
 |------|------|------|
-| **服务器地址**（可选） | ntfy 服务端地址，留空使用官方公共云 | `https://ntfy.sh`（默认）或 `https://ntfy.example.com` | | |
-| **Topic 名称** | 消息频道名称（相当于凭证） | `myapp_a7b3c9d2` | | |
-| **用户名**（可选） | Basic Auth 用户名，与 Access Token 二选一 | `myuser` | | |
-| **密码**（可选） | Basic Auth 密码，与用户名配对使用 | `mypassword` | | |
-| **Access Token**（可选） | Bearer Token 鉴权，与用户名密码二选一 | `tk_xxxxx...` | | |
-| **消息优先级**（可选） | 1-5，控制通知振动和声音 | `3`（默认） | | |
-| **标签**（可选） | 通知标签，逗号分隔，支持 emoji | `warning,backup` | | |
-| **操作按钮**（可选） | JSON 数组，最多 3 个，在通知中显示按钮 | `[{"action":"view","label":"打开","url":"..."}]` | | |
+| **服务器地址**（可选） | ntfy 服务端地址，留空使用官方公共云 | `https://ntfy.sh`（默认）或 `https://ntfy.example.com` |
+| **Topic 名称** | 消息频道名称（相当于凭证） | `myapp_a7b3c9d2` |
+| **用户名**（可选） | Basic Auth 用户名，与 Access Token 二选一 | `myuser` |
+| **密码**（可选） | Basic Auth 密码，与用户名配对使用 | `mypassword` |
+| **Access Token**（可选） | Bearer Token 鉴权，与用户名密码二选一 | `tk_xxxxx...` |
+| **消息优先级**（可选） | 1-5，控制通知振动和声音 | `3`（默认） |
+| **标签**（可选） | 通知标签，逗号分隔，支持 emoji | `warning,backup` |
+| **操作按钮**（可选） | JSON 数组，最多 3 个，在通知中显示按钮 | `[{"action":"view","label":"打开","url":"..."}]` |
 
 > 💡 **关于鉴权**：
 > - **官方公共云 `ntfy.sh` 不需要鉴权**（匿名使用）
 > - **自托管服务可以启用鉴权**，需要配置用户名密码或 Access Token
 > - **优先级说明**（控制手机通知方式）：
->   | 优先级 | 值 | 说明 | | |
+>   | 优先级 | 值 | 说明 |
 >   |--------|-----|------|
->   | Min | `1` | 静默通知，无振动无声音 | | |
->   | Low | `2` | 低优先级，轻微振动 | | |
->   | Default | `3` | 正常通知（推荐） | | |
->   | High | `4` | 高优先级，强烈振动 | | |
->   | Max/Urgent | `5` | 紧急通知，持续提醒 | | |
+>   | Min | `1` | 静默通知，无振动无声音 |
+>   | Low | `2` | 低优先级，轻微振动 |
+>   | Default | `3` | 正常通知（推荐） |
+>   | High | `4` | 高优先级，强烈振动 |
+>   | Max/Urgent | `5` | 紧急通知，持续提醒 |
 
 > 💡 **关于标签（Tags）**：
 > - 标签会显示在通知旁边，支持 emoji 短码（会自动转换）
@@ -145,11 +145,11 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 支持的消息类型（`type` 参数）：
 
-| type 值 | 说明 | | |
+| type 值 | 说明 |
 |---------|------|
-| `text` | 纯文本消息（默认） | | |
-| `markdown` | Markdown 格式消息（ntfy 原生支持） | | |
-| `html` | HTML 格式（会自动转为纯文本） | | |
+| `text` | 纯文本消息（默认） |
+| `markdown` | Markdown 格式消息（ntfy 原生支持） |
+| `html` | HTML 格式（会自动转为纯文本） |
 
 ### 3.2 Markdown 消息示例#
 
@@ -194,11 +194,11 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 ### 官方公共云限制#
 
-| 限制项 | 数值 | | |
+| 限制项 | 数值 |
 |--------|------|
-| 每秒请求数 | 有限制（防止滥用） | | |
-| 每条消息大小 | 有限制 | | |
-| Topic 数量 | 无限制 | | |
+| 每秒请求数 | 有限制（防止滥用） |
+| 每条消息大小 | 有限制 |
+| Topic 数量 | 无限制 |
 
 > 💡 如果使用官方公共云发送大量消息，建议自建 ntfy 服务。
 
@@ -255,13 +255,13 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 **回答**：ntfy 会自动将标签中的 emoji 短码转换为 emoji 图标：
 
-| 短码 | emoji | | |
+| 短码 | emoji |
 |--------|-------|
-| `warning` | ⚠️ | | |
-| `backup` | 💾 | | |
-| `ssh-login` | 🔐 | | |
-| `fire` | 🔥 | | |
-| `check` | ✅ | | |
+| `warning` | ⚠️ |
+| `backup` | 💾 |
+| `ssh-login` | 🔐 |
+| `fire` | 🔥 |
+| `check` | ✅ |
 
 完整列表参考：[ntfy 标签文档](https://docs.ntfy.sh/tags/)
 

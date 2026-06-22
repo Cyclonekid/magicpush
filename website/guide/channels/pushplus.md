@@ -76,10 +76,10 @@ PushPlus 是一个消息推送服务平台，可以将消息推送到微信公�
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 | |
+| 字段 | 说明 | 示例 |
 |------|------|------|
-| **Token** | PushPlus 令牌（从控制台复制） | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` | |
-| **Topic（可选）** | 群组编码，用于群推消息 | `xxxxxx` | |
+| **Token** | PushPlus 令牌（从控制台复制） | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
+| **Topic（可选）** | 群组编码，用于群推消息 | `xxxxxx` |
 
 > 💡 **Topic 说明**：
 > - 留空：消息只推送到你自己的微信

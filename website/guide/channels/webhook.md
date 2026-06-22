@@ -14,13 +14,13 @@ outline: deep
 
 Webhook 是一种通用的 HTTP 回调机制。MagicPush 的 Webhook 渠道允许你配置任意 HTTP 端点，将消息以自定义格式推送到第三方系统（如 Slack、Discord、自研系统、IFTTT 等）。
 
-| 特点 | 说明 | | |
+| 特点 | 说明 |
 |------|------|
-| 推送目标 | 任意支持 HTTP 的服务 | | |
-| 鉴权方式 | 自定义 Headers（如 Authorization、X-API-Key 等） | | |
-| 配置复杂度 | 中，需要了解目标服务的 API 格式 | | |
-| 消息格式 | 自定义（JSON 模板 + 变量替换） | | |
-| 频率限制 | 取决于目标服务 | | |
+| 推送目标 | 任意支持 HTTP 的服务 |
+| 鉴权方式 | 自定义 Headers（如 Authorization、X-API-Key 等） |
+| 配置复杂度 | 中，需要了解目标服务的 API 格式 |
+| 消息格式 | 自定义（JSON 模板 + 变量替换） |
+| 频率限制 | 取决于目标服务 |
 
 ### 前置条件
 
@@ -83,12 +83,12 @@ app.post('/webhook', (req, res) => {
 
 ### 2.3 填写配置信息
 
-| 字段 | 说明 | 示例 | | |
+| 字段 | 说明 | 示例 |
 |------|------|------|
-| **Webhook URL** | 接收推送的 HTTP 地址 | `https://hooks.slack.com/services/...` | | |
-| **HTTP 方法** | 请求方法 | `POST`（推荐）、`GET`、`PUT`、`PATCH` | | |
-| **自定义 Headers**（可选） | JSON 格式，支持模板变量 | `{"Authorization": "Bearer token123"}` | | |
-| **Body 模板**（可选） | 请求体模板，支持变量替换 | `{"text": "{{title}}: {{content}}"}` | | |
+| **Webhook URL** | 接收推送的 HTTP 地址 | `https://hooks.slack.com/services/...` |
+| **HTTP 方法** | 请求方法 | `POST`（推荐）、`GET`、`PUT`、`PATCH` |
+| **自定义 Headers**（可选） | JSON 格式，支持模板变量 | `{"Authorization": "Bearer token123"}` |
+| **Body 模板**（可选） | 请求体模板，支持变量替换 | `{"text": "{{title}}: {{content}}"}` |
 
 #### Headers 配置说明
 
@@ -105,12 +105,12 @@ app.post('/webhook', (req, res) => {
 
 MagicPush 支持在 Body 模板中使用变量：
 
-| 变量 | 说明 | 示例值 | | |
+| 变量 | 说明 | 示例值 |
 |--------|------|--------|
-| `{{title}}` | 消息标题 | `服务器告警` | | |
-| `{{content}}` | 消息内容 | `CPU 使用率超过 90%` | | |
-| `{{type}}` | 消息类型 | `text`、`markdown`、`html` | | |
-| `{{timestamp}}` | ISO 时间戳 | `2024-06-01T14:00:00.000Z` | | |
+| `{{title}}` | 消息标题 | `服务器告警` |
+| `{{content}}` | 消息内容 | `CPU 使用率超过 90%` |
+| `{{type}}` | 消息类型 | `text`、`markdown`、`html` |
+| `{{timestamp}}` | ISO 时间戳 | `2024-06-01T14:00:00.000Z` |
 
 **示例 1**：简单 JSON 格式（推荐）
 
@@ -211,10 +211,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 ### HTTP 方法与数据流
 
-| 方法 | Body 处理 | | |
+| 方法 | Body 处理 |
 |------|------------|
-| GET | Body 模板参数会作为 URL 查询参数发送 | | |
-| POST、PUT、PATCH | Body 模板作为请求体发送（JSON 格式） | | |
+| GET | Body 模板参数会作为 URL 查询参数发送 |
+| POST、PUT、PATCH | Body 模板作为请求体发送（JSON 格式） |
 
 ### 超时设置
 
