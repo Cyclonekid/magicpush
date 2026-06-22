@@ -30,7 +30,7 @@ Gotify 是一个开源的**自托管**推送通知服务器，完全由自己部
 - 已**自托管 Gotify 服务端**（参考 [部署文档](https://gotify.net/install)）
 - 已创建 Gotify 应用并获取 Application Token
 - 已安装 Gotify 客户端（[iOS](https://apps.apple.com/) / [Android](https://play.google.com/) / [桌面端](https://gotify.net/download)）
-- 已部署并登录 MagicPush 管理后台 |
+- 已部署并登录 MagicPush 管理后台
 
 ---
 
@@ -59,9 +59,9 @@ docker run -d --name gotify -p 8080:80 gotify/server
 
 ### 1.3 获取 Gotify 服务器地址#
 
-| 配置项 | 示例值 | 来源 |
+| 配置项 | 示例值 | 来源 | |
 |--------|--------|------|
-| 服务器地址 | `https://gotify.example.com` | 你的 Gotify 部署地址 |
+| 服务器地址 | `https://gotify.example.com` | 你的 Gotify 部署地址 | |
 
 > 💡 **提示**：Gotify 是完全自托管的，你需要有自己的服务器地址。
 
@@ -83,11 +83,11 @@ docker run -d --name gotify -p 8080:80 gotify/server
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 |
+| 字段 | 说明 | 示例 | |
 |------|------|------|
-| **服务器地址** | Gotify 服务端地址 | `https://gotify.example.com` |
-| **Application Token** | 应用的访问令牌 | `AbCdEfGhIjKlMnOpQrStUvWxYz...` |
-| **消息优先级**（可选） | 0-10，默认 5 | `5` |
+| **服务器地址** | Gotify 服务端地址 | `https://gotify.example.com` | |
+| **Application Token** | 应用的访问令牌 | `AbCdEfGhIjKlMnOpQrStUvWxYz...` | |
+| **消息优先级**（可选） | 0-10，默认 5 | `5` | |
 
 > 💡 **优先级说明**：
 > | 优先级 | 说明 |
@@ -177,12 +177,12 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 Gotify 的消息优先级控制客户端的振动和声音方式：
 
-| 优先级 | 值 | 说明 |
+| 优先级 | 值 | 说明 | |
 |--------|-----|------|
-| 最低 | 0 | 静默，无振动无声音 |
-| 低 | 1-3 | 轻微振动 |
-| 正常 | 4-7 | 正常振动（推荐 5） |
-| 高 | 8-10 | 强烈振动，持续提醒 |
+| 最低 | 0 | 静默，无振动无声音 | |
+| 低 | 1-3 | 轻微振动 | |
+| 正常 | 4-7 | 正常振动（推荐 5） | |
+| 高 | 8-10 | 强烈振动，持续提醒 | |
 
 ### Extras（扩展字段）#
 
@@ -191,7 +191,7 @@ MagicPush 支持通过 `extras` 添加扩展字段：
 | Extra Key | 说明 |
 |-----------|------|
 | `client::display` | 控制消息显示方式（如 Markdown） |
-| `client::notification::click` | 点击通知后的跳转 URL |#
+| `client::notification::click` | 点击通知后的跳转 URL |# |
 
 ---
 

@@ -18,9 +18,9 @@ Bark 是一款 iOS 推送通知应用，可以通过简单的 HTTP 请求向你�
 - **App Store**：搜索「Bark」下载
 - **开源地址**：[github.com/Finb/Bark](https://github.com/Finb/Bark)
 
-| 特点 | 说明 |
+| 特点 | 说明 | | |
 |------|------|
-| 推送目标 | iPhone / iPad（需安装 Bark App） |
+| 推送目标 | iPhone / iPad（需安装 Bark App） | | |
 | 鉴权方式 | Device Key（在 App 中获取） |
 | 配置复杂度 | 低，仅需服务器地址 + Device Key |
 | 消息格式 | text（纯文本） |
@@ -30,7 +30,7 @@ Bark 是一款 iOS 推送通知应用，可以通过简单的 HTTP 请求向你�
 
 - 拥有 iPhone 或 iPad
 - 已安装 [Bark App](https://apps.apple.com/cn/app/bark/id1400184399)
-- 已部署并登录 MagicPush 管理后台 |
+- 已部署并登录 MagicPush 管理后台
 
 ---
 
@@ -55,10 +55,10 @@ Bark 是一款 iOS 推送通知应用，可以通过简单的 HTTP 请求向你�
 
 > 📌 **关键信息**：
 
-| 配置项 | 示例值 | 来源 |
+| 配置项 | 示例值 | 来源 | |
 |--------|--------|------|
-| 服务器地址 | `https://api.day.app` | Bark App 首页 |
-| Device Key | `abcdEFGHIJKLMnopQRSTUVwxyZ...` | Bark App 首页，长按复制 |
+| 服务器地址 | `https://api.day.app` | Bark App 首页 | |
+| Device Key | `abcdEFGHIJKLMnopQRSTUVwxyZ...` | Bark App 首页，长按复制 | |
 
 > 💡 **提示**：如果使用官方服务，服务器地址填写 `https://api.day.app` 即可。如果自托管，填写你的服务器地址。
 
@@ -80,23 +80,23 @@ Bark 是一款 iOS 推送通知应用，可以通过简单的 HTTP 请求向你�
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 |
+| 字段 | 说明 | 示例 | |
 |------|------|------|
-| **服务器地址** | Bark 服务端地址 | `https://api.day.app`（官方）或自托管地址 |
-| **Device Key** | 设备唯一标识 | 从 Bark App 首页复制 |
-| **通知分组**（可选） | 指定推送消息的分组名 | `server-alerts` |
-| **推送铃声**（可选） | 自定义通知铃声 | `alarm`、`minuet` 等 |
-| **通知级别**（可选） | 控制通知显示方式 | `active`（默认）、`timeSensitive`、`passive`、`critical` |
-| **通知图标**（可选） | 自定义图标 URL（iOS 15+） | `https://example.com/icon.png` |
+| **服务器地址** | Bark 服务端地址 | `https://api.day.app`（官方）或自托管地址 | |
+| **Device Key** | 设备唯一标识 | 从 Bark App 首页复制 | |
+| **通知分组**（可选） | 指定推送消息的分组名 | `server-alerts` | |
+| **推送铃声**（可选） | 自定义通知铃声 | `alarm`、`minuet` 等 | |
+| **通知级别**（可选） | 控制通知显示方式 | `active`（默认）、`timeSensitive`、`passive`、`critical` | |
+| **通知图标**（可选） | 自定义图标 URL（iOS 15+） | `https://example.com/icon.png` | |
 
 #### 通知级别说明
 
-| 级别 | 值 | 说明 |
+| 级别 | 值 | 说明 | |
 |------|-----|------|
-| 默认 | `active` | 正常通知，受勿扰模式影响 |
-| 时效性通知 | `timeSensitive` | 不受勿扰模式影响 |
-| 静默通知 | `passive` | 不亮屏、无声音，仅出现在通知列表 |
-| 临界警报 | `critical` | 忽略静音和勿扰模式，强制响铃 |
+| 默认 | `active` | 正常通知，受勿扰模式影响 | |
+| 时效性通知 | `timeSensitive` | 不受勿扰模式影响 | |
+| 静默通知 | `passive` | 不亮屏、无声音，仅出现在通知列表 | |
+| 临界警报 | `critical` | 忽略静音和勿扰模式，强制响铃 | |
 
 #### 推送铃声说明
 

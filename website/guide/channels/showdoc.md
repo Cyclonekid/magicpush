@@ -17,13 +17,13 @@ ShowDoc 是一个在线文档协作平台，提供推送接口，可以将消息
 - **官网**：[showdoc.com.cn](https://www.showdoc.com.cn/)
 - **推送文档**：[showdoc.com.cn/push](https://www.showdoc.com.cn/push)
 
-| 特点 | 说明 |
+| 特点 | 说明 | | |
 |------|------|
-| 推送目标 | ShowDoc 文档页面（通过推送 URL 标识） |
-| 鉴权方式 | URL 中包含 Token（无需额外配置） |
-| 配置复杂度 | 低，仅需粘贴推送 URL |
-| 消息格式 | title + content（纯文本） |
-| 频率限制 | 取决于 ShowDoc 套餐 |
+| 推送目标 | ShowDoc 文档页面（通过推送 URL 标识） | | |
+| 鉴权方式 | URL 中包含 Token（无需额外配置） | | |
+| 配置复杂度 | 低，仅需粘贴推送 URL | | |
+| 消息格式 | title + content（纯文本） | | |
+| 频率限制 | 取决于 ShowDoc 套餐 | | |
 
 ### 前置条件#
 
@@ -56,9 +56,9 @@ ShowDoc 是一个在线文档协作平台，提供推送接口，可以将消息
 
 至此，你已获得配置所需的信息：
 
-| 配置项 | 示例值 | 来源 |
+| 配置项 | 示例值 | 来源 | | |
 |--------|--------|------|
-| 推送 URL | `https://push.showdoc.com.cn/...` | ShowDoc 项目设置 → 推送 |#
+| 推送 URL | `https://push.showdoc.com.cn/...` | ShowDoc 项目设置 → 推送 |# | |
 
 ---
 
@@ -78,9 +78,9 @@ ShowDoc 是一个在线文档协作平台，提供推送接口，可以将消息
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 |
+| 字段 | 说明 | 示例 | | |
 |------|------|------|
-| **推送 URL** | ShowDoc 提供的专属推送地址（包含认证信息） | `https://push.showdoc.com.cn/server/api/push/your_token` |#
+| **推送 URL** | ShowDoc 提供的专属推送地址（包含认证信息） | `https://push.showdoc.com.cn/server/api/push/your_token` |# | |
 
 > 💡 **提示**：
 > - 推送 URL 是完整地址，包含 Token，直接粘贴即可
@@ -131,10 +131,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 ShowDoc 推送接口接收以下参数：
 
-| 参数 | 类型 | 说明 |
+| 参数 | 类型 | 说明 | | |
 |--------|------|------|
-| `title` | String | 消息标题（可选，默认「通知」） |
-| `content` | String | 消息内容（必填） |#
+| `title` | String | 消息标题（可选，默认「通知」） | | |
+| `content` | String | 消息内容（必填） |# | |
 
 MagicPush 会自动将 `title` 和 `content` 映射到 ShowDoc 的期望格式（`application/x-www-form-urlencoded`）。
 
@@ -145,9 +145,9 @@ MagicPush 会自动将 `title` 和 `content` 映射到 ShowDoc 的期望格式�
 
 ### 错误处理#
 
-| ShowDoc 错误码 | 说明 | 解决方法 |
+| ShowDoc 错误码 | 说明 | 解决方法 | | |
 |----------------|------|----------|
-| `error_code !== 0` | 推送失败 | 检查推送 URL 是否正确，Token 是否有效 |#
+| `error_code !== 0` | 推送失败 | 检查推送 URL 是否正确，Token 是否有效 |# | |
 
 ---
 

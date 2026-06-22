@@ -14,14 +14,14 @@ outline: deep
 
 企业微信群机器人是企业微信内置的群聊机器人功能，可以在群中自动发送消息通知。与「企业微信应用」渠道不同：
 
-| 对比项 | 企业微信应用 | 企业微信群机器人（本渠道） |
+| 对比项 | 企业微信应用 | 企业微信群机器人（本渠道） | | |
 |--------|--------------|----------------------------|
-| 推送目标 | 个人 / 部门 / 标签 / 全员 | **群聊** |
-| 鉴权方式 | corpid + corpsecret + access_token | **Webhook Key（静态）** |
-| 配置复杂度 | 需要 corpid + corpsecret + agentid | **仅需一个 Key** |
-| 消息格式 | text、markdown | text、markdown |
-| 适用场景 | 个人通知、告警推送 | **群内通知、团队协作** |
-| 频率限制 | ~30次/分钟/人 | **20条/分钟/机器人** |
+| 推送目标 | 个人 / 部门 / 标签 / 全员 | **群聊** | | |
+| 鉴权方式 | corpid + corpsecret + access_token | **Webhook Key（静态）** | | |
+| 配置复杂度 | 需要 corpid + corpsecret + agentid | **仅需一个 Key** | | |
+| 消息格式 | text、markdown | text、markdown | | |
+| 适用场景 | 个人通知、告警推送 | **群内通知、团队协作** | | |
+| 频率限制 | ~30次/分钟/人 | **20条/分钟/机器人** | | |
 
 ### 前置条件
 
@@ -61,10 +61,10 @@ https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxxx-xxxx-xxxx-xxxx-xxx
 
 至此，你已获得配置所需的信息：
 
-| 配置项 | 示例值 | 来源 |
+| 配置项 | 示例值 | 来源 | | |
 |--------|--------|------|
-| 机器人 Key | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | 群机器人详情页 Webhook 地址中 |
-| 或完整 Webhook 地址 | `https://qyapi.weixin.qq.com/...` | 同上 |
+| 机器人 Key | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | 群机器人详情页 Webhook 地址中 | | |
+| 或完整 Webhook 地址 | `https://qyapi.weixin.qq.com/...` | 同上 | | |
 
 ---
 
@@ -84,9 +84,9 @@ https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxxx-xxxx-xxxx-xxxx-xxx
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 |
+| 字段 | 说明 | 示例 | | |
 |------|------|------|
-| **机器人 Key** | 机器人 Webhook Key 或完整 Webhook 地址 | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` 或完整 URL |
+| **机器人 Key** | 机器人 Webhook Key 或完整 Webhook 地址 | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` 或完整 URL | | |
 
 > 💡 **提示**：MagicPush 支持两种填写方式：
 > - 只填写 Key 字符串（推荐，更简洁）
@@ -122,10 +122,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 支持的消息类型（`type` 参数）：
 
-| type 值 | 说明 |
+| type 值 | 说明 | | |
 |---------|------|
-| `text` | 纯文本消息（默认） |
-| `markdown` | Markdown 格式消息 |
+| `text` | 纯文本消息（默认） | | |
+| `markdown` | Markdown 格式消息 | | |
 
 ### 3.2 Markdown 消息示例
 
@@ -215,12 +215,12 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 ### Q: 与「企业微信应用」渠道有什么区别？我该选哪个？
 
-| 场景 | 推荐渠道 |
+| 场景 | 推荐渠道 | | |
 |------|---------|
-| 需要推送到**群聊**，配置简单 | **企业微信群机器人**（本渠道） |
-| 需要推送到**个人**，每个人独立接收 | 企业微信应用 |
-| 需要通知企业**全员** | 企业微信应用 |
-| 需要较高的消息频率 | 企业微信群机器人（可多机器人分散） |
+| 需要推送到**群聊**，配置简单 | **企业微信群机器人**（本渠道） | | |
+| 需要推送到**个人**，每个人独立接收 | 企业微信应用 | | |
+| 需要通知企业**全员** | 企业微信应用 | | |
+| 需要较高的消息频率 | 企业微信群机器人（可多机器人分散） | | |
 
 ---
 

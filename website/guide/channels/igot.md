@@ -29,7 +29,7 @@ iGot 是一个开放式通知推送服务平台，支持 iOS 和 Android，通�
 
 - 拥有 iGot 账号
 - 已安装 iGot 客户端（[App Store](https://apps.apple.com/) / [Google Play](https://play.google.com/)）
-- 已部署并登录 MagicPush 管理后台 |
+- 已部署并登录 MagicPush 管理后台
 
 ---
 
@@ -68,10 +68,10 @@ iGot 是一个开放式通知推送服务平台，支持 iOS 和 Android，通�
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 |
+| 字段 | 说明 | 示例 | |
 |------|------|------|
-| **API 地址**（可选） | iGot API 地址，留空使用官方公共服务 | `https://push.hellyw.com` |
-| **Key** | 在 iGot 控制台获取的 Key | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
+| **API 地址**（可选） | iGot API 地址，留空使用官方公共服务 | `https://push.hellyw.com` | |
+| **Key** | 在 iGot 控制台获取的 Key | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | |
 
 > 💡 **关于 API 地址**：
 > - 留空则使用**官方公共服务** `https://push.hellyw.com`

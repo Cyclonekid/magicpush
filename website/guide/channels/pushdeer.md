@@ -28,7 +28,7 @@ PushDeer 是一个开源的无 App 推送服务，支持 iOS、Android、Mac 多
 ### 前置条件
 
 - 已安装 PushDeer 客户端（[App Store](https://apps.apple.com/) / [Google Play](https://play.google.com/)）
-- 已部署并登录 MagicPush 管理后台 |
+- 已部署并登录 MagicPush 管理后台
 
 ---
 
@@ -78,10 +78,10 @@ PushDeer 是一个开源的无 App 推送服务，支持 iOS、Android、Mac 多
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 |
+| 字段 | 说明 | 示例 | |
 |------|------|------|
-| **API 地址**（可选） | PushDeer 服务端地址，留空使用官方公共云 | `https://pushdeer.example.com` |
-| **PushKey** | 在 PushDeer 客户端中创建的 Key | `PDUxxxxx...` |
+| **API 地址**（可选） | PushDeer 服务端地址，留空使用官方公共云 | `https://pushdeer.example.com` | |
+| **PushKey** | 在 PushDeer 客户端中创建的 Key | `PDUxxxxx...` | |
 
 > 💡 **关于 API 地址**：
 > - 留空则使用**官方公共云** `https://api2.pushdeer.com`（免费使用）

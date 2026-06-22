@@ -26,7 +26,7 @@ PushPlus 是一个消息推送服务平台，可以将消息推送到微信公�
 
 - 拥有微信号（用于接收推送）
 - 已注册 [PushPlus 官网](https://www.pushplus.plus/) 账号
-- 已部署并登录 MagicPush 管理后台 |
+- 已部署并登录 MagicPush 管理后台
 
 ---
 
@@ -76,10 +76,10 @@ PushPlus 是一个消息推送服务平台，可以将消息推送到微信公�
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 |
+| 字段 | 说明 | 示例 | |
 |------|------|------|
-| **Token** | PushPlus 令牌（从控制台复制） | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
-| **Topic（可选）** | 群组编码，用于群推消息 | `xxxxxx` |
+| **Token** | PushPlus 令牌（从控制台复制） | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` | |
+| **Topic（可选）** | 群组编码，用于群推消息 | `xxxxxx` | |
 
 > 💡 **Topic 说明**：
 > - 留空：消息只推送到你自己的微信
@@ -157,7 +157,7 @@ PushPlus 支持以下 Markdown 语法：
 ### 频率限制
 
 | 版本 | 每天推送限制 |
-|------|--------------|
+|------|--------------
 | 免费版 | 200 条/天 |
 | 付费版 | 根据套餐不同，最高 10000 条/天 |
 

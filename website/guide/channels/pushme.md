@@ -28,7 +28,7 @@ PushMe 是一个轻量级的 Android 消息推送客户端，支持 text、markd
 ### 前置条件
 
 - Android 设备已安装 [PushMe App](https://push.i-i.me/)
-- 已部署并登录 MagicPush 管理后台 |
+- 已部署并登录 MagicPush 管理后台
 
 ---
 
@@ -48,10 +48,10 @@ PushMe 是一个轻量级的 Android 消息推送客户端，支持 text、markd
 > 📌 **Push Key 示例**：`PM_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
 
 > 💡 **两种鉴权方式**：
-> | 方式 | 说明 | 推荐度 |
-> |------|------|----------|
-> | **Push Key** | 正式使用，稳定可靠 | ⭐⭐⭐⭐⭐ 推荐 |
-> | **Temp Key** | 临时测试用，仅支持官方服务 | ⭐⭐ 仅测试用 |
+> | 方式 | 说明 | 推荐度 | |
+> |------|------|----------
+> | **Push Key** | 正式使用，稳定可靠 | ⭐⭐⭐⭐⭐ 推荐 | |
+> | **Temp Key** | 临时测试用，仅支持官方服务 | ⭐⭐ 仅测试用 | |
 >
 > - **Push Key**：在 App 中获取，用于身份验证，正式使用请配置此项
 > - **Temp Key**：临时密钥，仅用于快速测试，不支持自托管服务
@@ -83,11 +83,11 @@ PushMe 是一个轻量级的 Android 消息推送客户端，支持 text、markd
 
 根据第一步获取的信息，填写以下配置字段：
 
-| 字段 | 说明 | 示例 |
+| 字段 | 说明 | 示例 | |
 |------|------|------|
-| **服务器地址**（可选） | PushMe 服务端地址，留空使用官方服务 | `https://push.i-i.me` 或 `https://push.example.com` |
-| **Push Key**（推荐） | 在 PushMe App 中获取的 push_key | `PM_xxxxx...` |
-| **Temp Key**（可选） | 临时推送密钥，仅用于测试 | `TMP_xxxxx...` |
+| **服务器地址**（可选） | PushMe 服务端地址，留空使用官方服务 | `https://push.i-i.me` 或 `https://push.example.com` | |
+| **Push Key**（推荐） | 在 PushMe App 中获取的 push_key | `PM_xxxxx...` | |
+| **Temp Key**（可选） | 临时推送密钥，仅用于测试 | `TMP_xxxxx...` | |
 
 > 💡 **配置规则**：
 > - **Push Key 和 Temp Key 不能同时为空**
@@ -168,12 +168,12 @@ PushMe **原生支持** HTML 格式：
 
 ### Push Key vs Temp Key#
 
-| 对比项 | Push Key | Temp Key |
-|--------|----------|-----------|
-| 获取方式 | PushMe App 中获取 | PushMe App 中获取（临时） |
-| 稳定性 | 高，长期有效 | 低，临时使用 |
-| 自托管支持 | ✅ 支持 | ❌ 仅支持官方服务 |
-| 推荐用途 | 正式使用 | 快速测试 |
+| 对比项 | Push Key | Temp Key | |
+|--------|----------|-----------
+| 获取方式 | PushMe App 中获取 | PushMe App 中获取（临时） | |
+| 稳定性 | 高，长期有效 | 低，临时使用 | |
+| 自托管支持 | ✅ 支持 | ❌ 仅支持官方服务 | |
+| 推荐用途 | 正式使用 | 快速测试 | |
 
 ### 自托管说明#
 
