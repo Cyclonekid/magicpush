@@ -155,3 +155,15 @@ dev:
           script: bash ./scripts/docker.sh dev
         - name: update jsdelivr cache
           script: curl -s "https://purge.jsdelivr.net/gh/magiccode1412/magicpush@dev/version.json"
+
+  web_trigger_sync_from_github:
+    - imports: https://cnb.cool/magiccode1412/secret/-/blob/main/env.yml
+      stages:
+        - name: sync from github
+          image: tencentcom/git-sync
+          settings:
+            target_url: https://github.com/${GITHUB_USERNAME}/${CNB_REPO_NAME_LOWERCASE}.git
+            auth_type: https
+            username: "${GITHUB_USERNAME}"
+            password: "${GITHUB_ACCESS_TOKEN}"
+            sync_mode: pull
