@@ -166,15 +166,25 @@ const pushMessageValidation = [
     .trim()
     .isLength({ max: 200 })
     .withMessage('标题不能超过200个字符'),
+
   body('content')
+    .optional()
+    .trim()
     .notEmpty()
     .withMessage('消息内容不能为空')
     .isLength({ max: 5000 })
     .withMessage('消息内容不能超过5000个字符'),
+
   body('type')
     .optional()
     .isIn(['text', 'markdown', 'html'])
     .withMessage('消息类型必须是text、markdown或html'),
+
+  body('extraData')
+    .optional()
+    .isObject()
+    .withMessage('extraData 必须是对象'),
+
   handleValidationErrors,
 ];
 

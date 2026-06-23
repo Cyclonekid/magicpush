@@ -83,6 +83,42 @@ function getChannelTypes() {
 }
 
 /**
+ * 获取指定渠道的类型信息（包含支持的消息类型）
+ * @param {string} type - 渠道类型
+ * @returns {Object|null} - 渠道类型信息，包含 supportedTypes 和 channelSpecificTypes
+ */
+function getChannelTypeInfo(type) {
+  const AdapterClass = channelAdapters[type];
+  if (!AdapterClass) {
+    return null;
+  }
+
+  return {
+    type,
+    name: AdapterClass.getName(),
+    description: AdapterClass.getDescription(),
+    supportedTypes: AdapterClass.getSupportedTypes(),
+    channelSpecificTypes: AdapterClass.getChannelSpecificTypes(),
+  };
+}
+
+/**
+ * 获取所有渠道的能力信息
+ * @returns {Array<Object>} - 所有渠道的类型信息
+ */
+function getAllChannelsCapabilities() {
+  return Object.entries(channelAdapters)
+    .map(([type, AdapterClass]) => ({
+      type,
+      name: AdapterClass.getName(),
+      description: AdapterClass.getDescription(),
+      supportedTypes: AdapterClass.getSupportedTypes(),
+      channelSpecificTypes: AdapterClass.getChannelSpecificTypes(),
+    }))
+    .filter(channel => channel.channelSpecificTypes.length > 0); // 只返回有特有类型的渠道
+}
+
+/**
  * 验证渠道配置
  * @param {string} type - 渠道类型
  * @param {Object} config - 渠道配置
@@ -125,6 +161,8 @@ module.exports = {
   // QqbotChannel, // TODO: 待测试后启用
   getChannelAdapter,
   getChannelTypes,
+  getChannelTypeInfo,
+  getAllChannelsCapabilities,
   validateChannelConfig,
   channelAdapters,
 };

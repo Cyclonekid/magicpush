@@ -113,6 +113,17 @@
               />
             </el-form-item>
 
+            <el-form-item label="额外数据 (extraData)">
+              <el-input
+                v-model="form.extraData"
+                type="textarea"
+                :rows="4"
+                placeholder='请输入 JSON 格式的额外数据，如：{"articles":[{"title":"标题","description":"描述","url":"https://example.com","picurl":""}]}'
+                maxlength="10000"
+                show-word-limit
+              />
+            </el-form-item>
+
             <el-form-item label="消息类型">
               <el-radio-group v-model="form.type">
                 <el-radio-button label="text">纯文本</el-radio-button>
@@ -355,6 +366,7 @@ const form = reactive({
   title: '',
   content: '',
   type: 'text',
+  extraData: '',
 })
 
 // 入站相关
@@ -443,6 +455,13 @@ const requestBody = computed(() => {
     title: form.title,
     content: form.content,
     type: form.type,
+  }
+  if (form.extraData) {
+    try {
+      body.extraData = JSON.parse(form.extraData)
+    } catch (e) {
+      body.extraData = form.extraData
+    }
   }
   return JSON.stringify(body, null, 2)
 })
@@ -555,10 +574,21 @@ const handleTest = async () => {
         headers['Authorization'] = `Bearer ${token}`
       }
       
+      let parsedExtraData = null
+      if (form.extraData) {
+        try {
+          parsedExtraData = JSON.parse(form.extraData)
+        } catch (e) {
+          ElMessage.error('额外数据 (extraData) 格式错误，请输入合法的 JSON')
+          return
+        }
+      }
+
       res = await axios.post(url, {
         title: form.title,
         content: form.content,
         type: form.type,
+        ...(parsedExtraData ? { extraData: parsedExtraData } : {}),
       }, { headers })
     }
     

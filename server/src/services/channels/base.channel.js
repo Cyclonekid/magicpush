@@ -64,6 +64,25 @@ class BaseChannel {
   }
 
   /**
+   * 获取支持的通用消息类型
+   * @returns {Array<string>} - 支持的通用类型列表，如 ['text', 'markdown']
+   * 默认返回 ['text']，子类可覆写以声明更多支持
+   */
+  static getSupportedTypes() {
+    return ['text'];
+  }
+
+  /**
+   * 获取渠道特有的消息类型定义
+   * @returns {Array<Object>} - 渠道特有类型列表
+   * 每个类型包含: value, label, icon?, fields[], description?, example?
+   * 默认返回空数组，表示无特有类型
+   */
+  static getChannelSpecificTypes() {
+    return [];
+  }
+
+  /**
    * 根据代理URL创建代理Agent
    * @param {string} proxyUrl - 代理URL，如 http://127.0.0.1:7890 或 socks5://user:pass@host:port
    * @returns {Object|null} - HttpsProxyAgent 或 SocksProxyAgent 实例，无效时返回null

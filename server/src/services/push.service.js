@@ -94,11 +94,11 @@ class PushService {
    * 推送到多个渠道
    */
   static async pushToChannels(userId, endpointId, channels, message, clientIp) {
-    const { title, content, type = 'text', url } = message;
+    const { title, content, type = 'text', url, extraData } = message;
     const results = [];
 
     for (const channel of channels) {
-      const result = await this.pushToChannel(userId, endpointId, channel, { title, content, type, url }, clientIp);
+      const result = await this.pushToChannel(userId, endpointId, channel, { title, content, type, url, extraData }, clientIp);
       results.push(result);
     }
 
@@ -118,7 +118,25 @@ class PushService {
    * 推送到单个渠道
    */
   static async pushToChannel(userId, endpointId, channel, message, clientIp) {
-    const { title, content, type, url } = message;
+    let { title, content, type, url, extraData } = message;
+
+    // 渠道级默认配置：优先使用渠道配置中的 defaultChannelType
+    let channelType = null;
+    if (channel.config) {
+      const config = typeof channel.config === 'string' ? JSON.parse(channel.config) : channel.config;
+      if (config.defaultChannelType) {
+        channelType = config.defaultChannelType;
+        // 如果有默认的额外数据且请求未指定，则使用默认值
+        if (!extraData && config.defaultExtraData) {
+          extraData = config.defaultExtraData;
+        }
+      }
+    }
+
+    // 未配置 defaultChannelType 时回退为 text 类型
+    if (!channelType) {
+      channelType = 'text';
+    }
 
     // 消息免打扰检查：如果当前在免打扰时段内，记录日志但不实际推送
     if (endpointId) {
@@ -177,9 +195,9 @@ class PushService {
     });
 
     try {
-      // 获取适配器并发送
+      // 获取适配器并发送（传递完整消息对象以支持渠道特有类型）
       const adapter = getChannelAdapter(channel.channel_type, channel.config, channel.id);
-      const result = await adapter.send({ title, content, type, url });
+      const result = await adapter.send({ title, content, type, url, channelType, extraData });
 
       // 更新记录为成功
       await PushLogModel.updateStatus(log.id, 'success', result, null);
