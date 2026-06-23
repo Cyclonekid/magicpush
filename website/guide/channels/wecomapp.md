@@ -176,6 +176,172 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 - 引用（`> text`）
 - 字体颜色：`<font color="info">绿色</font>`、`<font color="comment">灰色</font>`、`<font color="warning">橙红色</font>`
 
+### 3.3 特有消息类型
+
+除了通用的 `text`、`markdown` 和 `html` 类型外，企业微信应用还支持以下**特有消息类型**，通过 `channelType` + `extraData` 参数发送：
+
+| channelType | 说明 | 典型场景 |
+|-------------|------|----------|
+| `news` | 图文消息（多条图文链接文章） | 资讯推送、公告通知、产品发布 |
+| `text_card` | 文本卡片（带标题和跳转链接） | 审批通知、简短提醒 |
+| `template_card` | 模板卡片（交互式卡片） | 告警通知、任务提醒、数据报告 |
+| `image` | 图片消息（Base64 编码，需上传获取 media_id） | 截图分享、验证码图片 |
+| `file` | 文件消息（Base64 编码，需上传获取 media_id） | 发送报表、PDF 文档 |
+
+::: tip 使用方式
+特有消息类型需要在 API 请求中额外指定 `channelType`（标识特有类型）和 `extraData`（携带该类型的结构化数据），而不是使用通用 `type` 字段。与群机器人渠道不同，应用渠道的图片和文件需要先通过企业微信 API 上传临时素材。
+:::
+
+#### news 图文消息
+
+适用于展示带封面图的多条图文资讯：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "news",
+    "extraData": {
+      "articles": [
+        {
+          "title": "系统升级公告",
+          "description": "系统将于今晚22:00-23:00进行升级维护",
+          "url": "https://example.com/notice",
+          "picurl": "https://picsum.photos/600/300"
+        }
+      ]
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| articles | Array | 是 | 文章数组 |
+| articles[].title | String | 是 | 文章标题（最长 128 字符） |
+| articles[].description | String | 否 | 文章描述（最长 512 字符） |
+| articles[].url | String | 否 | 点击跳转链接 |
+| articles[].picurl | String | 否 | 封面图 URL |
+
+#### text_card 文本卡片
+
+适用于审批通知等需要点击跳转的简短消息：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "text_card",
+    "extraData": {
+      "title": "审批通知",
+      "description": "您有一条新的审批待处理，请及时查看",
+      "url": "https://example.com/approval",
+      "btntxt": "查看详情"
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | String | 是 | 卡片标题（最长 128 字符） |
+| description | String | 否 | 卡片描述文本（最长 512 字符） |
+| url | String | 否 | 点击按钮后的跳转链接 |
+| btntxt | String | 否 | 按钮文字（默认"详情"，最长 16 字符） |
+
+#### template_card 模板卡片
+
+支持三种样式的交互式卡片：文本通知、图文通知、按钮互动：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "template_card",
+    "extraData": {
+      "card_type": "text_notice",
+      "source": { "desc_text": "来自魔法推送" },
+      "main_title": { "title": "系统升级通知" },
+      "sub_title_text": "系统将于今晚22:00-23:00进行升级维护",
+      "horizontal_content_list": [
+        { "keyname": "时间", "value": "2024-01-15 22:00-23:00" },
+        { "keyname": "影响范围", "value": "所有用户" }
+      ],
+      "card_action": { "url": "https://example.com/notice", "type": 1 }
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| card_type | String | 是 | 卡片类型：`text_notice` / `news_notice` / `button_interaction` |
+| source | Object | 否 | 来源信息 `{ desc_text: "描述" }` |
+| main_title | Object | 否 | 主标题 `{ title: "内容" }` |
+| sub_title_text | String | 否 | 副标题（最长 256 字符） |
+| horizontal_content_list | Array | 否 | 键值对列表 `[{ keyname, value }]` |
+| card_action | Object | 否 | 操作按钮 `{ url, type }` |
+| task_list | Array | 否 | 任务列表（button_interaction 类型常用） |
+| card_selection | Object | 否 | 选择器配置 |
+
+#### image 图片消息
+
+发送 Base64 编码的图片（MagicPush 会自动调用企业微信 API 上传为临时素材）：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "image",
+    "extraData": {
+      "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+      "filename": "screenshot.jpg"
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| base64 | String | 是 | 图片的 Base64 编码字符串（不含 data:image 前缀） |
+| filename | String | 否 | 文件名（如 `photo.jpg`） |
+
+#### file 文件消息
+
+发送 Base64 编码的文件（MagicPush 会自动调用企业微信 API 上传为临时素材）：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "file",
+    "extraData": {
+      "base64": "JVBERi0xLjQK...",
+      "filename": "report.pdf"
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| base64 | String | 是 | 文件的 Base64 编码字符串 |
+| filename | String | 否 | 文件名（如 `report.pdf`） |
+
+::: tip 默认消息类型配置
+在渠道设置中可以配置 **默认消息类型**（`defaultChannelType`），选择后该渠道的所有请求将默认使用指定的特有类型，无需每次在 API 中传递 `channelType`。
+:::
+
 ---
 
 ## 技术细节

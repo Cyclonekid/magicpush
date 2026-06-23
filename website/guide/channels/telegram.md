@@ -163,6 +163,134 @@ Telegram 支持以下 HTML 标签：
 <pre>代码块</pre>
 ```
 
+### 3.4 特有消息类型
+
+除了通用的 `text`、`markdown` 和 `html` 类型外，Telegram Bot 还支持以下**特有消息类型**，通过 `channelType` + `extraData` 参数发送：
+
+| channelType | 说明 | 典型场景 |
+|-------------|------|----------|
+| `photo` | 图片消息（URL 或 Base64） | 发送图片、截图、验证码 |
+| `document` | 文件消息（URL 或 Base64） | 发送文件、PDF、压缩包 |
+| `location` | 位置消息（经纬度） | 分享地理位置、定位打卡 |
+
+::: tip 使用方式
+特有消息类型需要在 API 请求中额外指定 `channelType`（标识特有类型）和 `extraData`（携带该类型的结构化数据），而不是使用通用 `type` 字段。Telegram 的图片和文件支持直接传入 URL 或 Base64 编码。
+:::
+
+#### photo 图片消息
+
+支持两种方式：通过 URL 发送或 Base64 编码发送：
+
+```bash
+# 方式一：使用 URL
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "photo",
+    "extraData": {
+      "url": "https://picsum.photos/600/400",
+      "caption": "今日天气实况"
+    }
+  }'
+
+# 方式二：使用 Base64 编码
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "photo",
+    "extraData": {
+      "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+      "filename": "screenshot.jpg",
+      "caption": "*服务器截图*",
+      "parse_mode": "Markdown"
+    }
+  }'
+```
+
+**extraData 字段说明**（url 和 base64 二选一）：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| url | String | 条件必填 | 图片的直接访问 URL（与 base64 二选一） |
+| base64 | String | 条件必填 | 图片 Base64 编码字符串（与 url 二选一） |
+| filename | String | 否 | 文件名（默认 `photo.jpg`，base64 方式时可用） |
+| caption | String | 否 | 图片下方的说明文字 |
+| parse_mode | String | 否 | 说明文字格式：`Markdown` / `HTML` / 留空为纯文本 |
+
+#### document 文件消息
+
+支持通过 URL 或 Base64 编码发送任意格式文件：
+
+```bash
+# 方式一：使用 URL
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "document",
+    "extraData": {
+      "url": "https://example.com/report.pdf",
+      "caption": "2024年第一季度报告"
+    }
+  }'
+
+# 方式二：使用 Base64 编码
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "document",
+    "extraData": {
+      "base64": "JVBERi0xLjQK...",
+      "filename": "report.pdf",
+      "caption": "月度报告"
+    }
+  }'
+```
+
+**extraData 字段说明**（url 和 base64 二选一）：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| url | String | 条件必填 | 文件的直接访问 URL（与 base64 二选一） |
+| base64 | String | 条件必填 | 文件 Base64 编码字符串（与 url 二选一） |
+| filename | String | 否 | 文件名（默认 `file.pdf`，base64 方式时可用） |
+| caption | String | 否 | 文件下方的说明文字 |
+
+#### location 位置消息
+
+发送地理坐标位置信息：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "location",
+    "extraData": {
+      "latitude": 39.9042,
+      "longitude": 116.4074,
+      "title": "天安门广场",
+      "address": "北京市东城区长安街"
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| latitude | Number | 是 | 纬度坐标（如北京：39.9042） |
+| longitude | Number | 是 | 经度坐标（如北京：116.4074） |
+| title | String | 否 | 显示在位置上方的地点名称（最长 256 字符） |
+| address | String | 否 | 详细地址信息 |
+
+::: tip 默认消息类型配置
+在渠道设置中可以配置 **默认消息类型**（`defaultChannelType`），选择后该渠道的所有请求将默认使用指定的特有类型，无需每次在 API 中传递 `channelType`。
+:::
+
 ---
 
 ## 技术细节

@@ -141,6 +141,162 @@ CPU 使用率超过 90%，请及时处理！
 - 换行（`\n`）
 - 文本颜色标注
 
+### 3.3 特有消息类型
+
+除了通用的 `text` 和 `markdown` 类型外，飞书群机器人还支持以下**特有消息类型**，通过 `channelType` + `extraData` 参数发送：
+
+| channelType | 说明 | 典型场景 |
+|-------------|------|----------|
+| `post` | 富文本消息（多段落、链接、@人） | 格式丰富的内容推送 |
+| `interactive_card` | 交互式卡片（完整卡片 JSON） | 自定义布局的复杂卡片交互 |
+| `image` | 图片消息（image_key 或 Base64） | 发送图片、截图 |
+| `share_chat` | 群名片分享 | 分享群聊邀请 |
+
+::: tip 使用方式
+特有消息类型需要在 API 请求中额外指定 `channelType`（标识特有类型）和 `extraData`（携带该类型的结构化数据），而不是使用通用 `type` 字段。
+:::
+
+#### post 富文本消息
+
+支持多段落、超链接、@人等富文本元素：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "post",
+    "extraData": {
+      "title": "项目更新通知",
+      "content": [
+        [
+          { "tag": "text", "text": "项目有新的更新：" }
+        ],
+        [
+          { "tag": "a", "text": "查看详情", "href": "https://example.com/update" }
+        ]
+      ]
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | String | 否 | 消息标题（最长 128 字符） |
+| content | Array | 是 | 内容段落数组，每段为一个元素数组 |
+
+**content 元素格式**：
+
+| tag 类型 | 必填字段 | 说明 |
+|----------|----------|------|
+| `text` | text | 纯文本 |
+| `a` | text, href | 超链接 |
+| `at` | user_id | @某人（user_id 为飞书用户 ID） |
+
+#### interactive_card 交互式卡片
+
+发送完整的飞书卡片 JSON 对象，支持自定义 header、elements、actions：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "interactive_card",
+    "extraData": {
+      "card": {
+        "header": {
+          "title": { "tag": "plain_text", "content": "系统通知" },
+          "template": "blue"
+        },
+        "elements": [
+          {
+            "tag": "div",
+            "text": { "tag": "lark_md", "content": "**服务器状态**: 正常运行\n**CPU使用率**: 45%" }
+          },
+          {
+            "tag": "action",
+            "actions": [
+              { "tag": "button", "text": { "tag": "plain_text", "content": "查看详情" }, "url": "https://example.com", "type": "primary" }
+            ]
+          }
+        ]
+      }
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| card | Object | 是 | 完整的飞书卡片 JSON 对象（含 header 和 elements） |
+
+> 详细卡片结构请参考 [飞书官方卡片文档](https://open.feishu.cn/document/server-docs/group/custom-bot-send/card_message)。
+
+#### image 图片消息
+
+支持两种方式：通过 `image_key`（已上传的图片）或 `base64`（Base64 编码）：
+
+```bash
+# 方式一：使用 image_key
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "image",
+    "extraData": {
+      "image_key": "img_v2_xxxx"
+    }
+  }'
+
+# 方式二：使用 Base64 编码
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "image",
+    "extraData": {
+      "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD..."
+    }
+  }'
+```
+
+**extraData 字段说明**（二选一）：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| image_key | String | 条件必填 | 通过飞书上传接口获取的图片 key（与 base64 二选一） |
+| base64 | String | 条件必填 | 图片 Base64 编码字符串（与 image_key 二选一） |
+
+#### share_chat 群名片分享
+
+分享群聊电子名片，方便成员快速加入群组：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "channelType": "share_chat",
+    "extraData": {
+      "share_chat_id": "oc_xxxxxxxx"
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| share_chat_id | String | 是 | 目标群聊的 open_chat_id |
+
+::: tip 默认消息类型配置
+在渠道设置中可以配置 **默认消息类型**（`defaultChannelType`），选择后该渠道的所有请求将默认使用指定的特有类型，无需每次在 API 中传递 `channelType`。
+:::
+
 ---
 
 ## 技术细节

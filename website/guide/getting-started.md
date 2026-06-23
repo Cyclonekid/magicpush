@@ -38,8 +38,7 @@ docker pull magiccode1412/magicpush:latest
 # 运行容器
 docker run -d \
   --name magicpush \
-  -p 3000:3000 \
-  -p 3001:3001 \
+  -p 818:3000 \
   magiccode1412/magicpush:latest
 ```
 
@@ -48,15 +47,13 @@ docker run -d \
 创建 `docker-compose.yml` 文件：
 
 ```yaml
-version: '3.8'
-
 services:
   magicpush:
     image: magiccode1412/magicpush:latest
     container_name: magicpush
+    network_mode: bridge
     ports:
-      - "3000:3000"
-      - "3001:3001"
+      - "818:3000"
     restart: unless-stopped
 ```
 

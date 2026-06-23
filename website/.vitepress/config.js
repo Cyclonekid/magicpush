@@ -121,7 +121,8 @@ export default defineConfig({
         {
           text: '扩展指南',
           items: [
-            { text: '新增渠道开发', link: '/guide/dev/new-channel-guide' }
+            { text: '新增渠道开发', link: '/guide/dev/new-channel-guide' },
+            { text: '特有消息类型开发', link: '/guide/dev/channel-specific-types' }
           ]
         },
         {
