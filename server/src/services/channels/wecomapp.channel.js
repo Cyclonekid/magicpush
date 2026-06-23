@@ -75,7 +75,7 @@ class WecomappChannel extends BaseChannel {
   /**
    * 构建带代理和 token 的 axios 配置
    */
-  _buildAxiosConfig(extra = {}) {
+  async _buildAxiosConfig(extra = {}) {
     const accessToken = await this._getAccessToken();
     const config = {
       params: { access_token: accessToken },
