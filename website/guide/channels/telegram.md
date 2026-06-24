@@ -96,6 +96,7 @@ Telegram Bot 是 Telegram 官方提供的机器人平台，通过 BotFather 创�
 |------|------|------|
 | **Bot Token** | 从 BotFather 获取的 Bot Token | `123456789:ABCdefGHIJKlmNoPQRsTUVwxyZ` |
 | **Chat ID** | 目标聊天 ID（用户 ID 或群组 ID） | `123456789` 或 `-1001234567890` |
+| **默认消息类型**（可选） | 默认使用设置值，不存在则回退普通消息 | `photo` |
 | **代理地址**（可选） | 用于访问 Telegram API 的代理地址 | `http://127.0.0.1:7890` |
 
 > 💡 **关于代理**：
@@ -165,16 +166,16 @@ Telegram 支持以下 HTML 标签：
 
 ### 3.4 特有消息类型
 
-除了通用的 `text`、`markdown` 和 `html` 类型外，Telegram Bot 还支持以下**特有消息类型**，通过 `channelType` + `extraData` 参数发送：
+除了通用的 `text`、`markdown` 和 `html` 类型外，Telegram Bot 还支持以下**特有消息类型**，通过 `extraData` 参数发送：
 
-| channelType | 说明 | 典型场景 |
+| 类型 | 说明 | 典型场景 |
 |-------------|------|----------|
 | `photo` | 图片消息（URL 或 Base64） | 发送图片、截图、验证码 |
 | `document` | 文件消息（URL 或 Base64） | 发送文件、PDF、压缩包 |
 | `location` | 位置消息（经纬度） | 分享地理位置、定位打卡 |
 
 ::: tip 使用方式
-特有消息类型需要在 API 请求中额外指定 `channelType`（标识特有类型）和 `extraData`（携带该类型的结构化数据），而不是使用通用 `type` 字段。Telegram 的图片和文件支持直接传入 URL 或 Base64 编码。
+特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可。Telegram 的图片和文件支持直接传入 URL 或 Base64 编码。
 :::
 
 #### photo 图片消息
@@ -187,7 +188,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "photo",
+    "title": "今日天气实况",
+    "content": "请查看今日天气截图",
+    "type": "text",
     "extraData": {
       "url": "https://picsum.photos/600/400",
       "caption": "今日天气实况"
@@ -199,7 +202,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "photo",
+    "title": "服务器截图",
+    "content": "服务器 CPU 使用率超过 90%，请查看截图",
+    "type": "text",
     "extraData": {
       "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
       "filename": "screenshot.jpg",
@@ -229,7 +234,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "document",
+    "title": "2024年第一季度报告",
+    "content": "请查收2024年第一季度报告",
+    "type": "text",
     "extraData": {
       "url": "https://example.com/report.pdf",
       "caption": "2024年第一季度报告"
@@ -241,7 +248,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "document",
+    "title": "月度报告",
+    "content": "请查收月度报告文件",
+    "type": "text",
     "extraData": {
       "base64": "JVBERi0xLjQK...",
       "filename": "report.pdf",
@@ -268,7 +277,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "location",
+    "title": "天安门广场位置",
+    "content": "北京市东城区长安街天安门广场",
+    "type": "text",
     "extraData": {
       "latitude": 39.9042,
       "longitude": 116.4074,
@@ -288,7 +299,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 | address | String | 否 | 详细地址信息 |
 
 ::: tip 默认消息类型配置
-在渠道设置中可以配置 **默认消息类型**（`defaultChannelType`），选择后该渠道的所有请求将默认使用指定的特有类型，无需每次在 API 中传递 `channelType`。
+在渠道设置中可以配置 **默认消息类型**，选择后该渠道的所有请求将默认使用指定的特有类型。
 :::
 
 ---

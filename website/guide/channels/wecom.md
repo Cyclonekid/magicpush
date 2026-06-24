@@ -12,16 +12,18 @@ outline: deep
 
 ### 什么是企业微信群机器人？
 
-企业微信群机器人是企业微信内置的群聊机器人功能，可以在群中自动发送消息通知。与「企业微信应用」渠道不同：
+企业微信群机器人是企业微信内置的群聊机器人功能，可以在群中自动发送消息通知。
 
-| 对比项 | 企业微信应用 | 企业微信群机器人（本渠道） |
-|--------|--------------|----------------------------|
-| 推送目标 | 个人 / 部门 / 标签 / 全员 | **群聊** |
-| 鉴权方式 | corpid + corpsecret + access_token | **Webhook Key（静态）** |
-| 配置复杂度 | 需要 corpid + corpsecret + agentid | **仅需一个 Key** |
-| 消息格式 | text、markdown | text、markdown |
-| 适用场景 | 个人通知、告警推送 | **群内通知、团队协作** |
-| 频率限制 | ~30次/分钟/人 | **20条/分钟/机器人** |
+**渠道特性**：
+
+| 特性 | 说明 |
+|------|------|
+| 推送目标 | **群聊** |
+| 鉴权方式 | **Webhook Key（静态）** |
+| 配置复杂度 | **仅需一个 Key** |
+| 支持消息类型 | **文本**、**Markdown** / **Markdown（增强版）**、图片、图文、文件、语音、模板卡片 |
+| 适用场景 | 群内通知、团队协作 |
+| 频率限制 | **20条/分钟/机器人** |
 
 ### 前置条件
 
@@ -36,11 +38,11 @@ outline: deep
 
 1. 打开企业微信，进入需要添加机器人的**群聊**
 2. 点击右上角 **「···」** 菜单按钮
-3. 在菜单中找到并点击 **「群机器人」**
+3. 在菜单中找到并点击 **「消息推送」**
 4. 点击 **「添加机器人」** → **「新建机器人」**
 5. 填写机器人信息：
    - **机器人名称**：如 `MagicPush 通知`
-   - **所属群组**：当前群（不可修改）
+   - **简介**：如 `用于接收 MagicPush 推送的通知`
 6. 点击 **「添加」**
 
 ### 1.2 获取机器人 Key
@@ -87,6 +89,7 @@ https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxxx-xxxx-xxxx-xxxx-xxx
 | 字段 | 说明 | 示例 |
 |------|------|------|
 | **机器人 Key** | 机器人 Webhook Key 或完整 Webhook 地址 | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` 或完整 URL |
+| **默认消息类型**（可选） | 默认使用设置值，不存在则回退普通消息 | `news` |
 
 > 💡 **提示**：MagicPush 支持两种填写方式：
 > - 只填写 Key 字符串（推荐，更简洁）
@@ -124,8 +127,8 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 | type 值 | 说明 |
 |---------|------|
-| `text` | 纯文本消息（默认） |
-| `markdown` | Markdown 格式消息 |
+| `text` | **文本消息**（默认） |
+| `markdown` | **Markdown 格式消息** |
 
 ### 3.2 Markdown 消息示例
 
@@ -154,17 +157,19 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 ### 3.3 特有消息类型
 
-除了通用的 `text` 和 `markdown` 类型外，企业微信群机器人还支持以下**特有消息类型**，通过 `channelType` + `extraData` 参数发送：
+除了通用的 `text` 和 `markdown` 类型外，企业微信群机器人还支持以下**特有消息类型**，通过 `extraData` 参数发送：
 
-| channelType | 说明 | 典型场景 |
+| 类型 | 说明 | 典型场景 |
 |-------------|------|----------|
-| `news` | 图文消息（带封面图和跳转链接） | 资讯推送、公告通知、活动宣传 |
-| `image` | 图片消息（Base64 编码） | 发送截图、验证码图片等 |
-| `file` | 文件消息（Base64 编码） | 发送报告、Excel 等文件 |
-| `template_card` | 模板卡片（交互式） | 告警卡片、任务通知、审批提醒 |
+| `news` | **图文消息**（带封面图和跳转链接） | 资讯推送、公告通知、活动宣传 |
+| `image` | **图片消息**（Base64 编码） | 发送截图、验证码图片等 |
+| `file` | **文件消息**（需上传获取 media_id） | 发送报告、Excel 等文件 |
+| `voice` | **语音消息**（需上传获取 media_id） | 发送语音通知（≤60秒，AMR格式） |
+| `markdown_v2` | **Markdown增强版**（支持表格、列表、代码块） | 周报汇报、数据报告、格式化通知 |
+| `template_card` | **模板卡片**（交互式） | 告警卡片、任务通知、审批提醒 |
 
 ::: tip 使用方式
-特有消息类型需要在 API 请求中额外指定 `channelType`（标识特有类型）和 `extraData`（携带该类型的结构化数据），而不是使用通用 `type` 字段。
+特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可。
 :::
 
 #### news 图文消息
@@ -176,7 +181,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "news",
+    "title": "中秋节礼品到",
+    "content": "今年中秋公司为大家准备了精美礼品",
+    "type": "text",
     "extraData": {
       "articles": [
         {
@@ -209,7 +216,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "image",
+    "title": "验证码图片",
+    "content": "您的验证码已发送，请查收图片",
+    "type": "text",
     "extraData": {
       "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
     }
@@ -232,7 +241,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "file",
+    "title": "月度报表",
+    "content": "请查收本月度报表文件",
+    "type": "text",
     "extraData": {
       "base64": "JVBERi0xLjQK..."
     }
@@ -255,7 +266,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "template_card",
+    "title": "系统升级通知",
+    "content": "系统将于今晚22:00-23:00进行升级维护",
+    "type": "text",
     "extraData": {
       "card_type": "text_notice",
       "source": { "desc_text": "来自魔法推送" },
@@ -281,8 +294,68 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 | horizontal_content_list | Array | 否 | 键值对列表 `[{ keyname, value }]` |
 | card_action | Object | 否 | 操作按钮 `{ url: "跳转URL", type: 1 }` |
 
+#### voice 语音消息
+
+发送 AMR 格式的语音文件（需先上传获取 media_id）：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "语音通知",
+    "content": "系统告警语音已发送，请查收",
+    "type": "text",
+    "extraData": {
+      "base64": "IyAgICAgICAgICAgICAg..."
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| base64 | String | 否（与media_id二选一） | 语音的 Base64 编码字符串（AMR格式） |
+| media_id | String | 否（与base64二选一） | 已上传的媒体ID |
+
+> ⚠️ **注意**：语音文件限制：
+> - 大小不超过 **2M**
+> - 播放长度不超过 **60秒**
+> - 格式仅支持 **AMR**
+> - `media_id` 有效期为 **3天**
+
+#### markdown_v2 Markdown增强版
+
+发送支持表格、斜体、列表等更丰富语法的 Markdown 消息：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "周报汇总",
+    "content": "本周项目进度报告",
+    "type": "text",
+    "extraData": {
+      "content": "| 项目 | 状态 | 进度 |\n|------|------|------|\n| 任务A | 进行中 | 80% |\n| 任务B | 已完成 | 100% |\n\n- *任务A*: 开发接近尾声\n- **任务C**: 下周启动"
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| content | String | 是 | Markdown_v2 内容（最长 4096 字节） |
+
+> ⚠️ **注意**：
+> - **不支持**字体颜色和 `@群成员` 语法
+> - 客户端版本需 ≥ **4.1.36** 才能正常渲染，否则显示为纯文本
+> - 相比普通 Markdown，额外支持：**表格、斜体、有序/无序列表、独立代码块、图片插入**
+
 ::: tip 默认消息类型配置
-在渠道设置中可以配置 **默认消息类型**（`defaultChannelType`），选择后该渠道的所有请求将默认使用指定的特有类型，无需每次在 API 中传递 `channelType`。
+在渠道设置中可以配置 **默认消息类型**，选择后该渠道的所有请求将默认使用指定的特有类型。
 :::
 
 ---
@@ -300,12 +373,16 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 如果发送频率超过限制，会返回错误码 `88888`。MagicPush 不会做额外限制，请注意控制推送频率。
 
-### 安全设置
+### 安全注意事项
 
-如果在企业微信中配置了机器人的安全设置（IP 白名单、 secret 签名等），需要确保：
-
-1. MagicPush 服务器的 IP 在白名单中
-2. 如果启用了签名验证，当前渠道暂不支持签名（企业微信群机器人签名需在计算签名后拼接到 URL），可考虑使用「企业微信应用」渠道代替
+> ⚠️ **重要**：企业微信群机器人 **不提供** IP 白名单、签名验证等安全机制。
+>
+> 其安全性完全依赖于 **Webhook URL 的保密性**：
+> - 任何人获取到 Webhook 地址即可向该群发送消息
+> - 请勿将 URL 分享到 GitHub、博客等公开场所
+> - 如果怀疑 URL 已泄露，建议在群中删除旧机器人并重新创建
+>
+> 如需更高级的安全控制（鉴权、审计日志等），可考虑使用「企业微信应用」渠道代替。
 
 ---
 
@@ -346,14 +423,14 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 **解决**：每个群需要单独创建一个群机器人，每个机器人对应一个 MagicPush 渠道。无法通过一个 Webhook 同时推送到多个群。
 
-### Q: 与「企业微信应用」渠道有什么区别？我该选哪个？
+### Q: 什么时候应该选择本渠道？
 
-| 场景 | 推荐渠道 |
-|------|---------|
-| 需要推送到**群聊**，配置简单 | **企业微信群机器人**（本渠道） |
-| 需要推送到**个人**，每个人独立接收 | 企业微信应用 |
-| 需要通知企业**全员** | 企业微信应用 |
-| 需要较高的消息频率 | 企业微信群机器人（可多机器人分散） |
+| 场景 | 说明 |
+|------|------|
+| 需要推送到**群聊** | ✅ 本渠道支持 |
+| 配置简单，仅需一个 Webhook Key | ✅ 本渠道支持 |
+| 需要较高的消息频率（可多机器人分散） | ✅ 本渠道支持 |
+| 群内通知、团队协作场景 | ✅ 本渠道适合 |
 
 ---
 

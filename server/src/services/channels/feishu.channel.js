@@ -5,7 +5,7 @@ const BaseChannel = require('./base.channel');
  * 飞书群机器人适配器
  *
  * 支持的消息类型：
- * - 通用类型: text, markdown
+ * - 通用类型: text, markdown, html(自动转为text)
  * - 特有类型: post(富文本), image(图片), interactive_card(交互卡片), share_chat(群名片)
  */
 class FeishuChannel extends BaseChannel {
@@ -13,6 +13,49 @@ class FeishuChannel extends BaseChannel {
     super(config);
     this.webhookUrl = config.webhookUrl;
     this.secret = config.secret || '';
+  }
+
+  /**
+   * 从HTML中剥离标签，保留纯文本内容
+   */
+  stripHtml(html) {
+    if (!html || typeof html !== 'string') return html;
+
+    // 处理换行元素：块级元素替换为换行符
+    let text = html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<\/h[1-6]>/gi, '\n\n')
+      .replace(/<\/tr>/gi, '\n');
+
+    // 移除所有剩余的HTML标签
+    text = text.replace(/<[^>]+>/g, '');
+
+    // 解码常见HTML实体
+    const entities = {
+      '&amp;': '&',
+      '&lt;': '<',
+      '&gt;': '>',
+      '&quot;': '"',
+      '&#39;': "'",
+      '&nbsp;': ' ',
+      '&#160;': ' ',
+      '&ensp;': ' ',
+      '&emsp;': '  ',
+    };
+    for (const [entity, char] of Object.entries(entities)) {
+      text = text.split(entity).join(char);
+    }
+
+    // 清理多余空白和空行
+    text = text.replace(/[ \t]+/g, ' ')           // 多个空格合并为一个
+                .replace(/\n[ \t]+/g, '\n')       // 行首多余空格
+                .replace(/\n{3,}/g, '\n\n')       // 多于2个连续换行合并为2个
+                .trim();
+
+    return text;
   }
 
   /**
@@ -43,11 +86,17 @@ class FeishuChannel extends BaseChannel {
   }
 
   async send(message) {
-    const { title, content, type = 'text', channelType, extraData } = message;
+    let { title, content, type = 'text', channelType, extraData } = message;
 
     // 如果是渠道特有类型，委托给专门的处理方法
     if (channelType && channelType !== 'text' && channelType !== 'markdown') {
       return await this.sendChannelSpecific(channelType, extraData);
+    }
+
+    // HTML类型：剥离HTML标签，转为纯文本发送
+    if (type === 'html') {
+      content = this.stripHtml(content);
+      type = 'text';
     }
 
     // 通用类型处理（保持原有逻辑不变）
@@ -291,7 +340,7 @@ class FeishuChannel extends BaseChannel {
   }
 
   static getSupportedTypes() {
-    return ['text', 'markdown'];
+    return ['text', 'markdown', 'html'];
   }
 
   static getChannelSpecificTypes() {
@@ -441,8 +490,8 @@ class FeishuChannel extends BaseChannel {
         required: false,
         links: [
           {
-            label: '查看飞书机器人创建指南',
-            url: 'https://open.feishu.cn/document/client-docs/bot-v3/bot-overview',
+            label: '查看飞书自定义机器人创建指南',
+            url: 'https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot#355ec8c0',
           },
         ],
       },

@@ -73,6 +73,10 @@ class WecomChannel extends BaseChannel {
         return await this.sendImage(extraData);
       case 'file':
         return await this.sendFile(extraData);
+      case 'voice':
+        return await this.sendVoice(extraData);
+      case 'markdown_v2':
+        return await this.sendMarkdownV2(extraData);
       case 'template_card':
         return await this.sendTemplateCard(extraData);
       default:
@@ -184,6 +188,86 @@ class WecomChannel extends BaseChannel {
   }
 
   /**
+   * 发送语音消息
+   * @param {Object} data - 语音消息数据，包含 base64 或 media_id
+   */
+  async sendVoice(data) {
+    if (!data) {
+      throw new Error('语音消息必须包含数据');
+    }
+
+    let mediaId;
+
+    // 如果直接提供了 media_id，则使用它
+    if (data.media_id) {
+      mediaId = data.media_id;
+    } else if (data.base64) {
+      // 如果提供的是 base64 数据，需要先上传获取 media_id
+      mediaId = await this._uploadMedia('voice', data.base64);
+    } else {
+      throw new Error('语音消息必须包含 base64 或 media_id');
+    }
+
+    const payload = {
+      msgtype: 'voice',
+      voice: {
+        media_id: mediaId,
+      },
+    };
+
+    const response = await axios.post(this.webhookUrl, payload, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 15000,
+    });
+
+    if (response.data.errcode !== 0) {
+      throw new Error(`企业微信语音消息发送失败: ${response.data.errmsg}`);
+    }
+
+    return {
+      success: true,
+      messageId: response.data.msgid,
+      type: 'voice',
+    };
+  }
+
+  /**
+   * 发送 Markdown 增强版消息（markdown_v2）
+   * 支持表格、斜体、列表、独立代码块等更丰富的语法
+   * 需要客户端版本 ≥ 4.1.36 才能正常渲染
+   * @param {Object} data - Markdown_v2 消息数据
+   */
+  async sendMarkdownV2(data) {
+    const content = data?.content || '';
+
+    if (!content) {
+      throw new Error('Markdown增强版消息必须包含 content 内容');
+    }
+
+    const payload = {
+      msgtype: 'markdown_v2',
+      markdown_v2: {
+        content: content,
+      },
+    };
+
+    const response = await axios.post(this.webhookUrl, payload, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 10000,
+    });
+
+    if (response.data.errcode !== 0) {
+      throw new Error(`企业微信Markdown增强版消息发送失败: ${response.data.errmsg}`);
+    }
+
+    return {
+      success: true,
+      messageId: response.data.msgid,
+      type: 'markdown_v2',
+    };
+  }
+
+  /**
    * 发送模板卡片消息
    * @param {Object} data - 模板卡片数据
    */
@@ -225,6 +309,36 @@ class WecomChannel extends BaseChannel {
     };
   }
 
+  /**
+   * 上传临时素材（文件/语音等）
+   * @param {string} type - 素材类型：file / voice
+   * @param {string} base64 - Base64 编码的文件内容
+   * @returns {Promise<string>} media_id
+   */
+  async _uploadMedia(type, base64) {
+    // 从 webhookUrl 提取 key
+    const url = new URL(this.webhookUrl);
+    const key = url.searchParams.get('key');
+
+    const uploadUrl = `https://qyapi.weixin.qq.com/cgi-bin/webhook/upload_media?key=${key}&type=${type}`;
+
+    // 将 base64 转换为 Buffer
+    const fileBuffer = Buffer.from(base64, 'base64');
+
+    const response = await axios.post(uploadUrl, fileBuffer, {
+      headers: {
+        'Content-Type': 'application/octet-stream',
+      },
+      timeout: 30000,
+    });
+
+    if (response.data.errcode !== 0) {
+      throw new Error(`企业微信${type === 'voice' ? '语音' : '文件'}上传失败: ${response.data.errmsg}`);
+    }
+
+    return response.data.media_id;
+  }
+
   validate(config) {
     if (!config.key || config.key.trim() === '') {
       return { valid: false, message: '机器人Key不能为空' };
@@ -261,7 +375,7 @@ class WecomChannel extends BaseChannel {
   }
 
   static getDescription() {
-    return '企业微信群机器人，支持文本、Markdown及图文等丰富消息格式';
+    return '企业微信群机器人，支持文本、Markdown（增强版）、图片、图文、文件、语音及模板卡片等8种消息类型';
   }
 
   static getSupportedTypes() {
@@ -338,6 +452,37 @@ class WecomChannel extends BaseChannel {
         }
       },
       {
+        value: 'voice',
+        label: '语音消息',
+        icon: '🎤',
+        description: '发送语音消息（AMR格式，≤2M，时长≤60秒），需先上传获取media_id',
+        fields: [
+          { name: 'base64', label: '语音Base64编码', type: 'textarea', required: false, description: '语音的Base64编码字符串（AMR格式）' },
+          { name: 'media_id', label: '媒体ID', type: 'text', required: false, description: '已上传的媒体ID（与base64二选一）' },
+        ],
+        example: {
+          channelType: 'voice',
+          extraData: {
+            base64: 'IyAgICAgICAgICAgICAg...'
+          }
+        }
+      },
+      {
+        value: 'markdown_v2',
+        label: 'Markdown增强版',
+        icon: '✍️',
+        description: '增强版Markdown格式，支持表格、斜体、列表、代码块等丰富语法（需客户端≥4.1.36）',
+        fields: [
+          { name: 'content', label: 'Markdown内容', type: 'textarea', required: true, description: 'Markdown_v2格式内容（最长4096字节），不支持字体颜色和@群成员语法' },
+        ],
+        example: {
+          channelType: 'markdown_v2',
+          extraData: {
+            content: '| 项目 | 状态 | 进度 |\n|------|------|------|\n| 任务A | 进行中 | 80% |\n| 任务B | 已完成 | 100% |'
+          }
+        }
+      },
+      {
         value: 'template_card',
         label: '模板卡片',
         icon: '🃏',
@@ -403,9 +548,11 @@ class WecomChannel extends BaseChannel {
         options: [
           { value: 'text', label: '文本消息 (text)' },
           { value: 'markdown', label: 'Markdown (markdown)' },
+          { value: 'markdown_v2', label: 'Markdown增强版 (markdown_v2)' },
           { value: 'news', label: '图文消息 (news)' },
           { value: 'image', label: '图片消息 (image)' },
           { value: 'file', label: '文件消息 (file)' },
+          { value: 'voice', label: '语音消息 (voice)' },
           { value: 'template_card', label: '模板卡片 (template_card)' },
         ],
         description: '选择后，推送时将始终使用此消息类型。不选则根据请求内容自动判断（默认text）',

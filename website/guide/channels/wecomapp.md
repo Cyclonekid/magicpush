@@ -8,20 +8,29 @@ outline: deep
 
 本教程将指导你如何在 MagicPush（魔法推送）中配置**企业微信应用消息**推送渠道，实现向指定成员或全员推送消息。
 
+::: warning 使用必看
+创建企业微信自建应用并正常调用 API，需要满足以下条件：
+
+- **域名备案要求**：需要有固定IP地址；应用必须绑定已备案的域名，且**备案主体需与企业主体一致或有强关联关系**
+- 如果不具备上述条件（如使用海外服务器、无备案域名等），建议改用 **[企业微信群机器人](./wecom)** 渠道，仅需一个 Webhook Key 即可使用
+:::
+
 ## 概述
 
 ### 什么是企业微信应用推送？
 
-企业微信应用消息推送是通过在企业微信管理后台创建**自建应用**，调用企业微信开放 API 向指定成员发送消息的能力。与「企业微信群机器人」渠道不同：
+企业微信应用消息推送是通过在企业微信管理后台创建**自建应用**，调用企业微信开放 API 向指定成员发送消息的能力。
 
-| 对比项 | 企业微信群机器人 | 企业微信应用（本渠道） |
-|--------|-------------------|---------------------|
-| 推送目标 | 群聊 | **个人** / 部门 / 标签 / 全员 |
-| 鉴权方式 | Webhook Key（静态） | access_token（动态刷新，7200秒有效期） |
-| 配置复杂度 | 仅需一个 Key | 需要 corpid + corpsecret + agentid |
-| 消息格式 | text、markdown | text、markdown |
-| 适用场景 | 群内通知 | **个人通知、告警推送、系统通知** |
-| 频率限制 | 20条/分钟 | ~30次/分钟/人 |
+**渠道特性**：
+
+| 特性 | 说明 |
+|------|------|
+| 推送目标 | **个人** / 部门 / 标签 / 全员 |
+| 鉴权方式 | access_token（动态刷新，7200秒有效期） |
+| 配置复杂度 | 需要 corpid + corpsecret + agentid |
+| 支持消息类型 | 文本消息、**markdown 消息**、图文消息、图片消息、视频消息、文件消息、语音消息、mpnews 图文消息、文本卡片消息、模板卡片消息、小程序通知消息 |
+| 适用场景 | 个人通知、告警推送、系统通知 |
+| 频率限制 | ~30次/分钟/人 |
 
 ### 前置条件
 
@@ -115,6 +124,7 @@ outline: deep
 | **应用 Secret** | 自建应用的凭证密钥 | 点击应用详情中的「查看」获取 |
 | **应用 AgentId** | 企业应用 ID（整型数字） | `1000002` |
 | **接收成员** | 成员 UserID（多个用 `\|` 分隔）或 `@all` | `zhangsan` 或 `zhangsan\|lisi` 或 `@all` |
+| **默认消息类型**（可选） | 默认使用设置值，不存在则回退普通消息 | `news` |
 | **代理地址**（可选） | 如需通过代理访问企业微信 API | `http://127.0.0.1:7890` |
 
 填写完成后，给渠道起一个易于辨识的**名称**（如「生产环境告警推送」），点击「**保存**」。
@@ -178,18 +188,22 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 ### 3.3 特有消息类型
 
-除了通用的 `text`、`markdown` 和 `html` 类型外，企业微信应用还支持以下**特有消息类型**，通过 `channelType` + `extraData` 参数发送：
+除了通用的 `text`、`markdown` 和 `html` 类型外，企业微信应用还支持以下**特有消息类型**，通过 `extraData` 参数发送：
 
-| channelType | 说明 | 典型场景 |
+| 类型 | 说明 | 典型场景 |
 |-------------|------|----------|
 | `news` | 图文消息（多条图文链接文章） | 资讯推送、公告通知、产品发布 |
 | `text_card` | 文本卡片（带标题和跳转链接） | 审批通知、简短提醒 |
 | `template_card` | 模板卡片（交互式卡片） | 告警通知、任务提醒、数据报告 |
 | `image` | 图片消息（Base64 编码，需上传获取 media_id） | 截图分享、验证码图片 |
 | `file` | 文件消息（Base64 编码，需上传获取 media_id） | 发送报表、PDF 文档 |
+| `voice` | 语音消息（AMR 格式，需上传获取 media_id） | 语音通知、语音播报 |
+| `video` | 视频消息（MP4 格式，需上传获取 media_id） | 视频演示、操作教程 |
+| `mpnews` | 图文消息 mpnews（支持富文本 HTML 正文） | 富文本资讯推送、图文详情页 |
+| `miniprogram_notice` | 小程序通知消息（可跳转小程序页面） | 订单状态更新、服务通知 |
 
 ::: tip 使用方式
-特有消息类型需要在 API 请求中额外指定 `channelType`（标识特有类型）和 `extraData`（携带该类型的结构化数据），而不是使用通用 `type` 字段。与群机器人渠道不同，应用渠道的图片和文件需要先通过企业微信 API 上传临时素材。
+特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可，无需额外指定类型标识。与群机器人渠道不同，应用渠道的图片和文件需要先通过企业微信 API 上传临时素材。
 :::
 
 #### news 图文消息
@@ -201,7 +215,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "news",
+    "title": "系统升级公告",
+    "content": "系统将于今晚22:00-23:00进行升级维护",
+    "type": "text",
     "extraData": {
       "articles": [
         {
@@ -234,7 +250,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "text_card",
+    "title": "审批通知",
+    "content": "您有一条新的审批待处理，请及时查看",
+    "type": "text",
     "extraData": {
       "title": "审批通知",
       "description": "您有一条新的审批待处理，请及时查看",
@@ -262,7 +280,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "template_card",
+    "title": "系统升级通知",
+    "content": "系统将于今晚22:00-23:00进行升级维护",
+    "type": "text",
     "extraData": {
       "card_type": "text_notice",
       "source": { "desc_text": "来自魔法推送" },
@@ -299,7 +319,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "image",
+    "title": "服务器截图",
+    "content": "服务器 CPU 使用率超过 90%，请查看截图",
+    "type": "text",
     "extraData": {
       "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
       "filename": "screenshot.jpg"
@@ -323,7 +345,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "file",
+    "title": "月度报告",
+    "content": "请查收2024年第一季度月度报告",
+    "type": "text",
     "extraData": {
       "base64": "JVBERi0xLjQK...",
       "filename": "report.pdf"
@@ -338,8 +362,153 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 | base64 | String | 是 | 文件的 Base64 编码字符串 |
 | filename | String | 否 | 文件名（如 `report.pdf`） |
 
+#### voice 语音消息
+
+发送 Base64 编码的语音文件（MagicPush 会自动调用企业微信 API 上传为临时素材）：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "语音通知",
+    "content": "请查收语音消息",
+    "type": "text",
+    "extraData": {
+      "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+      "filename": "voice.amr"
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| base64 | String | 是 | 语音的 Base64 编码字符串（AMR 格式） |
+| filename | String | 否 | 文件名（如 `voice.amr`） |
+
+> ⚠️ **注意**：语音文件仅支持 AMR 格式，文件大小不超过 **2MB**，播放时长不超过 **60秒**。
+
+#### video 视频消息
+
+发送 Base64 编码的视频文件（MagicPush 会自动调用企业微信 API 上传为临时素材）：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "产品演示视频",
+    "content": "最新版本功能演示，请查看视频",
+    "type": "text",
+    "extraData": {
+      "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+      "filename": "demo.mp4",
+      "title": "产品演示视频",
+      "description": "V2.0 新功能演示"
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| base64 | String | 是 | 视频的 Base64 编码字符串（MP4 格式） |
+| filename | String | 否 | 文件名（如 `demo.mp4`） |
+| title | String | 否 | 视频消息标题（显示在卡片上） |
+| description | String | 否 | 视频消息描述文字 |
+
+> ⚠️ **注意**：视频文件仅支持 MP4 格式，文件大小不超过 **10MB**。
+
+#### mpnews 图文消息
+
+与普通 news 不同，mpnews 支持富文本正文内容（HTML），需要先通过素材上传接口获取封面图的 `thumb_media_id`：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "系统升级公告",
+    "content": "系统将于今晚22:00-23:00进行升级维护",
+    "type": "text",
+    "extraData": {
+      "articles": [
+        {
+          "title": "系统升级公告",
+          "thumb_media_id": "MEDIA_ID_xxxx",
+          "author": "运维团队",
+          "content": "<h3>系统将于今晚升级</h3><p>预计维护时间：22:00-23:00</p><p>影响范围：所有用户</p>",
+          "content_source_url": "https://example.com/notice",
+          "digest": "系统升级通知摘要"
+        }
+      ]
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| articles | Array | 是 | 文章数组 |
+| articles[].title | String | 是 | 文章标题（最长 512 字符） |
+| articles[].thumb_media_id | String | 是 | 封面图素材 ID（需先通过上传接口获取） |
+| articles[].author | String | 否 | 作者名称 |
+| articles[].content | String | 是 | 正文 HTML 内容（支持完整 HTML 标签） |
+| articles[].content_source_url | String | 否 | 阅读原文 URL |
+| articles[].digest | String | 否 | 摘要文本（最长 120 字符） |
+
+:::: tip 与 news 的区别
+`news` 类型适合简单的图文链接列表，而 `mpnews` 支持完整的富文本 HTML 正文内容，展示效果更丰富。但 mpnews 需要预先上传封面图获取 `thumb_media_id`，使用门槛稍高。
+::::
+
+#### miniprogram_notice 小程序通知消息
+
+发送小程序通知卡片，点击可跳转至指定小程序页面：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "订单状态更新",
+    "content": "您的订单已发货",
+    "type": "text",
+    "extraData": {
+      "appid": "wxa1234567890abcdef",
+      "page": "pages/order/detail?orderId=12345",
+      "title": "订单状态更新",
+      "description": "您的订单已发货",
+      "emphasis_first_item": true,
+      "content_items": [
+        { "key": "订单号", "value": "ORD-20240115-001" },
+        { "key": "状态", "value": "已发货" },
+        { "key": "快递公司", "value": "顺丰速运" }
+      ]
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| appid | String | 是 | 小程序 AppID（必须是已关联到企业的应用） |
+| page | String | 是 | 小程序页面路径（如 `pages/index/index`） |
+| title | String | 否 | 通知标题（最长 32 字符；不填则使用 content_items 第一项 key） |
+| description | String | 否 | 描述文字（最长 128 字符） |
+| emphasis_first_item | Boolean | 否 | 是否放大显示 content_items 第一项（默认 true） |
+| content_items | Array | 否 | 键值对列表 `[{key, value}]`（最多 10 项） |
+| content_items[].key | String | 是 | 键名（最长 20 字符） |
+| content_items[].value | String | 是 | 值（最长 30 字符） |
+
+> 💡 **提示**：使用前需要在企业微信管理后台将对应的小程序应用关联到企业，并确保用户有权限访问该小程序。
+
 ::: tip 默认消息类型配置
-在渠道设置中可以配置 **默认消息类型**（`defaultChannelType`），选择后该渠道的所有请求将默认使用指定的特有类型，无需每次在 API 中传递 `channelType`。
+在渠道设置中可以配置 **默认消息类型**，选择后该渠道的所有请求将默认使用指定的特有类型。
 :::
 
 ---
@@ -429,14 +598,14 @@ MagicPush 不会对频率做额外限制，请确保推送频率在企业微信�
 
 支持的代理协议：`http://`、`https://`、`socks4://`、`socks5://`
 
-### Q: 与「企业微信群机器人」渠道有什么区别？我该选哪个？
+### Q: 什么时候应该选择本渠道？
 
-| 场景 | 推荐渠道 |
-|------|---------|
-| 需要推送到群聊，配置简单 | 企业微信群机器人 |
-| 需要推送到**个人**，每个人独立接收 | **企业微信应用**（本渠道） |
-| 需要通知企业**全员** | **企业微信应用**（设置 touser 为 @all） |
-| 需要较高的消息频率 | 企业微信群机器人 |
+| 场景 | 说明 |
+|------|------|
+| 需要推送到**个人**，每个人独立接收 | ✅ 本渠道支持 |
+| 需要通知企业**全员** | ✅ 设置 touser 为 @all |
+| 需要推送到部门或标签分组 | ✅ 本渠道支持 |
+| 需要较高的消息频率（~30次/分钟/人） | ✅ 本渠道支持 |
 
 ---
 

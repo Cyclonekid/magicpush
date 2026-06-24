@@ -20,7 +20,10 @@ outline: deep
 | 鉴权方式 | Webhook URL（可选签名校验） |
 | 配置复杂度 | 低，仅需粘贴 Webhook 地址 |
 | 消息格式 | text、interactive（卡片） |
-| 频率限制 | 50条/分钟/机器人 |
+| 频率限制 | **100 次/分钟**、**5 次/秒**（单租户单机器人） |
+| 请求体大小 | 不超过 **20 KB** |
+
+> ⚠️ **重要提醒**：建议发送消息尽量避开 10:00、17:30 等整点及半点时间，否则可能因系统压力导致 **11232 限流错误**，造成消息发送失败。
 
 ### 前置条件
 
@@ -43,6 +46,8 @@ outline: deep
    - **描述**：可选，如 `接收系统告警通知`
    - **安全设置**：可选择启用「签名校验」
 7. 点击 **「添加」**
+
+> 💡 **提示**：官方文档： [在群组中添加自定义机器人](https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot#399d949c)。
 
 ### 1.2 获取 Webhook 地址和 Secret
 
@@ -82,6 +87,7 @@ outline: deep
 |------|------|------|
 | **Webhook 地址** | 飞书机器人的完整 Webhook 地址 | `https://open.feishu.cn/open-apis/bot/v2/hook/...` |
 | **Secret 密钥（可选）** | 签名校验密钥，留空则不校验签名 | `xxxxxxxxxxxxxxxxxxxx` |
+| **默认消息类型**（可选） | 默认使用设置值，不存在则回退普通消息 | `interactive_card` |
 
 > 💡 **签名校验说明**：
 > - 如果在飞书机器人设置中启用了「签名校验」，**必须**填写 Secret
@@ -143,9 +149,9 @@ CPU 使用率超过 90%，请及时处理！
 
 ### 3.3 特有消息类型
 
-除了通用的 `text` 和 `markdown` 类型外，飞书群机器人还支持以下**特有消息类型**，通过 `channelType` + `extraData` 参数发送：
+除了通用的 `text` 和 `markdown` 类型外，飞书群机器人还支持以下**特有消息类型**，通过 `extraData` 参数发送：
 
-| channelType | 说明 | 典型场景 |
+| 类型 | 说明 | 典型场景 |
 |-------------|------|----------|
 | `post` | 富文本消息（多段落、链接、@人） | 格式丰富的内容推送 |
 | `interactive_card` | 交互式卡片（完整卡片 JSON） | 自定义布局的复杂卡片交互 |
@@ -153,7 +159,7 @@ CPU 使用率超过 90%，请及时处理！
 | `share_chat` | 群名片分享 | 分享群聊邀请 |
 
 ::: tip 使用方式
-特有消息类型需要在 API 请求中额外指定 `channelType`（标识特有类型）和 `extraData`（携带该类型的结构化数据），而不是使用通用 `type` 字段。
+特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可。
 :::
 
 #### post 富文本消息
@@ -165,7 +171,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "post",
+    "title": "项目更新通知",
+    "content": "项目有新的更新，请查看详情",
+    "type": "text",
     "extraData": {
       "title": "项目更新通知",
       "content": [
@@ -204,7 +212,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "interactive_card",
+    "title": "系统通知",
+    "content": "服务器状态：正常运行，CPU使用率：45%",
+    "type": "text",
     "extraData": {
       "card": {
         "header": {
@@ -234,7 +244,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 |------|------|------|------|
 | card | Object | 是 | 完整的飞书卡片 JSON 对象（含 header 和 elements） |
 
-> 详细卡片结构请参考 [飞书官方卡片文档](https://open.feishu.cn/document/server-docs/group/custom-bot-send/card_message)。
+> 详细卡片结构请参考 [飞书官方卡片文档](https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot#%E5%8D%A1%E7%89%87%E6%B6%88%E6%81%AF)。
 
 #### image 图片消息
 
@@ -246,7 +256,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "image",
+    "title": "截图分享",
+    "content": "请查看分享的图片",
+    "type": "text",
     "extraData": {
       "image_key": "img_v2_xxxx"
     }
@@ -257,7 +269,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "image",
+    "title": "验证码图片",
+    "content": "您的验证码已发送，请查收图片",
+    "type": "text",
     "extraData": {
       "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD..."
     }
@@ -280,7 +294,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <你的API Token>" \
   -d '{
-    "channelType": "share_chat",
+    "title": "群聊邀请",
+    "content": "邀请您加入项目交流群",
+    "type": "text",
     "extraData": {
       "share_chat_id": "oc_xxxxxxxx"
     }
@@ -294,7 +310,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 | share_chat_id | String | 是 | 目标群聊的 open_chat_id |
 
 ::: tip 默认消息类型配置
-在渠道设置中可以配置 **默认消息类型**（`defaultChannelType`），选择后该渠道的所有请求将默认使用指定的特有类型，无需每次在 API 中传递 `channelType`。
+在渠道设置中可以配置 **默认消息类型**，选择后该渠道的所有请求将默认使用指定的特有类型。
 :::
 
 ---
@@ -306,9 +322,17 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 - 文本消息：最长不超过 **5000 字符**
 - 卡片消息：最长不超过 **5000 字符**
 
+### 请求体大小限制
+
+- 请求体数据大小不能超过 **20 KB**
+
 ### 频率限制
 
-飞书群机器人限制：**每个机器人最多 50 条消息/分钟**。
+飞书自定义机器人限制（单租户单机器人）：
+- **100 次/分钟**
+- **5 次/秒**
+
+> ⚠️ 建议避开整点及半点时间发送，避免触发系统限流。
 
 ### 签名机制
 
@@ -344,7 +368,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 ### Q: 发送消息返回频率限制错误？
 
-**原因**：触发了频率限制（50条/分钟）。
+**原因**：触发了频率限制（100 次/分钟 或 5 次/秒）。
 
 **解决**：
 1. 降低推送频率，合并消息
@@ -367,6 +391,5 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 ## 参考资源
 
-- [飞书自定义机器人文档](https://open.feishu.cn/document/client-docs/bot-v3/bot-overview)
-- [飞书机器人消息格式](https://open.feishu.cn/document/client-docs/bot-v3/message/create)
+- [飞书自定义机器人官方文档](https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot)
 - [MagicPush GitHub 仓库](https://github.com/magiccode1412/magicpush)
