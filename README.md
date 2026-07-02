@@ -13,7 +13,7 @@
       <img alt="MIT License"
         src="https://img.shields.io/github/license/magiccode1412/magicpush">
     </a>
-    <a href="./version.json">
+    <a href="https://www.160621.xyz/magicpush-dev/guide/changelog.html" target="_blank">
       <img alt="Latest Version"
         src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmagiccode1412%2Fmagicpush%2Frefs%2Fheads%2Fmain%2Fversion.json&query=%24.version&prefix=v&style=flat&label=version&labelColor=orange">
     </a>
@@ -192,11 +192,20 @@
     </td>
     <td align="center">
       <a href="https://github.com/tt-haogege">
-        <img src="https://avatars.githubusercontent.com/u/56960885?v=4" 
-             width="70" 
+        <img src="https://avatars.githubusercontent.com/u/56960885?v=4"
+             width="70"
              height="70"
              style="border-radius:50%;" />
         <br /><sub>tt-haogege</sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/HuFakai">
+        <img src="https://avatars.githubusercontent.com/u/54195943?v=4"
+             width="70"
+             height="70"
+             style="border-radius:50%;" />
+        <br /><sub>HuFakai</sub>
       </a>
     </td>
   </tr>
