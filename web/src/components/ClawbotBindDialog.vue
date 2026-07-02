@@ -118,7 +118,7 @@ import { ref, watch, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Loading, SuccessFilled, WarningFilled } from '@element-plus/icons-vue'
 import QrcodeVue from 'qrcode.vue'
-import { getClawbotQRCode, getClawbotQRStatus, clawbotBindConfirm, clawbotRebind, checkClawbotContextStatus } from '@/api/channel'
+import { getClawbotQRCode, getClawbotQRStatus, clawbotBindConfirm, clawbotRebind, checkClawbotContextStatus } from '@/api/clawbot'
 
 const props = defineProps({
   visible: Boolean,

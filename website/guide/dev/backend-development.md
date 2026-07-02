@@ -352,6 +352,8 @@ module.exports = router;
 
 ### 1.5 注册路由
 
+#### 方式一：顶层注册（独立功能模块）
+
 修改 `server/src/routes/index.js`：
 
 ```javascript
@@ -361,6 +363,53 @@ const notificationTemplateRoutes = require('./notificationTemplate.routes');
 // 在 app 上注册
 app.use('/api/templates', notificationTemplateRoutes);
 ```
+
+#### 方式二：子路由挂载（渠道专属功能）
+
+对于需要特殊绑定流程的渠道（如扫码登录），应在主渠道路由中挂载子路由：
+
+```javascript
+// server/src/routes/channel.routes.js
+
+// 微信龙虾机器人绑定路由（必须在 /:id 之前，避免路径冲突）
+const clawbotRoutes = require('./clawbot.routes');
+router.use('/clawbot', clawbotRoutes);
+
+// 小爱音箱扫码登录路由
+const misoundRoutes = require('./misound.routes');
+router.use('/misound', misoundRoutes);
+```
+
+**子路由文件示例：**
+
+```javascript
+// server/src/routes/misound.routes.js
+const express = require('express');
+const { body, param } = require('express-validator');
+const router = express.Router();
+const authMiddleware = require('../middleware/auth.middleware');
+const validatorMiddleware = require('../middleware/validator.middleware');
+const misoundController = require('../controllers/misound.controller');
+
+// 所有小爱音箱路由都需要认证
+router.use(authMiddleware);
+
+// 初始化扫码登录
+router.post('/qr/init', misoundController.initQRLogin);
+
+// 确认绑定 - 需要参数验证
+const confirmBindValidation = [
+  body('userId').trim().notEmpty().withMessage('userId 不能为空'),
+  validatorMiddleware.validate,
+];
+router.post('/qr/confirm', confirmBindValidation, misoundController.confirmBind);
+
+module.exports = router;
+```
+
+**注意事项：**
+- 子路由必须在 `/:id` 等通配符路由之前挂载，避免路径冲突
+- 每个子路由文件应包含自己的认证和参数验证逻辑
 
 ---
 

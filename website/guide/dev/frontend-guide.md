@@ -43,7 +43,10 @@ web/src/
 │   ├── request.js             # Axios 实例（拦截器、自动Token刷新）
 │   ├── auth.js                # 认证相关 API
 │   ├── user.js                # 用户 API
-│   ├── channel.js             # 渠道 API
+│   ├── channel.js             # 渠道通用 CRUD API
+│   ├── clawbot.js             # 微信龙虾机器人绑定 API（渠道专属）
+│   ├── misound.js             # 小爱音箱扫码登录 API（渠道专属）
+│   ├── yuanbaobot.js          # 元宝Bot绑定 API（渠道专属）
 │   ├── endpoint.js            # 接口 API
 │   ├── push.js                # 推送 API
 │   ├── log.js                 # 日志 API
@@ -53,6 +56,7 @@ web/src/
 │   ├── Layout/               # 主布局组件
 │   │   └── MainLayout.vue     # 侧边栏 + 顶栏 + 内容区
 │   ├── ClawbotBindDialog.vue  # 龙虾机器人绑定对话框
+│   ├── MisoundBindDialog.vue  # 小爱音箱扫码绑定对话框
 │   ├── YuanbaobotBindDialog.vue
 │   └── VersionUpdateDialog.vue
 │
@@ -363,6 +367,8 @@ export default request
 
 ### 6.2 API 模块示例
 
+#### 通用 CRUD API（以渠道为例）
+
 ```javascript
 // web/src/api/channel.js
 import request from './request'
@@ -383,9 +389,38 @@ export function testChannel(channelId) {
 }
 ```
 
+#### 渠道专属 API（独立文件模式）
+
+对于需要特殊绑定流程的渠道（如扫码登录），API 应**独立成文件**：
+
+```javascript
+// web/src/api/clawbot.js - 微信龙虾机器人绑定
+import request from './request'
+
+export function getClawbotQRCode() {
+  return request.post('/channels/clawbot/bind/qrcode')
+}
+
+export function clawbotBindConfirm(data) {
+  return request.post('/channels/clawbot/bind/confirm', data)
+}
+
+// web/src/api/misound.js - 小爱音箱扫码登录
+import request from './request'
+
+export function initQRLogin() {
+  return request.post('/channels/misound/qr/init')
+}
+
+export function pollQRStatus(sessionId) {
+  return request.get('/channels/misound/qr/status', { params: { sessionId } })
+}
+```
+
 **API 模块规范：**
-- 一个资源对应一个文件
-- 函数名使用 camelCase：`getXxxList`, `createXxx`, `updateXxx`, `deleteXxx`
+- **通用CRUD API**：放在对应资源的主文件中（如 `channel.js`）
+- **渠道专属 API**：独立文件，命名 `{平台名}.js`（如 `clawbot.js`, `misound.js`）
+- 函数名使用 camelCase：`getXxxList`, `createXxx`, `initXxx`
 - 直接返回 Axios Promise，不做额外包装
 - 错误处理统一在响应拦截器中处理
 
