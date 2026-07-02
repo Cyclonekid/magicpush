@@ -6,8 +6,6 @@ outline: deep
 
 # QQ 机器人推送渠道配置指南#
 
-⚠️开发ing⚠️
-
 本教程将指导你如何在 MagicPush（魔法推送）中配置 **QQ 机器人** 推送渠道，实现向 QQ 群聊、单聊、子频道或私信发送消息。
 
 ## 概述#
@@ -21,7 +19,7 @@ outline: deep
 | 特点 | 说明 |
 |------|------|
 | 推送目标 | QQ 群聊 / 单聊消息列表 / 子频道 / 私信 |
-| 鉴权方式 | AppID + Token（Access Token） |
+| 鉴权方式 | **AppSecret 自动换取 Access Token**（官方推荐） |
 | 配置复杂度 | 中，需要创建 QQ 机器人并获取凭证 |
 | 消息格式 | text、markdown（群聊/单聊支持） |
 | 频率限制 | 取决于 QQ 开放平台限制 |
@@ -34,14 +32,14 @@ QQ 机器人支持四种推送模式：
 |------|------|----------
 | **群聊消息** (`group`) | 发送到指定 QQ 群 | ⭐⭐⭐⭐⭐ 推荐 |
 | **单聊消息** (`c2c`) | 发送到用户消息列表（非私信） | ⭐⭐⭐⭐⭐ 推荐 |
-| **子频道消息** (`channel`) | 发送到 QQ 频道子频道 | ⭐⭐⭐ |
+| **子频道消息** (`channel`) | 发送到 QQ 频道子频道 | ⭐⭐⭐ 支持 Markdown |
 | **私信消息** (`dms`) | 通过私信频道发送（旧版） | ⭐⭐ 旧版，需先创建会话 |
 
 ### 前置条件#
 
 - 拥有 QQ 账号
-- 已在 [QQ 开放平台](https://qun.qq.com/) 创建机器人
-- 已获取机器人的 AppID 和 AppSecret/Access Token
+- 已在 [QQ 开放平台](https://q.qq.com/) 创建机器人
+- 已获取机器人的 **AppID** 和 **AppSecret**
 - 已部署并登录 MagicPush 管理后台
 - （可选）需要代理才能访问 QQ API（国内服务器通常需要）
 
@@ -51,23 +49,26 @@ QQ 机器人支持四种推送模式：
 
 ### 1.1 创建 QQ 机器人#
 
-1. 访问 [QQ 开放平台](https://qun.qq.com/)
-2. 点击 **「创建机器人」**
+1. 访问 [QQ 开放平台](https://q.qq.com/)（注意是 `q.qq.com`）
+2. 注册/登录账号（支持企业或个人主体）
+3. 点击 **「创建机器人」**
 3. 填写机器人信息：
    - **机器人名称**：如 `MagicPush 通知`
    - **机器人简介**：可选
 4. 创建成功后，进入机器人详情页
 
-### 1.2 获取 AppID 和 Token#
+### 1.2 获取 AppID 和 AppSecret#
 
 在机器人详情页，可以找到：
 
 | 配置项 | 说明 | 示例值 | 来源 |
 |--------|------|--------|------|
 | AppID | 机器人应用 ID | `1234567890` | 机器人详情页 |
-| AppSecret / Access Token | 鉴权凭证 | `xxxxxxxxxxxxxxxx` | 机器人详情页 → 「凭证」 |
+| AppSecret | 应用密钥（用于自动获取 Access Token） | `xxxxxxxxxxxxxxxx` | 机器人详情页 → 「凭证」或「开发设置」 |
 
-> 🔐 **重要**：AppSecret/Token 是敏感凭证，请妥善保管，不要公开分享。
+> 🔐 **重要**：AppSecret 是敏感凭证，请妥善保管，不要公开分享。
+>
+> 💡 **关于 Access Token**：MagicPush 会自动使用你的 AppSecret 向 QQ 官方接口获取 Access Token，无需手动操作！系统会自动管理 Token 的获取、缓存和刷新（提前 5 分钟刷新避免失效）。
 
 ### 1.3 获取目标 ID#
 
@@ -133,7 +134,7 @@ QQ 机器人支持四种推送模式：
 | 字段 | 说明 | 示例 |
 |------|------|------|
 | **AppID** | QQ 开放平台机器人的 AppID | `1234567890` |
-| **AppSecret / Token** | 机器人的鉴权凭证 | `xxxxxxxxxxxxxxxx` |
+| **AppSecret（应用密钥）** | 用于自动获取 Access Token | `xxxxxxxxxxxxxxxx` |
 | **推送场景** | 群聊消息 / 单聊消息 / 子频道消息 / 私信消息 | `group`（推荐） |
 | **目标 ID** | 根据推送场景不同：群号 / 用户 openid / 子频道 ID | `xxxxxxxxxxxxxxxx` |
 | **来源频道 ID**（可选） | 仅私信模式需要，用于创建私信会话 | `xxxxxxxxxxxxxxxx` |
@@ -224,20 +225,29 @@ MagicPush 自动处理代理配置：
 
 ### 鉴权方式#
 
-MagicPush 使用 `Authorization: Bot ${appId}.${token}` 格式进行鉴权。
+MagicPush 使用官方推荐的 **Access Token** 鉴权方式：
+
+1. 用户配置 **AppID** 和 **AppSecret**
+2. 系统自动向 `https://bots.qq.com/app/getAppAccessToken` 获取 Access Token
+3. Access Token 自动缓存（有效期 2 小时，提前 5 分钟刷新）
+4. 所有 API 请求使用 `Authorization: QQBot ${accessToken}` 格式
+
+> ✅ **优势**：无需手动管理 Token 的获取和刷新，系统全自动处理！
 
 ---
 
 ## 常见问题#
 
-### Q: 发送消息返回「token 无效」错误？#
+### Q: 发送消息返回「token 无效」或 Access Token 相关错误？#
 
-**原因**：AppID 或 Token 填写错误。
+**原因**：AppID 或 AppSecret 填写错误。
 
 **解决**：
 1. 检查 AppID 是否完整复制，没有多余空格或换行
-2. 检查 Token 是否完整复制
-3. 重新从 QQ 开放平台复制凭证#
+2. 检查 AppSecret 是否完整复制（注意不是 Access Token，是 AppSecret）
+3. 确认机器人已在 QQ 开放平台发布/上线
+4. 如果是正式环境，检查是否配置了 IP 白名单
+5. 重新从 QQ 开放平台复制凭证#
 
 ### Q: 发送消息返回「目标 ID 不正确」错误？#
 

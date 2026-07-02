@@ -57,6 +57,10 @@
                   <RefreshCw class="w-4 h-4 mr-2" />
                   重新绑定
                 </el-dropdown-item>
+                <el-dropdown-item v-if="channel.channel_type === 'qqbot'" command="rebind_qqbot">
+                  <RefreshCw class="w-4 h-4 mr-2" />
+                  重新绑定
+                </el-dropdown-item>
                 <el-dropdown-item command="test">
                   <TestTube class="w-4 h-4 mr-2" />
                   测试
@@ -192,6 +196,21 @@
           <el-button type="primary" class="mt-3" @click="openMisoundBind">
             扫码登录绑定
           </el-button>
+        </div>
+
+        <!-- QQ 机器人：握手绑定引导 -->
+        <div v-if="form.channelType === 'qqbot' && !editingChannel" class="text-center py-4">
+          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 text-left mb-4">
+            <p class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1.5">🔗 绑定方式说明</p>
+            <ul class="text-sm text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
+              <li>QQ机器人需要通过<strong>在QQ中@机器人或发消息</strong>的方式获取 OpenID 完成绑定</li>
+              <li>系统会自动从消息中提取 OpenID，无需手动查找</li>
+              <li>支持群聊@、私聊、频道子频道三种场景</li>
+            </ul>
+          </div>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            请先填写 AppID 和 AppSecret，然后点击下方按钮开始连接。
+          </p>
         </div>
 
         <el-form-item v-if="form.channelType !== 'wechatclawbot' && form.channelType !== 'misound'" label="渠道名称" prop="name">
@@ -349,7 +368,7 @@
         <div class="flex justify-end gap-2">
           <el-button @click="showCreateDialog = false">取消</el-button>
           <el-button type="primary" :loading="formLoading" @click="handleSubmit">
-            {{ editingChannel ? '保存' : (form.channelType === 'yuanbaobot' ? '绑定并连接' : '绑定') }}
+            {{ editingChannel ? '保存' : (form.channelType === 'yuanbaobot' || form.channelType === 'qqbot' ? '绑定并连接' : '绑定') }}
           </el-button>
         </div>
       </template>
@@ -377,6 +396,14 @@
       :mode="misoundBindMode"
       :channel-id="misoundBindChannelId"
       @success="handleMisoundBindSuccess"
+    />
+
+    <!-- QQ 机器人握手绑定弹窗 -->
+    <QqbotBindDialog
+      v-model:visible="showQqbotDialog"
+      :mode="qqbotBindMode"
+      :channel-id="qqbotBindChannelId"
+      @success="handleQqbotBindSuccess"
     />
   </div>
 </template>
@@ -411,6 +438,7 @@ import {
 import ClawbotBindDialog from '@/components/ClawbotBindDialog.vue'
 import YuanbaobotBindDialog from '@/components/YuanbaobotBindDialog.vue'
 import MisoundBindDialog from '@/components/MisoundBindDialog.vue'
+import QqbotBindDialog from '@/components/QqbotBindDialog.vue'
 
 const channels = ref([])
 const channelTypes = ref([])
@@ -426,6 +454,9 @@ const yuanbaobotBindChannelId = ref(null)
 const showMisoundDialog = ref(false)
 const misoundBindMode = ref('create')
 const misoundBindChannelId = ref(null)
+const showQqbotDialog = ref(false)
+const qqbotBindMode = ref('create')
+const qqbotBindChannelId = ref(null)
 
 const formRef = ref(null)
 const form = reactive({
@@ -613,6 +644,10 @@ const handleCommand = (command, channel) => {
     misoundBindMode.value = 'rebind'
     misoundBindChannelId.value = channel.id
     showMisoundDialog.value = true
+  } else if (command === 'rebind_qqbot') {
+    qqbotBindMode.value = 'rebind'
+    qqbotBindChannelId.value = channel.id
+    showQqbotDialog.value = true
   } else if (command === 'test') {
     handleTest(channel)
   } else if (command === 'delete') {
@@ -708,6 +743,16 @@ const handleSubmit = async () => {
           showYuanbaobotDialog.value = true
           return
         }
+        // QQ Bot：创建成功后自动打开握手绑定弹窗
+        if (form.channelType === 'qqbot' && res.data?.id) {
+          showCreateDialog.value = false
+          resetForm()
+          loadData()
+          qqbotBindMode.value = 'create'
+          qqbotBindChannelId.value = res.data.id
+          showQqbotDialog.value = true
+          return
+        }
       }
     }
     showCreateDialog.value = false
@@ -754,6 +799,11 @@ const handleMisoundBindSuccess = () => {
   showMisoundDialog.value = false
   showCreateDialog.value = false
   resetForm()
+  loadData()
+}
+
+const handleQqbotBindSuccess = () => {
+  showQqbotDialog.value = false
   loadData()
 }
 

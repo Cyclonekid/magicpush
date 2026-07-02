@@ -15,6 +15,7 @@ require('console');
 require('./models');
 const clawbotMonitor = require('./services/clawbot/clawbot-monitor');
 const yuanbaobotMonitor = require('./services/yuanbaobot/yuanbaobot-monitor');
+const qqbotMonitor = require('./services/qqbot/qqbot-monitor');
 
 // 确保日志目录存在
 const logsDir = path.join(__dirname, '../logs');
@@ -112,6 +113,9 @@ app.listen(PORT, () => {
 
   // 启动元宝 Bot WS 连接监控
   yuanbaobotMonitor.start();
+
+  // 启动 QQ Bot WS 连接监控（用于获取 OpenID 完成绑定）
+  qqbotMonitor.start();
 });
 
 // ── 内存监控 ──────────────────────────────────────────────────

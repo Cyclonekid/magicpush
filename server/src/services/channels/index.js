@@ -23,8 +23,7 @@ const IGotChannel = require('./igot.channel');
 const SynologyChatChannel = require('./synologychat.channel');
 const ShowDocChannel = require('./showdoc.channel');
 const MisoundChannel = require('./misound.channel');
-// TODO: QQ 机器人渠道开发中，待测试后启用
-// const QqbotChannel = require('./qqbot.channel');
+const QqbotChannel = require('./qqbot.channel');
 
 // 渠道类型到适配器的映射
 const channelAdapters = {
@@ -52,7 +51,7 @@ const channelAdapters = {
   synologychat: SynologyChatChannel,
   showdoc: ShowDocChannel,
   misound: MisoundChannel,
-  // qqbot: QqbotChannel, // TODO: 待测试后启用
+  qqbot: QqbotChannel,
 };
 
 /**
@@ -158,7 +157,7 @@ module.exports = {
   SynologyChatChannel,
   ShowDocChannel,
   MisoundChannel,
-  // QqbotChannel, // TODO: 待测试后启用
+  QqbotChannel,
   getChannelAdapter,
   getChannelTypes,
   getChannelTypeInfo,

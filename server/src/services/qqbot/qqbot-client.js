@@ -4,24 +4,147 @@ const { SocksProxyAgent } = require('socks-proxy-agent');
 const logger = require('../../utils/logger');
 
 /**
+ * Access Token 管理器
+ * 负责自动获取、缓存和刷新 QQ Bot Access Token
+ *
+ * 接口地址: https://bots.qq.com/app/getAppAccessToken
+ * 文档: https://bot.q.qq.com/wiki/
+ */
+class TokenManager {
+  constructor() {
+    // 缓存 Map: key=appId, value={accessToken, expireAt}
+    this.cache = new Map();
+    // 提前刷新时间（秒），避免临界时刻失效
+    this.refreshBuffer = 300; // 5分钟
+  }
+
+  /**
+   * 获取 Access Token
+   * 如果缓存有效则直接返回，否则从服务器获取新的
+   *
+   * @param {string} appId - 应用 AppID
+   * @param {string} clientSecret - 应用密钥
+   * @param {Object} [options] - 可选配置
+   * @param {string} [options.proxyUrl] - 代理地址
+   * @returns {Promise<string>} - Access Token
+   */
+  async getAccessToken(appId, clientSecret, options = {}) {
+    const cacheKey = appId;
+    const cached = this.cache.get(cacheKey);
+
+    // 检查缓存是否有效（提前 refreshBuffer 秒刷新）
+    if (cached && cached.expireAt > Date.now()) {
+      return cached.accessToken;
+    }
+
+    return this._fetchNewToken(appId, clientSecret, options);
+  }
+
+  /**
+   * 从服务器获取新的 Access Token
+   */
+  async _fetchNewToken(appId, clientSecret, options = {}) {
+    try {
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000,
+      };
+
+      // 支持代理
+      if (options.proxyUrl) {
+        const agent = this._createAgent(options.proxyUrl);
+        if (agent) config.httpsAgent = agent;
+      }
+
+      logger.info(`QQBot 正在获取新 Access Token: appId=${appId}`);
+      const response = await axios.post(
+        'https://bots.qq.com/app/getAppAccessToken',
+        {
+          appId: appId,
+          clientSecret: clientSecret,
+        },
+        config
+      );
+
+      const data = response.data;
+      if (!data || !data.access_token) {
+        throw new Error(`获取 Access Token 失败: ${JSON.stringify(data)}`);
+      }
+
+      const accessToken = data.access_token;
+      const expiresIn = data.expires_in || 7200; // 默认2小时
+
+      // 缓存 token，提前 refreshBuffer 秒过期以避免临界问题
+      const expireAt = Date.now() + (expiresIn - this.refreshBuffer) * 1000;
+
+      this.cache.set(appId, {
+        accessToken,
+        expireAt,
+      });
+
+      logger.info(`QQBot Access Token 获取成功，有效期至 ${new Date(expireAt).toLocaleString()}`);
+      return accessToken;
+    } catch (error) {
+      logger.error(`QQBot 获取 Access Token 异常: ${error.message}`);
+      throw new Error(`QQBot 获取 Access Token 失败: ${error.message}`);
+    }
+  }
+
+  /**
+   * 清除指定应用的缓存
+   */
+  invalidate(appId) {
+    this.cache.delete(appId);
+    logger.info(`QQToken 已清除缓存: appId=${appId}`);
+  }
+
+  /**
+   * 创建代理 Agent
+   */
+  _createAgent(proxyUrl) {
+    if (!proxyUrl || proxyUrl.trim() === '') return null;
+    try {
+      const url = new URL(proxyUrl);
+      const protocol = url.protocol.replace(':', '').toLowerCase();
+      if (protocol === 'socks' || protocol === 'socks5' || protocol === 'socks4') {
+        return new SocksProxyAgent(proxyUrl);
+      }
+      return new HttpsProxyAgent(proxyUrl);
+    } catch (e) {
+      logger.warn(`创建代理 Agent 失败: ${e.message}`);
+      return null;
+    }
+  }
+}
+
+// 全局单例实例
+const tokenManager = new TokenManager();
+
+/**
  * QQ 官方机器人 API 客户端
  * 封装 QQ OpenAPI 的 HTTP 交互，包含 Token 管理和消息发送
  *
  * API 文档: https://bot.q.qq.com/wiki/develop/api-v2/
- * 基础 URL: https://api.sgroup.qq.com
- * 鉴权方式: Authorization: Bot ${appID}.${token}
+ * 基础 URL: https://api.sgroup.qq.com（沙箱: https://sandbox.api.sgroup.qq.com）
+ * 鉴权方式: Authorization: QQBot ${accessToken}（推荐）或 Bot ${appId}.${token}（已弃用）
  */
 class QqbotClient {
   /**
    * @param {Object} options
    * @param {string} options.appId - 机器人 AppID
-   * @param {string} options.token - 机器人鉴权 Token（Access Token）
+   * @param {string} options.clientSecret - 应用密钥（用于获取 Access Token）
    * @param {string} [options.baseUrl] - API 基础地址，默认 https://api.sgroup.qq.com
    * @param {string} [options.proxyUrl] - 代理地址
    */
-  constructor({ appId, token, baseUrl = 'https://api.sgroup.qq.com', proxyUrl }) {
+  constructor({ appId, clientSecret, baseUrl = 'https://api.sgroup.qq.com', proxyUrl }) {
+    if (!appId || !clientSecret) {
+      throw new Error('QQBot 初始化失败: 缺少 appId 或 clientSecret');
+    }
+
     this.appId = appId;
-    this.token = token;
+    this.clientSecret = clientSecret;
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.proxyUrl = proxyUrl;
     this._agent = this._createAgent(proxyUrl);
@@ -46,20 +169,29 @@ class QqbotClient {
   }
 
   /**
-   * 构建请求配置
+   * 构建请求配置（包含自动鉴权）
+   * 使用 Access Token 进行鉴权
    */
-  _requestConfig() {
+  async _requestConfig() {
+    const accessToken = await tokenManager.getAccessToken(
+      this.appId,
+      this.clientSecret,
+      { proxyUrl: this.proxyUrl }
+    );
+
     const config = {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bot ${this.appId}.${this.token}`,
+        'Authorization': `QQBot ${accessToken}`, // 使用官方推荐的 Access Token 鉴权
         'User-Agent': 'MagicPush/QQBot',
       },
       timeout: 15000,
     };
+
     if (this._agent) {
       config.httpsAgent = this._agent;
     }
+
     return config;
   }
 
@@ -83,7 +215,7 @@ class QqbotClient {
     const response = await axios.post(
       `${this.baseUrl}/users/@me/dms`,
       body,
-      this._requestConfig()
+      await this._requestConfig()
     );
 
     const data = response.data;
@@ -115,7 +247,7 @@ class QqbotClient {
     const response = await axios.post(
       `${this.baseUrl}/dms/${guildId}/messages`,
       body,
-      this._requestConfig()
+      await this._requestConfig()
     );
 
     return response.data;
@@ -145,7 +277,7 @@ class QqbotClient {
     const response = await axios.post(
       `${this.baseUrl}/channels/${channelId}/messages`,
       body,
-      this._requestConfig()
+      await this._requestConfig()
     );
 
     return response.data;
@@ -179,7 +311,7 @@ class QqbotClient {
     const response = await axios.post(
       `${this.baseUrl}/v2/groups/${groupId}/messages`,
       body,
-      this._requestConfig()
+      await this._requestConfig()
     );
 
     return response.data;
@@ -213,11 +345,30 @@ class QqbotClient {
     const response = await axios.post(
       `${this.baseUrl}/v2/users/${userId}/messages`,
       body,
-      this._requestConfig()
+      await this._requestConfig()
     );
 
     return response.data;
   }
+
+  /**
+   * 测试连接：验证 AppID 和 ClientSecret 是否有效
+   * 通过尝试获取 Access Token 来验证配置是否正确
+   *
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async testConnection() {
+    try {
+      // 尝试获取 token 来验证配置
+      await this._requestConfig();
+      return { success: true, message: 'QQ机器人配置验证成功' };
+    } catch (error) {
+      return { success: false, message: `QQ机器人配置错误: ${error.message}` };
+    }
+  }
 }
+
+// 导出类和TokenManager实例（用于测试和管理）
+QqbotClient.tokenManager = tokenManager;
 
 module.exports = QqbotClient;
