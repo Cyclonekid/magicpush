@@ -88,10 +88,10 @@
           <div
             v-for="(value, key) in getDisplayConfig(channel)"
             :key="key"
-            class="flex items-center text-sm"
+            class="flex items-center text-sm gap-2"
           >
-            <span class="text-gray-500 dark:text-gray-400 w-16">{{ key }}:</span>
-            <span class="text-gray-700 dark:text-gray-300 truncate">{{ value }}</span>
+            <span class="text-gray-500 dark:text-gray-400 whitespace-nowrap flex-shrink-0">{{ key }}:</span>
+            <span class="text-gray-700 dark:text-gray-300 break-all min-w-0">{{ value }}</span>
           </div>
         </div>
 
