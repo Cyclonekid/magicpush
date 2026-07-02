@@ -62,13 +62,15 @@
 
       <!-- 备选：手动打开链接 -->
       <div class="mt-3">
-        <p class="text-xs text-gray-400 mb-1">无法扫码？点击下方链接手动登录：</p>
-        <a
-          :href="loginUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="text-xs text-blue-500 hover:text-blue-700 break-all"
-        >{{ loginUrl }}</a>
+        <p class="text-xs text-gray-400">
+          无法扫码？
+          <a
+            :href="loginUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-xs text-blue-500 hover:text-blue-700 underline"
+          >点击此处打开链接手动登录</a>
+        </p>
       </div>
 
       <!-- 状态提示 -->
@@ -281,8 +283,7 @@ async function loadExistingAccounts() {
       startQRLogin()
     }
   } catch (error) {
-    console.error('加载已有账号失败:', error)
-    // 出错时也直接进入扫码
+    // 加载已有账号失败，直接进入扫码流程
     startQRLogin()
   }
 }

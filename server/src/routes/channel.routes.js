@@ -14,6 +14,10 @@ router.use(authMiddleware);
 const clawbotRoutes = require('./clawbot.routes');
 router.use('/clawbot', clawbotRoutes);
 
+// 小爱音箱扫码登录路由（必须在 /:id 之前，避免路径冲突）
+const misoundRoutes = require('./misound.routes');
+router.use('/misound', misoundRoutes);
+
 // 获取渠道列表
 router.get('/', channelController.getChannels);
 

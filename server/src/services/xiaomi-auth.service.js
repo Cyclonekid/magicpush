@@ -18,27 +18,116 @@ const { HttpsProxyAgent } = require('https-proxy-agent');
 const { SocksProxyAgent } = require('socks-proxy-agent');
 const logger = require('../utils/logger');
 
-// 小米账号认证相关常量
-const XIAOMI_ACCOUNT_URL = 'https://account.xiaomi.com';
-const XIAOMI_SID = 'xiaomiio';
-const XIAOMI_CALLBACK = 'https://sts.api.io.mi.com/sts';
-const QR_SIZE = 480;
-const POLL_TIMEOUT = 300; // 长轮询超时（秒）
+// ========== 小米账号认证相关常量 ==========
 
-// 小米云 API 区域服务器
-const REGION_SERVERS = {
-  cn: 'https://api.io.mi.com',
-  de: 'https://de.api.io.mi.com',
-  us: 'https://us.api.io.mi.com',
-  ru: 'https://ru.api.io.mi.com',
-  tw: 'https://tw.api.io.mi.com',
-  sg: 'https://sg.api.io.mi.com',
-  in: 'https://in.api.io.mi.com',
-  i2: 'https://i2.api.io.mi.com',
-};
+/** 小米账号服务基础 URL */
+const XIAOMI_ACCOUNT_URL = 'https://account.xiaomi.com';
+
+/** 小米服务 ID */
+const XIAOMI_SID = 'xiaomiio';
+
+/** 回调地址（用于 STS 令牌获取） */
+const XIAOMI_CALLBACK = 'https://sts.api.io.mi.com/sts';
+
+/** 二维码尺寸（像素） */
+const QR_SIZE = 480;
+
+/** 长轮询超时时间（秒） */
+const POLL_TIMEOUT = 300;
+
+/** 会话有效期（毫秒）：5 分钟 */
+const SESSION_TTL = 5 * 60 * 1000;
+
+/** 最大会话数量限制（防止内存耗尽） */
+const MAX_SESSIONS = 1000;
+
+// ========== 小米云 API 区域服务器 ==========
 
 /**
- * 根据环境变量创建代理 Agent
+ * 各区域的小米云 API 服务器地址
+ * @type {Object.<string, string>}
+ */
+const REGION_SERVERS = {
+  cn: 'https://api.io.mi.com',       // 中国大陆
+  de: 'https://de.api.io.mi.com',    // 德国
+  us: 'https://us.api.io.mi.com',    // 美国
+  ru: 'https://ru.api.io.mi.com',    // 俄罗斯
+  tw: 'https://tw.api.io.mi.com',    // 台湾
+  sg: 'https://sg.api.io.mi.com',    // 新加坡
+  in: 'https://in.api.io.mi.com',    // 印度
+  i2: 'https://i2.api.io.mi.com',    // 备用服务器
+};
+
+// ========== 扫码登录会话管理 ==========
+
+/**
+ * 扫码登录会话存储（内存缓存）
+ * key: 随机 sessionId, value: { lpUrl, cookies, createdAt }
+ * @type {Map<string, Object>}
+ */
+const loginSessions = new Map();
+
+/**
+ * 定期清理过期会话（每分钟执行一次）
+ */
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, session] of loginSessions) {
+    if (now - session.createdAt > SESSION_TTL) {
+      loginSessions.delete(key);
+    }
+  }
+}, 60 * 1000);
+
+/**
+ * 创建新的扫码登录会话
+ * @param {Object} sessionData - 会话数据 { lpUrl, cookies }
+ * @returns {string} sessionId
+ * @throws {Error} 当会话数量超过上限时抛出异常
+ */
+function createSession(sessionData) {
+  if (loginSessions.size >= MAX_SESSIONS) {
+    throw new Error('服务器繁忙，请稍后再试');
+  }
+  const sessionId = crypto.randomBytes(16).toString('hex');
+  loginSessions.set(sessionId, {
+    ...sessionData,
+    createdAt: Date.now(),
+  });
+  return sessionId;
+}
+
+/**
+ * 获取会话数据
+ * @param {string} sessionId - 会话 ID
+ * @returns {Object|null} 会话数据，不存在或过期返回 null
+ */
+function getSession(sessionId) {
+  const session = loginSessions.get(sessionId);
+  if (!session) return null;
+
+  // 检查是否过期
+  if (Date.now() - session.createdAt > SESSION_TTL) {
+    loginSessions.delete(sessionId);
+    return null;
+  }
+
+  return session;
+}
+
+/**
+ * 删除会话
+ * @param {string} sessionId - 会话 ID
+ */
+function deleteSession(sessionId) {
+  loginSessions.delete(sessionId);
+}
+
+/**
+ * 根据环境变量创建 HTTP/SOCKS 代理 Agent
+ * 支持通过 HTTP_PROXY / HTTPS_PROXY / ALL_PROXY 环境变量配置
+ *
+ * @returns {HttpsProxyAgent|SocksProxyAgent|undefined} 代理 Agent 实例
  */
 function createProxyAgent() {
   const proxyUrl = process.env.HTTP_PROXY || process.env.HTTPS_PROXY || process.env.ALL_PROXY;
@@ -59,6 +148,9 @@ function createProxyAgent() {
 
 /**
  * 生成随机 User-Agent（模拟小米手机浏览器）
+ * 用于避免被小米服务端识别为异常请求
+ *
+ * @returns {string} 随机的 User-Agent 字符串
  */
 function generateUserAgent() {
   const agents = [
@@ -72,6 +164,10 @@ function generateUserAgent() {
 /**
  * 从 JSONP 响应中提取 JSON 数据
  * 小米 API 返回格式：jsonpcallback({...})
+ *
+ * @param {string} text - JSONP 格式的响应文本
+ * @returns {Object} 解析后的 JSON 对象
+ * @throws {Error} 当无法提取 JSON 时抛出异常
  */
 function extractJsonFromJsonp(text) {
   const match = text.match(/\{.*\}/s);
@@ -258,8 +354,9 @@ class XiaomiAuthService {
     logger.info('[XiaomiAuth] 正在获取 serviceToken...');
 
     // location 会 302 重定向，Cookie 拦截器会自动提取 serviceToken
-    await client.get(location).catch(() => {
-      // 302 重定向会被 axios 拦截，忽略错误
+    await client.get(location).catch((err) => {
+      // 302 重定向会被 axios 拦截，记录警告日志
+      logger.warn('[XiaomiAuth] 获取 serviceToken 时重定向拦截:', err.message);
     });
 
     const serviceToken = cookies.serviceToken || '';
@@ -439,3 +536,6 @@ class XiaomiAuthService {
 }
 
 module.exports = XiaomiAuthService;
+module.exports.createSession = createSession;
+module.exports.getSession = getSession;
+module.exports.deleteSession = deleteSession;

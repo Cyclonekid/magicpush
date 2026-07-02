@@ -2,34 +2,14 @@
  * 小爱音箱渠道控制器
  *
  * 提供扫码登录、设备列表查询、绑定确认等接口
+ * 无状态设计：会话数据由 xiaomi-auth.service 统一管理
  */
 
 const XiaomiAuthService = require('../services/xiaomi-auth.service');
+const { createSession, getSession, deleteSession } = require('../services/xiaomi-auth.service');
 const ChannelService = require('../services/channel.service');
 const ResponseUtil = require('../utils/response');
 const logger = require('../utils/logger');
-
-// 临时存储扫码登录的会话数据（内存缓存，5 分钟过期）
-// key: 随机 sessionId, value: { lpUrl, cookies, createdAt }
-const loginSessions = new Map();
-const SESSION_TTL = 5 * 60 * 1000; // 5 分钟
-
-// 定期清理过期会话
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, session] of loginSessions) {
-    if (now - session.createdAt > SESSION_TTL) {
-      loginSessions.delete(key);
-    }
-  }
-}, 60 * 1000);
-
-/**
- * 生成随机 sessionId
- */
-function generateSessionId() {
-  return require('crypto').randomBytes(16).toString('hex');
-}
 
 class MisoundController {
   /**
@@ -43,12 +23,10 @@ class MisoundController {
     try {
       const qrData = await XiaomiAuthService.initQRLogin();
 
-      // 创建会话，保存长轮询 URL 和 Cookie
-      const sessionId = generateSessionId();
-      loginSessions.set(sessionId, {
+      // 通过 Service 层创建会话（包含数量上限保护）
+      const sessionId = createSession({
         lpUrl: qrData.lpUrl,
         cookies: qrData.cookies,
-        createdAt: Date.now(),
       });
 
       return ResponseUtil.success(res, {
@@ -77,7 +55,8 @@ class MisoundController {
         return ResponseUtil.badRequest(res, 'sessionId 参数不能为空');
       }
 
-      const session = loginSessions.get(sessionId);
+      // 通过 Service 层获取会话（自动检查过期）
+      const session = getSession(sessionId);
       if (!session) {
         return ResponseUtil.badRequest(res, '会话已过期，请重新获取二维码');
       }
@@ -86,8 +65,8 @@ class MisoundController {
       const result = await XiaomiAuthService.completeLogin(session.lpUrl, session.cookies);
 
       if (result.status === 'confirmed') {
-        // 登录成功，清理会话
-        loginSessions.delete(sessionId);
+        // 登录成功，通过 Service 层清理会话
+        deleteSession(sessionId);
 
         return ResponseUtil.success(res, {
           status: 'confirmed',
@@ -142,6 +121,10 @@ class MisoundController {
       return ResponseUtil.created(res, channel, '绑定成功');
     } catch (error) {
       logger.error('[Misound] 绑定失败:', error.message);
+      // 细化错误分类：渠道不存在返回 404，其他业务错误返回 400
+      if (error.message.includes('不存在') || error.message.includes('无权')) {
+        return ResponseUtil.notFound(res, error.message);
+      }
       return ResponseUtil.badRequest(res, error.message);
     }
   }

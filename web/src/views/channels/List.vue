@@ -66,6 +66,10 @@
                   <RefreshCw class="w-4 h-4 mr-2" />
                   重新绑定
                 </el-dropdown-item>
+                <el-dropdown-item v-if="channel.channel_type === 'misound'" command="rebind_misound">
+                  <RefreshCw class="w-4 h-4 mr-2" />
+                  重新绑定
+                </el-dropdown-item>
                 <el-dropdown-item command="test">
                   <TestTube class="w-4 h-4 mr-2" />
                   测试
@@ -193,12 +197,22 @@
           </p>
         </div>
 
-        <el-form-item v-if="form.channelType !== 'wechatclawbot'" label="渠道名称" prop="name">
+        <!-- 小爱音箱：扫码登录绑定引导 -->
+        <div v-if="form.channelType === 'misound' && !editingChannel" class="text-center py-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            小爱音箱需要通过小米账号扫码登录完成绑定，点击下方按钮开始
+          </p>
+          <el-button type="primary" class="mt-3" @click="openMisoundBind">
+            扫码登录绑定
+          </el-button>
+        </div>
+
+        <el-form-item v-if="form.channelType !== 'wechatclawbot' && form.channelType !== 'misound'" label="渠道名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入渠道名称" />
         </el-form-item>
 
         <!-- 动态配置字段 -->
-        <template v-if="currentChannelType && form.channelType !== 'wechatclawbot'">
+        <template v-if="currentChannelType && form.channelType !== 'wechatclawbot' && form.channelType !== 'misound'">
           <el-form-item
             v-for="field in visibleConfigFields"
             :key="field.name"
@@ -300,7 +314,7 @@
         </template>
       </el-form>
 
-      <template v-if="form.channelType !== 'wechatclawbot'" #footer>
+      <template v-if="form.channelType !== 'wechatclawbot' && form.channelType !== 'misound'" #footer>
         <!-- 群晖 Chat 相关文档链接 -->
         <div v-if="form.channelType === 'synologychat'" class="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-xs">
           <a href="https://www.synology.com/en-global/dsm/feature/chat" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1">
@@ -369,6 +383,14 @@
       :channel-id="yuanbaobotBindChannelId"
       @success="handleYuanbaobotBindSuccess"
     />
+
+    <!-- 小爱音箱扫码绑定弹窗 -->
+    <MisoundBindDialog
+      v-model:visible="showMisoundDialog"
+      :mode="misoundBindMode"
+      :channel-id="misoundBindChannelId"
+      @success="handleMisoundBindSuccess"
+    />
   </div>
 </template>
 
@@ -402,6 +424,7 @@ import {
 } from 'lucide-vue-next'
 import ClawbotBindDialog from '@/components/ClawbotBindDialog.vue'
 import YuanbaobotBindDialog from '@/components/YuanbaobotBindDialog.vue'
+import MisoundBindDialog from '@/components/MisoundBindDialog.vue'
 
 const channels = ref([])
 const channelTypes = ref([])
@@ -414,6 +437,9 @@ const clawbotBindChannelId = ref(null)
 const showYuanbaobotDialog = ref(false)
 const yuanbaobotBindMode = ref('create')
 const yuanbaobotBindChannelId = ref(null)
+const showMisoundDialog = ref(false)
+const misoundBindMode = ref('create')
+const misoundBindChannelId = ref(null)
 
 const formRef = ref(null)
 const form = reactive({
@@ -597,6 +623,10 @@ const handleCommand = (command, channel) => {
     yuanbaobotBindMode.value = 'rebind'
     yuanbaobotBindChannelId.value = channel.id
     showYuanbaobotDialog.value = true
+  } else if (command === 'rebind_misound') {
+    misoundBindMode.value = 'rebind'
+    misoundBindChannelId.value = channel.id
+    showMisoundDialog.value = true
   } else if (command === 'test') {
     handleTest(channel)
   } else if (command === 'delete') {
@@ -725,6 +755,19 @@ const handleClawbotBindSuccess = () => {
 
 const handleYuanbaobotBindSuccess = () => {
   showYuanbaobotDialog.value = false
+  loadData()
+}
+
+const openMisoundBind = () => {
+  misoundBindMode.value = 'create'
+  misoundBindChannelId.value = null
+  showMisoundDialog.value = true
+}
+
+const handleMisoundBindSuccess = () => {
+  showMisoundDialog.value = false
+  showCreateDialog.value = false
+  resetForm()
   loadData()
 }
 
