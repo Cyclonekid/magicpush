@@ -11,19 +11,6 @@
       </el-button>
     </div>
 
-    <!-- 渠道类型说明 -->
-    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-      <div class="flex items-start gap-3">
-        <Info class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-        <div class="text-sm text-blue-700 dark:text-blue-300">
-          <p class="font-medium mb-1">支持的渠道类型</p>
-          <p class="opacity-80">
-            微信龙虾机器人 · 企业微信群机器人 · 钉钉 · 飞书 · Telegram · 微信公众号 · WxPusher · PushPlus · Server酱 · Webhook · SMTP邮件 · Gotify · Bark · Meow · PushMe · 息知 · 企业微信应用 · 元宝 Bot · ntfy · PushDeer · iGot · 群晖 Chat · ShowDoc · 小爱音箱
-          </p>
-        </div>
-      </div>
-    </div>
-
     <!-- 渠道列表 -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <div
@@ -405,7 +392,6 @@ import {
   Edit,
   TestTube,
   Trash2,
-  Info,
   MessageCircle,
   Send,
   Bell,
