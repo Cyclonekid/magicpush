@@ -146,6 +146,7 @@
             v-model="form.channelType"
             placeholder="选择渠道类型"
             class="w-full"
+            popper-class="channel-type-dropdown"
             :disabled="!!editingChannel"
           >
             <el-option
@@ -153,10 +154,11 @@
               :key="type.type"
               :label="type.name"
               :value="type.type"
+              :title="`${type.name} - ${type.description}`"
             >
-              <div class="flex items-center gap-2">
-                <span>{{ type.name }}</span>
-                <span class="text-gray-400 text-xs">- {{ type.description }}</span>
+              <div class="channel-option-item">
+                <span class="channel-name">{{ type.name }}</span>
+                <span class="channel-desc" :title="type.description">- {{ type.description }}</span>
               </div>
             </el-option>
           </el-select>
@@ -811,3 +813,46 @@ onMounted(() => {
   loadData()
 })
 </script>
+
+<style>
+/* 渠道类型下拉框弹窗样式 - 与输入框等宽并截断长文本 */
+.channel-type-dropdown.el-select__popper {
+  /* 关键：使用 min-content 防止被长内容撑开，同时不设最大值保持与输入框等宽 */
+  width: fit-content !important;
+  max-width: var(--el-dropdown-menu-max-width, 480px) !important;
+}
+
+.channel-type-dropdown .el-select-dropdown__wrap {
+  max-height: 274px; /* 保持与默认高度一致 */
+}
+
+.channel-type-dropdown .el-select-dropdown__item {
+  padding-right: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 自定义选项内容布局 */
+.channel-option-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  overflow: hidden;
+  min-width: 0; /* 允许子元素收缩 */
+}
+
+.channel-name {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.channel-desc {
+  font-size: 12px;
+  color: #909399;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0; /* 关键：允许文字截断 */
+}
+</style>
