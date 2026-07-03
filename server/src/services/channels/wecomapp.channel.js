@@ -179,21 +179,44 @@ class WecomappChannel extends BaseChannel {
   }
 
   /**
-   * 上传临时素材（图片/文件），返回 media_id
-   * 企业微信应用发送图片/文件必须先上传获取 media_id
+   * 上传临时素材（图片/文件/语音/视频），返回 media_id
+   * 支持三种输入方式（优先级从高到低）：
+   *   1. 直接传入 Buffer（跳过转换）
+   *   2. base64Data — Base64 编码字符串 → Buffer
+   *   3. url — 公网可访问的资源 URL → axios 下载 → Buffer
    */
-  async _uploadMedia(mediaType, base64Data, filename) {
+  async _uploadMedia(mediaType, { buffer, base64Data, url: fileUrl, filename } = {}) {
+    // 已有 Buffer 直接用
+    let fileBuffer = buffer;
+    if (!fileBuffer && base64Data) {
+      fileBuffer = Buffer.from(base64Data, 'base64');
+    }
+    if (!fileBuffer && fileUrl) {
+      logger.info(`企业微信应用正在下载资源: ${fileUrl}`);
+      const downloadConfig = { responseType: 'arraybuffer', timeout: 30000 };
+      const proxyAgent = this.createProxyAgent(this.proxyUrl);
+      if (proxyAgent) {
+        downloadConfig.httpsAgent = proxyAgent;
+        downloadConfig.httpAgent = proxyAgent;
+      }
+      const res = await axios.get(fileUrl, downloadConfig);
+      fileBuffer = Buffer.from(res.data);
+      logger.info(`企业微信应用资源下载完成: ${fileBuffer.length} bytes`);
+    }
+    if (!fileBuffer || fileBuffer.length === 0) {
+      throw new Error('上传媒体文件失败: 必须提供 buffer、base64Data 或 url 三者之一');
+    }
+
     const accessToken = await this._getAccessToken();
-    const buffer = Buffer.from(base64Data, 'base64');
     const formData = new FormData();
-    formData.append('media', buffer, { filename: filename || `file.${mediaType === 'image' ? 'jpg' : 'file'}` });
+    formData.append('media', fileBuffer, {
+      filename: filename || `file.${this._defaultExt(mediaType)}`,
+    });
 
     const axiosConfig = {
       params: { access_token: accessToken, type: mediaType },
       timeout: mediaType === 'file' ? 20000 : 15000,
-      headers: {
-        ...formData.getHeaders(),
-      },
+      headers: { ...formData.getHeaders() },
     };
 
     const proxyAgent = this.createProxyAgent(this.proxyUrl);
@@ -211,6 +234,29 @@ class WecomappChannel extends BaseChannel {
       throw new Error(`上传媒体文件失败: [${res.data.errcode}] ${res.data.errmsg}`);
     }
     return res.data.media_id;
+  }
+
+  _defaultExt(mediaType) {
+    const map = { image: 'jpg', file: 'file', voice: 'amr', video: 'mp4' };
+    return map[mediaType] || 'bin';
+  }
+
+  /**
+   * 解析媒体数据：优先使用已有的 media_id，否则准备上传参数
+   * 返回 { mediaId, uploadOptions }
+   * - mediaId 有值时调用方直接使用，跳过上传
+   * - mediaId 为空时调用方需将 uploadOptions 传给 _uploadMedia
+   */
+  _resolveMediaInput(data) {
+    if (data.media_id) {
+      return { mediaId: data.media_id, uploadOptions: null };
+    }
+    const options = { base64Data: data.base64, url: data.url, filename: data.filename };
+    // 至少提供一种数据源
+    if (!options.base64Data && !options.url) {
+      throw new Error('必须提供以下之一: media_id、base64 或 url');
+    }
+    return { mediaId: null, uploadOptions: options };
   }
 
   /**
@@ -243,23 +289,23 @@ class WecomappChannel extends BaseChannel {
 
   /**
    * 发送图片消息
-   * 需要先上传 base64 图片获取 media_id
+   * 支持三种方式: media_id(已有素材) / base64 / url(自动下载上传)
    */
   async sendImage(data) {
-    if (!data || !data.base64) {
-      throw new Error('图片消息必须包含 base64 数据');
-    }
+    if (!data) throw new Error('图片消息必须提供数据');
 
-    logger.info(`企业微信应用发送图片消息: uploading...`);
-    const mediaId = await this._uploadMedia('image', data.base64, data.filename);
+    const { mediaId, uploadOptions } = this._resolveMediaInput(data);
+    let finalMediaId = mediaId;
+    if (!finalMediaId) {
+      logger.info(`企业微信应用发送图片消息: ${uploadOptions.url ? 'downloading url' : 'uploading base64'}...`);
+      finalMediaId = await this._uploadMedia('image', uploadOptions);
+    }
 
     const body = {
       touser: this.touser,
       agentid: this.agentid,
       msgtype: 'image',
-      image: {
-        media_id: mediaId,
-      },
+      image: { media_id: finalMediaId },
     };
 
     const result = await this._sendBody(body, 15000);
@@ -268,23 +314,23 @@ class WecomappChannel extends BaseChannel {
 
   /**
    * 发送文件消息
-   * 需要先上传 base64 文件获取 media_id
+   * 支持三种方式: media_id(已有素材) / base64 / url(自动下载上传)
    */
   async sendFile(data) {
-    if (!data || !data.base64) {
-      throw new Error('文件消息必须包含 base64 数据');
-    }
+    if (!data) throw new Error('文件消息必须提供数据');
 
-    logger.info(`企业微信应用发送文件消息: uploading...`);
-    const mediaId = await this._uploadMedia('file', data.base64, data.filename);
+    const { mediaId, uploadOptions } = this._resolveMediaInput(data);
+    let finalMediaId = mediaId;
+    if (!finalMediaId) {
+      logger.info(`企业微信应用发送文件消息: ${uploadOptions.url ? 'downloading url' : 'uploading base64'}...`);
+      finalMediaId = await this._uploadMedia('file', uploadOptions);
+    }
 
     const body = {
       touser: this.touser,
       agentid: this.agentid,
       msgtype: 'file',
-      file: {
-        media_id: mediaId,
-      },
+      file: { media_id: finalMediaId },
     };
 
     const result = await this._sendBody(body, 20000);
@@ -355,24 +401,23 @@ class WecomappChannel extends BaseChannel {
 
   /**
    * 发送语音消息
-   * 需要先上传 base64 语音文件获取 media_id
-   * 文档: https://developer.work.weixin.qq.com/document/path/90236#%E8%AF%AD%E9%9F%B3%E6%B6%88%E6%81%AF
+   * 支持三种方式: media_id(已有素材) / base64 / url(自动下载上传)
    */
   async sendVoice(data) {
-    if (!data || !data.base64) {
-      throw new Error('语音消息必须包含 base64 数据');
-    }
+    if (!data) throw new Error('语音消息必须提供数据');
 
-    logger.info(`企业微信应用发送语音消息: uploading...`);
-    const mediaId = await this._uploadMedia('voice', data.base64, data.filename);
+    const { mediaId, uploadOptions } = this._resolveMediaInput(data);
+    let finalMediaId = mediaId;
+    if (!finalMediaId) {
+      logger.info(`企业微信应用发送语音消息: ${uploadOptions.url ? 'downloading url' : 'uploading base64'}...`);
+      finalMediaId = await this._uploadMedia('voice', uploadOptions);
+    }
 
     const body = {
       touser: this.touser,
       agentid: this.agentid,
       msgtype: 'voice',
-      voice: {
-        media_id: mediaId,
-      },
+      voice: { media_id: finalMediaId },
     };
 
     const result = await this._sendBody(body, 15000);
@@ -381,23 +426,24 @@ class WecomappChannel extends BaseChannel {
 
   /**
    * 发送视频消息
-   * 需要先上传 base64 视频文件获取 media_id
-   * 文档: https://developer.work.weixin.qq.com/document/path/90236#%E8%A7%86%E9%A2%91%E6%B6%88%E6%81%AF
+   * 支持三种方式: media_id(已有素材) / base64 / url(自动下载上传)
    */
   async sendVideo(data) {
-    if (!data || !data.base64) {
-      throw new Error('视频消息必须包含 base64 数据');
-    }
+    if (!data) throw new Error('视频消息必须提供数据');
 
-    logger.info(`企业微信应用发送视频消息: uploading...`);
-    const mediaId = await this._uploadMedia('video', data.base64, data.filename);
+    const { mediaId, uploadOptions } = this._resolveMediaInput(data);
+    let finalMediaId = mediaId;
+    if (!finalMediaId) {
+      logger.info(`企业微信应用发送视频消息: ${uploadOptions.url ? 'downloading url' : 'uploading base64'}...`);
+      finalMediaId = await this._uploadMedia('video', uploadOptions);
+    }
 
     const body = {
       touser: this.touser,
       agentid: this.agentid,
       msgtype: 'video',
       video: {
-        media_id: mediaId,
+        media_id: finalMediaId,
         title: data.title || '',
         description: data.description || '',
       },
@@ -666,16 +712,19 @@ class WecomappChannel extends BaseChannel {
         value: 'image',
         label: '图片消息',
         icon: '🖼️',
-        description: '发送Base64编码的图片，支持JPG/PNG格式（需先上传获取media_id）',
+        description: '发送图片，支持 media_id、Base64 编码或 URL 自动下载上传（需获取 media_id）',
         fields: [
-          { name: 'base64', label: '图片Base64编码', type: 'textarea', required: true, description: '图片的Base64编码字符串（不含data:image前缀）' },
+          { name: 'media_id', label: '已有素材ID', type: 'text', required: false, description: '已上传过的素材 media_id，填此字段可跳过重新上传' },
+          { name: 'base64', label: '图片Base64编码', type: 'textarea', required: false, description: '图片的 Base64 编码字符串（不含 data:image 前缀），与 url 二选一' },
+          { name: 'url', label: '图片URL', type: 'url', required: false, description: '公网可访问的图片 URL，后端自动下载并上传（与 base64 二选一）' },
           { name: 'filename', label: '文件名', type: 'text', required: false, description: '如 photo.jpg（可选）' },
         ],
         example: {
           channelType: 'image',
           extraData: {
-            base64: '/9j/4AAQSkZJRgABAQAAAQABAAD...',
-            filename: 'screenshot.jpg'
+            url: 'https://example.com/image.jpg'
+            // 或者用 base64: { base64: '/9j/4AAQ...', filename: 'screenshot.jpg' }
+            // 或者用 media_id: { media_id: 'MEDIA_ID_xxx' }
           }
         }
       },
@@ -683,16 +732,20 @@ class WecomappChannel extends BaseChannel {
         value: 'file',
         label: '文件消息',
         icon: '📎',
-        description: '发送Base64编码的文件，支持多种文件格式（需先上传获取media_id）',
+        description: '发送文件，支持 media_id、Base64 编码或 URL 自动下载上传（需获取 media_id）',
         fields: [
-          { name: 'base64', label: '文件Base64编码', type: 'textarea', required: true, description: '文件的Base64编码字符串' },
+          { name: 'media_id', label: '已有素材ID', type: 'text', required: false, description: '已上传过的素材 media_id，填此字段可跳过重新上传' },
+          { name: 'base64', label: '文件Base64编码', type: 'textarea', required: false, description: '文件的 Base64 编码字符串，与 url 二选一' },
+          { name: 'url', label: '文件URL', type: 'url', required: false, description: '公网可访问的文件 URL，后端自动下载并上传（与 base64 二选一）' },
           { name: 'filename', label: '文件名', type: 'text', required: false, description: '如 report.pdf（可选）' },
         ],
         example: {
           channelType: 'file',
           extraData: {
-            base64: 'JVBERi0xLjQK...',
+            url: 'https://example.com/report.pdf',
             filename: 'report.pdf'
+            // 或者用 base64: { base64: 'JVBERi0xLjQK...', filename: 'report.pdf' }
+            // 或者用 media_id: { media_id: 'MEDIA_ID_xxx' }
           }
         }
       },
@@ -700,16 +753,19 @@ class WecomappChannel extends BaseChannel {
         value: 'voice',
         label: '语音消息',
         icon: '🎤',
-        description: '发送Base64编码的语音文件，支持AMR格式（需先上传获取media_id）',
+        description: '发送语音文件，支持 media_id、Base64 编码或 URL 自动下载上传（需获取 media_id）',
         fields: [
-          { name: 'base64', label: '语音Base64编码', type: 'textarea', required: true, description: '语音的Base64编码字符串（AMR格式）' },
+          { name: 'media_id', label: '已有素材ID', type: 'text', required: false, description: '已上传过的素材 media_id，填此字段可跳过重新上传' },
+          { name: 'base64', label: '语音Base64编码', type: 'textarea', required: false, description: '语音的 Base64 编码字符串（AMR 格式），与 url 二选一' },
+          { name: 'url', label: '语音URL', type: 'url', required: false, description: '公网可访问的语音文件 URL，后端自动下载并上传（与 base64 二选一）' },
           { name: 'filename', label: '文件名', type: 'text', required: false, description: '如 voice.amr（可选）' },
         ],
         example: {
           channelType: 'voice',
           extraData: {
-            base64: '/9j/4AAQSkZJRgABAQAAAQABAAD...',
-            filename: 'voice.amr'
+            url: 'https://example.com/voice.amr'
+            // 或者用 base64: { base64: '/9j/4AAQ...', filename: 'voice.amr' }
+            // 或者用 media_id: { media_id: 'MEDIA_ID_xxx' }
           }
         }
       },
@@ -717,9 +773,11 @@ class WecomappChannel extends BaseChannel {
         value: 'video',
         label: '视频消息',
         icon: '🎬',
-        description: '发送Base64编码的视频文件，支持MP4格式（需先上传获取media_id）',
+        description: '发送视频文件，支持 media_id、Base64 编码或 URL 自动下载上传（需获取 media_id）',
         fields: [
-          { name: 'base64', label: '视频Base64编码', type: 'textarea', required: true, description: '视频的Base64编码字符串（MP4格式）' },
+          { name: 'media_id', label: '已有素材ID', type: 'text', required: false, description: '已上传过的素材 media_id，填此字段可跳过重新上传' },
+          { name: 'base64', label: '视频Base64编码', type: 'textarea', required: false, description: '视频的 Base64 编码字符串（MP4 格式），与 url 二选一' },
+          { name: 'url', label: '视频URL', type: 'url', required: false, description: '公网可访问的视频文件 URL，后端自动下载并上传（与 base64 二选一）' },
           { name: 'filename', label: '文件名', type: 'text', required: false, description: '如 video.mp4（可选）' },
           { name: 'title', label: '视频标题', type: 'text', required: false, description: '视频消息的标题' },
           { name: 'description', label: '视频描述', type: 'textarea', required: false, description: '视频消息的描述文字' },
@@ -727,10 +785,12 @@ class WecomappChannel extends BaseChannel {
         example: {
           channelType: 'video',
           extraData: {
-            base64: '/9j/4AAQSkZJRgABAQAAAQABAAD...',
+            url: 'https://example.com/demo.mp4',
             filename: 'demo.mp4',
             title: '产品演示视频',
             description: '最新版本的功能演示'
+            // 或者用 base64: { base64: '/9j/4AAQ...', filename: 'demo.mp4', title: '...' }
+            // 或者用 media_id: { media_id: 'MEDIA_ID_xxx', title: '...' }
           }
         }
       },

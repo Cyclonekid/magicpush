@@ -195,15 +195,21 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 | `news` | 图文消息（多条图文链接文章） | 资讯推送、公告通知、产品发布 |
 | `text_card` | 文本卡片（带标题和跳转链接） | 审批通知、简短提醒 |
 | `template_card` | 模板卡片（交互式卡片） | 告警通知、任务提醒、数据报告 |
-| `image` | 图片消息（Base64 编码，需上传获取 media_id） | 截图分享、验证码图片 |
-| `file` | 文件消息（Base64 编码，需上传获取 media_id） | 发送报表、PDF 文档 |
-| `voice` | 语音消息（AMR 格式，需上传获取 media_id） | 语音通知、语音播报 |
-| `video` | 视频消息（MP4 格式，需上传获取 media_id） | 视频演示、操作教程 |
+| `image` | 图片消息（支持 media_id / Base64 / URL 上传） | 截图分享、验证码图片 |
+| `file` | 文件消息（支持 media_id / Base64 / URL 上传） | 发送报表、PDF 文档 |
+| `voice` | 语音消息（支持 media_id / Base64 / URL 上传，AMR 格式） | 语音通知、语音播报 |
+| `video` | 视频消息（支持 media_id / Base64 / URL 上传，MP4 格式） | 视频演示、操作教程 |
 | `mpnews` | 图文消息 mpnews（支持富文本 HTML 正文） | 富文本资讯推送、图文详情页 |
 | `miniprogram_notice` | 小程序通知消息（可跳转小程序页面） | 订单状态更新、服务通知 |
 
 ::: tip 使用方式
-特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可，无需额外指定类型标识。与群机器人渠道不同，应用渠道的图片和文件需要先通过企业微信 API 上传临时素材。
+特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可，无需额外指定类型标识。对于图片、文件、语音、视频类型的消息，**支持三种数据源**（按优先级排序）：
+
+1. **`media_id`** — 已上传过的素材 ID，直接使用，**跳过重新上传**
+2. **`base64`** — Base64 编码字符串，后端自动解码后上传至企业微信
+3. **`url`** — 公网可访问的资源 URL，**后端自动下载后上传**
+
+三者至少提供一种即可。推荐优先使用 `media_id` 或 `url`，避免在请求体中传输大量 Base64 数据。
 :::
 
 #### news 图文消息
@@ -312,7 +318,26 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 #### image 图片消息
 
-发送 Base64 编码的图片（MagicPush 会自动调用企业微信 API 上传为临时素材）：
+支持三种方式发送图片（MagicPush 会自动处理上传）：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "服务器截图",
+    "content": "服务器 CPU 使用率超过 90%，请查看截图",
+    "type": "text",
+    "extraData": {
+      "url": "https://example.com/screenshot.jpg",
+      "filename": "screenshot.jpg"
+    }
+  }'
+```
+
+**方式二：使用 Base64**
 
 ```bash
 curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
@@ -329,16 +354,55 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   }'
 ```
 
-**extraData 字段说明**：
+**方式三：使用已有 media_id（跳过上传，最快）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "服务器截图",
+    "content": "服务器 CPU 使用率超过 90%",
+    "type": "text",
+    "extraData": {
+      "media_id": "MEDIA_ID_xxx"
+    }
+  }'
+```
+
+**extraData 字段说明（三选一）**：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| base64 | String | 是 | 图片的 Base64 编码字符串（不含 data:image 前缀） |
+| media_id | String | 条件必填* | 已上传过的素材 ID，填此字段可跳过重新上传 |
+| url | String | 条件必填* | 公网可访问的图片 URL，后端自动下载后上传 |
+| base64 | String | 条件必填* | 图片的 Base64 编码字符串（不含 data:image 前缀） |
 | filename | String | 否 | 文件名（如 `photo.jpg`） |
+
+\* `media_id`、`url`、`base64` 三者至少提供一种。优先推荐 `media_id` 或 `url`。
 
 #### file 文件消息
 
-发送 Base64 编码的文件（MagicPush 会自动调用企业微信 API 上传为临时素材）：
+支持三种方式发送文件（MagicPush 会自动处理上传）：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "月度报告",
+    "content": "请查收2024年第一季度月度报告",
+    "type": "text",
+    "extraData": {
+      "url": "https://example.com/report.pdf",
+      "filename": "report.pdf"
+    }
+  }'
+```
+
+**方式二：使用 Base64**
 
 ```bash
 curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
@@ -355,16 +419,54 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   }'
 ```
 
-**extraData 字段说明**：
+**方式三：使用已有 media_id（跳过上传，最快）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "月度报告",
+    "content": "请查收报告",
+    "type": "text",
+    "extraData": {
+      "media_id": "MEDIA_ID_xxx"
+    }
+  }'
+```
+
+**extraData 字段说明（三选一）**：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| base64 | String | 是 | 文件的 Base64 编码字符串 |
+| media_id | String | 条件必填* | 已上传过的素材 ID，填此字段可跳过重新上传 |
+| url | String | 条件必填* | 公网可访问的文件 URL，后端自动下载后上传 |
+| base64 | String | 条件必填* | 文件的 Base64 编码字符串 |
 | filename | String | 否 | 文件名（如 `report.pdf`） |
+
+\* `media_id`、`url`、`base64` 三者至少提供一种。优先推荐 `media_id` 或 `url`。
 
 #### voice 语音消息
 
-发送 Base64 编码的语音文件（MagicPush 会自动调用企业微信 API 上传为临时素材）：
+支持三种方式发送语音（MagicPush 会自动处理上传）：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "语音通知",
+    "content": "请查收语音消息",
+    "type": "text",
+    "extraData": {
+      "url": "https://example.com/voice.amr"
+    }
+  }'
+```
+
+**方式二：使用 Base64**
 
 ```bash
 curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
@@ -381,18 +483,59 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   }'
 ```
 
-**extraData 字段说明**：
+**方式三：使用已有 media_id**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "语音通知",
+    "content": "请查收语音消息",
+    "type": "text",
+    "extraData": {
+      "media_id": "MEDIA_ID_xxx"
+    }
+  }'
+```
+
+**extraData 字段说明（三选一）**：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| base64 | String | 是 | 语音的 Base64 编码字符串（AMR 格式） |
+| media_id | String | 条件必填* | 已上传过的素材 ID，填此字段可跳过重新上传 |
+| url | String | 条件必填* | 公网可访问的语音文件 URL，后端自动下载后上传 |
+| base64 | String | 条件必填* | 语音的 Base64 编码字符串（AMR 格式） |
 | filename | String | 否 | 文件名（如 `voice.amr`） |
+
+\* `media_id`、`url`、`base64` 三者至少提供一种。优先推荐 `media_id` 或 `url`。
 
 > ⚠️ **注意**：语音文件仅支持 AMR 格式，文件大小不超过 **2MB**，播放时长不超过 **60秒**。
 
 #### video 视频消息
 
-发送 Base64 编码的视频文件（MagicPush 会自动调用企业微信 API 上传为临时素材）：
+支持三种方式发送视频（MagicPush 会自动处理上传）：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "产品演示视频",
+    "content": "最新版本功能演示，请查看视频",
+    "type": "text",
+    "extraData": {
+      "url": "https://example.com/demo.mp4",
+      "filename": "demo.mp4",
+      "title": "产品演示视频",
+      "description": "V2.0 新功能演示"
+    }
+  }'
+```
+
+**方式二：使用 Base64**
 
 ```bash
 curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
@@ -411,14 +554,36 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   }'
 ```
 
-**extraData 字段说明**：
+**方式三：使用已有 media_id**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "产品演示视频",
+    "content": "请查看视频",
+    "type": "text",
+    "extraData": {
+      "media_id": "MEDIA_ID_xxx",
+      "title": "产品演示视频",
+      "description": "V2.0 新功能演示"
+    }
+  }'
+```
+
+**extraData 字段说明（三选一）**：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| base64 | String | 是 | 视频的 Base64 编码字符串（MP4 格式） |
+| media_id | String | 条件必填* | 已上传过的素材 ID，填此字段可跳过重新上传 |
+| url | String | 条件必填* | 公网可访问的视频文件 URL，后端自动下载后上传 |
+| base64 | String | 条件必填* | 视频的 Base64 编码字符串（MP4 格式） |
 | filename | String | 否 | 文件名（如 `demo.mp4`） |
 | title | String | 否 | 视频消息标题（显示在卡片上） |
 | description | String | 否 | 视频消息描述文字 |
+
+\* `media_id`、`url`、`base64` 三者至少提供一种。优先推荐 `media_id` 或 `url`。
 
 > ⚠️ **注意**：视频文件仅支持 MP4 格式，文件大小不超过 **10MB**。
 
@@ -525,6 +690,16 @@ MagicPush 自动管理 access_token 的生命周期：
 4. **容错**：如果发送时发现 token 失效（errcode 42001 或 40014），自动清除缓存并重新获取
 
 服务重启后 token 缓存会丢失，首次发送时会自动重新获取，无需人工干预。
+
+### 媒体上传机制
+
+对于图片、文件、语音、视频类型的消息，MagicPush 的上传流程如下：
+
+1. **`media_id`**：直接使用已有素材 ID，跳过上传步骤
+2. **`url` 模式**：后端通过 HTTP GET 下载远程资源（支持代理），将响应内容转为 Buffer 后通过 `multipart/form-data` 上传至企业微信 `/cgi-bin/media/upload` 接口
+3. **`base64` 模式**：后端将 Base64 字符串解码为 Buffer 后上传
+
+> ⚠️ **注意**：使用 `url` 方式时，目标 URL 必须是公网可访问的地址。下载超时时间为 30 秒。如果服务器配置了代理，下载过程会自动走代理通道。
 
 ### 频率限制
 

@@ -1,5 +1,6 @@
 const axios = require('axios');
 const BaseChannel = require('./base.channel');
+const logger = require('../../utils/logger');
 
 /**
  * 企业微信机器人适配器
@@ -123,96 +124,97 @@ class WecomChannel extends BaseChannel {
 
   /**
    * 发送图片消息
-   * @param {Object} data - 图片消息数据，包含 base64 和可选的 md5
+   * 群机器人支持在 JSON payload 中内联 base64（无需预上传）
+   * 支持三种方式: base64(内联) / url(下载后转base64内联)
    */
   async sendImage(data) {
-    if (!data || !data.base64) {
-      throw new Error('图片消息必须包含 base64 数据');
+    if (!data) throw new Error('图片消息必须提供数据');
+
+    let finalBase64;
+    if (data.base64) {
+      finalBase64 = data.base64;
+    } else if (data.url) {
+      finalBase64 = await this._downloadToBase64(data.url);
+    } else {
+      throw new Error('图片消息必须提供 base64 或 url');
     }
 
     const payload = {
       msgtype: 'image',
       image: {
-        base64: data.base64,
+        base64: finalBase64,
         md5: data.md5 || '',
       },
     };
 
     const response = await axios.post(this.webhookUrl, payload, {
       headers: { 'Content-Type': 'application/json' },
-      timeout: 15000, // 图片上传可能需要更长时间
+      timeout: 15000,
     });
 
     if (response.data.errcode !== 0) {
       throw new Error(`企业微信图片消息发送失败: ${response.data.errmsg}`);
     }
 
-    return {
-      success: true,
-      messageId: response.data.msgid,
-      type: 'image',
-    };
+    return { success: true, messageId: response.data.msgid, type: 'image' };
   }
 
   /**
    * 发送文件消息
-   * @param {Object} data - 文件消息数据，包含 base64 和可选的 md5
+   * 群机器人文件只支持 media_id 模式（必须先上传获取 media_id）
+   * 支持三种方式: media_id(直接用) / base64(上传) / url(下载后上传)
    */
   async sendFile(data) {
-    if (!data || !data.base64) {
-      throw new Error('文件消息必须包含 base64 数据');
+    if (!data) throw new Error('文件消息必须提供数据');
+
+    let mediaId;
+
+    if (data.media_id) {
+      mediaId = data.media_id;
+    } else if (data.base64 || data.url) {
+      mediaId = await this._uploadMedia('file', { base64: data.base64, url: data.url });
+    } else {
+      throw new Error('文件消息必须提供 media_id、base64 或 url');
     }
 
     const payload = {
       msgtype: 'file',
-      file: {
-        base64: data.base64,
-        md5: data.md5 || '',
-      },
+      file: { media_id: mediaId },
     };
 
     const response = await axios.post(this.webhookUrl, payload, {
       headers: { 'Content-Type': 'application/json' },
-      timeout: 20000, // 文件上传可能需要更长时间
+      timeout: 20000,
     });
 
     if (response.data.errcode !== 0) {
       throw new Error(`企业微信文件消息发送失败: ${response.data.errmsg}`);
     }
 
-    return {
-      success: true,
-      messageId: response.data.msgid,
-      type: 'file',
-    };
+    return { success: true, messageId: response.data.msgid, type: 'file' };
   }
 
   /**
    * 发送语音消息
-   * @param {Object} data - 语音消息数据，包含 base64 或 media_id
+   * 群机器人语音只支持 media_id 模式（必须先上传获取 media_id）
+   * 支持三种方式: media_id(直接用) / base64(上传) / url(下载后上传)
    */
   async sendVoice(data) {
-    if (!data) {
-      throw new Error('语音消息必须包含数据');
-    }
+    if (!data) throw new Error('语音消息必须包含数据');
 
     let mediaId;
 
-    // 如果直接提供了 media_id，则使用它
     if (data.media_id) {
       mediaId = data.media_id;
-    } else if (data.base64) {
-      // 如果提供的是 base64 数据，需要先上传获取 media_id
-      mediaId = await this._uploadMedia('voice', data.base64);
+    } else if (data.base64 || data.url) {
+      mediaId = await this._uploadMedia('voice', { base64: data.base64, url: data.url });
     } else {
-      throw new Error('语音消息必须包含 base64 或 media_id');
+      throw new Error('语音消息必须提供 media_id、base64 或 url');
     }
 
     const payload = {
       msgtype: 'voice',
-      voice: {
-        media_id: mediaId,
-      },
+      voice: { media_id: mediaId },
     };
 
     const response = await axios.post(this.webhookUrl, payload, {
@@ -224,11 +226,7 @@ class WecomChannel extends BaseChannel {
       throw new Error(`企业微信语音消息发送失败: ${response.data.errmsg}`);
     }
 
-    return {
-      success: true,
-      messageId: response.data.msgid,
-      type: 'voice',
-    };
+    return { success: true, messageId: response.data.msgid, type: 'voice' };
   }
 
   /**
@@ -310,25 +308,33 @@ class WecomChannel extends BaseChannel {
   }
 
   /**
-   * 上传临时素材（文件/语音等）
-   * @param {string} type - 素材类型：file / voice
-   * @param {string} base64 - Base64 编码的文件内容
-   * @returns {Promise<string>} media_id
+   * 上传临时素材（文件/语音等），返回 media_id
+   * 支持两种输入方式：
+   *   1. base64 — Base64 编码字符串 → Buffer → 上传
+   *   2. url — 公网可访问的资源 URL → axios 下载 → Buffer → 上传
    */
-  async _uploadMedia(type, base64) {
+  async _uploadMedia(type, { base64, url: fileUrl } = {}) {
+    let fileBuffer;
+
+    if (base64) {
+      fileBuffer = Buffer.from(base64, 'base64');
+    } else if (fileUrl) {
+      logger.info(`企业微信机器人正在下载资源: ${fileUrl}`);
+      const res = await axios.get(fileUrl, { responseType: 'arraybuffer', timeout: 30000 });
+      fileBuffer = Buffer.from(res.data);
+      logger.info(`企业微信机器人资源下载完成: ${fileBuffer.length} bytes`);
+    } else {
+      throw new Error('上传媒体文件失败: 必须提供 base64 或 url');
+    }
+
     // 从 webhookUrl 提取 key
     const url = new URL(this.webhookUrl);
     const key = url.searchParams.get('key');
 
     const uploadUrl = `https://qyapi.weixin.qq.com/cgi-bin/webhook/upload_media?key=${key}&type=${type}`;
 
-    // 将 base64 转换为 Buffer
-    const fileBuffer = Buffer.from(base64, 'base64');
-
     const response = await axios.post(uploadUrl, fileBuffer, {
-      headers: {
-        'Content-Type': 'application/octet-stream',
-      },
+      headers: { 'Content-Type': 'application/octet-stream' },
       timeout: 30000,
     });
 
@@ -337,6 +343,17 @@ class WecomChannel extends BaseChannel {
     }
 
     return response.data.media_id;
+  }
+
+  /**
+   * 下载远程资源并转为 Base64 字符串（用于 image/file 内联发送）
+   */
+  async _downloadToBase64(fileUrl) {
+    logger.info(`企业微信机器人正在下载资源: ${fileUrl}`);
+    const res = await axios.get(fileUrl, { responseType: 'arraybuffer', timeout: 30000 });
+    const buffer = Buffer.from(res.data);
+    logger.info(`企业微信机器人资源下载完成: ${buffer.length} bytes`);
+    return buffer.toString('base64');
   }
 
   validate(config) {
@@ -421,16 +438,17 @@ class WecomChannel extends BaseChannel {
         value: 'image',
         label: '图片消息',
         icon: '🖼️',
-        description: '发送Base64编码的图片，支持JPG/PNG格式',
+        description: '发送图片，支持 Base64 编码或 URL 自动下载（JPG/PNG格式，内联发送）',
         fields: [
-          { name: 'base64', label: '图片Base64编码', type: 'textarea', required: true, description: '图片的Base64编码字符串（不含data:image前缀）' },
+          { name: 'base64', label: '图片Base64编码', type: 'textarea', required: false, description: '图片的Base64编码字符串（不含data:image前缀），与url二选一' },
+          { name: 'url', label: '图片URL', type: 'url', required: false, description: '公网可访问的图片URL，后端自动下载后转Base64内联发送（与base64二选一）' },
           { name: 'md5', label: 'MD5签名', type: 'text', required: false, description: '图片内容的MD5值（可选，用于校验）' },
         ],
         example: {
           channelType: 'image',
           extraData: {
-            base64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
-            md5: 'a1b2c3d4e5f6...'
+            url: 'https://example.com/screenshot.jpg'
+            // 或者用 base64: { base64: 'iVBORw0KGgoAAAANS...', md5: 'a1b2c3d4...' }
           }
         }
       },
@@ -438,16 +456,18 @@ class WecomChannel extends BaseChannel {
         value: 'file',
         label: '文件消息',
         icon: '📎',
-        description: '发送Base64编码的文件，支持多种文件格式',
+        description: '发送文件，支持 media_id / Base64 / URL 上传（多种格式，≤20MB）',
         fields: [
-          { name: 'base64', label: '文件Base64编码', type: 'textarea', required: true, description: '文件的Base64编码字符串' },
-          { name: 'md5', label: 'MD5签名', type: 'text', required: false, description: '文件内容的MD5值（可选，用于校验）' },
+          { name: 'media_id', label: '媒体ID', type: 'text', required: false, description: '已上传的媒体ID（优先使用，跳过重新上传）' },
+          { name: 'base64', label: '文件Base64编码', type: 'textarea', required: false, description: '文件的Base64编码字符串（将自动上传获取media_id，与url二选一）' },
+          { name: 'url', label: '文件URL', type: 'url', required: false, description: '公网可访问的文件URL，后端自动下载后上传获取media_id（与base64二选一）' },
         ],
         example: {
           channelType: 'file',
           extraData: {
-            base64: 'JVBERi0xLjQK...',
-            md5: 'd4c3b2a1e9f8...'
+            url: 'https://example.com/report.pdf'
+            // 或者用 base64: { base64: 'JVBERi0xLjQK...' }
+            // 或者用 media_id: { media_id: '@lALdD...' }
           }
         }
       },
@@ -457,13 +477,16 @@ class WecomChannel extends BaseChannel {
         icon: '🎤',
         description: '发送语音消息（AMR格式，≤2M，时长≤60秒），需先上传获取media_id',
         fields: [
-          { name: 'base64', label: '语音Base64编码', type: 'textarea', required: false, description: '语音的Base64编码字符串（AMR格式）' },
-          { name: 'media_id', label: '媒体ID', type: 'text', required: false, description: '已上传的媒体ID（与base64二选一）' },
+          { name: 'media_id', label: '媒体ID', type: 'text', required: false, description: '已上传的媒体ID（优先使用，跳过重新上传）' },
+          { name: 'base64', label: '语音Base64编码', type: 'textarea', required: false, description: '语音的Base64编码字符串（AMR格式，与url二选一）' },
+          { name: 'url', label: '语音URL', type: 'url', required: false, description: '公网可访问的语音文件URL，后端自动下载后上传（与base64二选一）' },
         ],
         example: {
           channelType: 'voice',
           extraData: {
-            base64: 'IyAgICAgICAgICAgICAg...'
+            url: 'https://example.com/voice.amr'
+            // 或者用 base64: { base64: 'IyAgICAg...' }
+            // 或者用 media_id: { media_id: '@lALdD...' }
           }
         }
       },

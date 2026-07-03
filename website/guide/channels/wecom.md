@@ -162,14 +162,24 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 | 类型 | 说明 | 典型场景 |
 |-------------|------|----------|
 | `news` | **图文消息**（带封面图和跳转链接） | 资讯推送、公告通知、活动宣传 |
-| `image` | **图片消息**（Base64 编码） | 发送截图、验证码图片等 |
-| `file` | **文件消息**（需上传获取 media_id） | 发送报告、Excel 等文件 |
-| `voice` | **语音消息**（需上传获取 media_id） | 发送语音通知（≤60秒，AMR格式） |
+| `image` | **图片消息**（Base64 或 URL 内联发送） | 发送截图、验证码图片等 |
+| `file` | **文件消息**（需上传获取 media_id，≤20MB） | 发送报告、Excel 等文件 |
+| `voice` | **语音消息**（需上传获取 media_id，AMR 格式） | 发送语音通知（≤60秒） |
 | `markdown_v2` | **Markdown增强版**（支持表格、列表、代码块） | 周报汇报、数据报告、格式化通知 |
 | `template_card` | **模板卡片**（交互式） | 告警卡片、任务通知、审批提醒 |
 
 ::: tip 使用方式
-特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可。
+特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可，无需额外指定类型标识。
+
+对于图片、文件、语音类型的消息，**支持多种数据输入方式**：
+
+- **`image` 图片**：支持 `base64`（内联到 JSON）或 `url`（后端自动下载转 Base64 后内联）
+- **`file` 文件 / `voice` 语音**：只接受 `media_id` 发送，但可通过以下任一方式获取：
+  - 直接提供已有的 `media_id`
+  - 提供 `base64`，后端自动上传并返回 `media_id`
+  - 提供 `url`，后端自动下载后上传并返回 `media_id`
+
+推荐优先使用 `url` 方式，避免在请求体中传输大量 Base64 数据。
 :::
 
 #### news 图文消息
@@ -209,7 +219,25 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 #### image 图片消息
 
-发送 Base64 编码的图片（不含 `data:image` 前缀）：
+群机器人图片支持在 JSON 中直接内联 Base64 数据，也支持通过 URL 自动下载：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "验证码图片",
+    "content": "您的验证码已发送，请查收图片",
+    "type": "text",
+    "extraData": {
+      "url": "https://example.com/captcha.png"
+    }
+  }'
+```
+
+**方式二：使用 Base64**
 
 ```bash
 curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
@@ -225,16 +253,39 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   }'
 ```
 
-**extraData 字段说明**：
+**extraData 字段说明（二选一）**：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| base64 | String | 是 | 图片的 Base64 编码字符串 |
+| url | String | 条件必填* | 公网可访问的图片 URL，后端自动下载后转 Base64 内联 |
+| base64 | String | 条件必填* | 图片的 Base64 编码字符串（不含 `data:image` 前缀） |
 | md5 | String | 否 | 图片内容的 MD5 值（可选校验用） |
+
+\* `url` 和 `base64` 二者至少提供一种。
 
 #### file 文件消息
 
-发送 Base64 编码的文件（如 PDF、Excel 等）：
+> ⚠️ **注意**：群机器人文件类型**不支持** Base64 内联，必须通过上传获取 `media_id` 后发送。MagicPush 会自动处理上传流程。
+
+支持三种方式（三选一）：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "月度报表",
+    "content": "请查收本月度报表文件",
+    "type": "text",
+    "extraData": {
+      "url": "https://example.com/report.pdf"
+    }
+  }'
+```
+
+**方式二：使用 Base64**
 
 ```bash
 curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
@@ -250,12 +301,31 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   }'
 ```
 
-**extraData 字段说明**：
+**方式三：使用已有 media_id（跳过上传）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "月度报表",
+    "content": "请查收报表",
+    "type": "text",
+    "extraData": {
+      "media_id": "@lALdD..."
+    }
+  }'
+```
+
+**extraData 字段说明（三选一）**：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| base64 | String | 是 | 文件的 Base64 编码字符串 |
-| md5 | String | 否 | 文件内容的 MD5 值（可选校验用） |
+| media_id | String | 条件必填* | 已上传的媒体 ID（优先使用，跳过重新上传） |
+| url | String | 条件必填* | 公网可访问的文件 URL，后端自动下载后上传获取 media_id |
+| base64 | String | 条件必填* | 文件的 Base64 编码字符串，后端自动上传获取 media_id |
+
+\* 三者至少提供一种。
 
 #### template_card 模板卡片
 
@@ -296,7 +366,27 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 #### voice 语音消息
 
-发送 AMR 格式的语音文件（需先上传获取 media_id）：
+> ⚠️ **注意**：群机器人语音类型必须通过上传获取 `media_id` 后发送。MagicPush 会自动处理上传流程。
+
+支持三种方式（三选一）：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "语音通知",
+    "content": "系统告警语音已发送，请查收",
+    "type": "text",
+    "extraData": {
+      "url": "https://example.com/voice.amr"
+    }
+  }'
+```
+
+**方式二：使用 Base64**
 
 ```bash
 curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
@@ -312,12 +402,31 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   }'
 ```
 
-**extraData 字段说明**：
+**方式三：使用已有 media_id（跳过上传）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "语音通知",
+    "content": "请查收语音",
+    "type": "text",
+    "extraData": {
+      "media_id": "@lALdD..."
+    }
+  }'
+```
+
+**extraData 字段说明（三选一）**：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| base64 | String | 否（与media_id二选一） | 语音的 Base64 编码字符串（AMR格式） |
-| media_id | String | 否（与base64二选一） | 已上传的媒体ID |
+| media_id | String | 条件必填* | 已上传的媒体 ID（优先使用，跳过重新上传） |
+| url | String | 条件必填* | 公网可访问的语音文件 URL，后端自动下载后上传获取 media_id |
+| base64 | String | 条件必填* | 语音的 Base64 编码字符串（AMR 格式），后端自动上传获取 media_id |
+
+\* 三者至少提供一种。
 
 > ⚠️ **注意**：语音文件限制：
 > - 大小不超过 **2M**
@@ -372,6 +481,18 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 企业微信群机器人限制：**每个机器人最多 20 条消息/分钟**。
 
 如果发送频率超过限制，会返回错误码 `88888`。MagicPush 不会做额外限制，请注意控制推送频率。
+
+### 媒体上传机制
+
+对于图片、文件、语音类型的消息，MagicPush 的处理流程如下：
+
+| 类型 | API 字段格式 | MagicPush 处理方式 |
+|------|-------------|-------------------|
+| **image** | `{ base64, md5 }` 内联到 JSON | `base64` 直接使用；`url` → 下载转 Base64 → 内联发送 |
+| **file** | `{ media_id }` | `media_id` 直接使用；`base64`/`url` → 上传至 `webhook/upload_media` 获取 `media_id` 后发送 |
+| **voice** | `{ media_id }` | 同上 |
+
+> 💡 **说明**：群机器人的 `webhook/upload_media` 接口采用 `Content-Type: application/octet-stream` 方式上传原始文件内容。使用 `url` 方式时，后端通过 HTTP GET 下载远程资源（超时 30 秒），转为 Buffer 后上传。
 
 ### 安全注意事项
 
