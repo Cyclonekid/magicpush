@@ -217,6 +217,24 @@ QQ 机器人的群聊和单聊模式支持以下标准 Markdown 语法的**子�
 
 QQ 机器人支持发送**富媒体消息**：图片、视频、语音和通用文件。这是通过特有消息类型 `media` 实现的。
 
+::: tip 命名空间隔离
+extraData 采用**命名空间隔离**设计，所有特有类型的字段必须放在以渠道标识符为 key 的对象内：
+
+```json
+{
+  "channelType": "media",
+  "extraData": {
+    "qqbot": {
+      "file_type": 1,
+      "url": "https://example.com/image.png"
+    }
+  }
+}
+```
+
+各渠道的命名空间 key：`wecom`（企业微信群机器人）、`wecomapp`（企业微信应用）、`telegram`、`feishu`、`qqbot`
+:::
+
 #### 支持的媒体类型
 
 | file_type | 媒体类型 | 支持格式 | QQ场景 |
@@ -259,8 +277,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "title": "",
     "content": "",
     "extraData": {
-      "file_type": 1,
-      "url": "https://example.com/image.png"
+      "qqbot": {
+        "file_type": 1,
+        "url": "https://example.com/image.png"
+      }
     }
   }'
 ```
@@ -275,8 +295,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "title": "",
     "content": "",
     "extraData": {
-      "file_type": 3,
-      "file_data": "<Base64编码的silk/wav/mp3音频数据>"
+      "qqbot": {
+        "file_type": 3,
+        "file_data": "<Base64编码的silk/wav/mp3音频数据>"
+      }
     }
   }'
 ```

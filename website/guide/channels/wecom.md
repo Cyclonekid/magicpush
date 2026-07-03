@@ -159,6 +159,23 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 除了通用的 `text` 和 `markdown` 类型外，企业微信群机器人还支持以下**特有消息类型**，通过 `extraData` 参数发送：
 
+::: tip 命名空间隔离
+extraData 采用**命名空间隔离**设计，所有特有类型的字段必须放在以渠道标识符为 key 的对象内：
+
+```json
+{
+  "channelType": "image",
+  "extraData": {
+    "wecom": {
+      "url": "https://example.com/img.png"
+    }
+  }
+}
+```
+
+各渠道的命名空间 key：`wecom`（企业微信群机器人）、`wecomapp`（企业微信应用）、`telegram`、`feishu`、`qqbot`
+:::
+
 | 类型 | 说明 | 典型场景 |
 |-------------|------|----------|
 | `news` | **图文消息**（带封面图和跳转链接） | 资讯推送、公告通知、活动宣传 |
@@ -195,14 +212,16 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "今年中秋公司为大家准备了精美礼品",
     "type": "text",
     "extraData": {
-      "articles": [
-        {
-          "title": "中秋节礼品到",
-          "description": "今年中秋公司为大家准备了精美礼品",
-          "url": "https://example.com/gift",
-          "picurl": "https://picsum.photos/600/300"
-        }
-      ]
+      "wecom": {
+        "articles": [
+          {
+            "title": "中秋节礼品到",
+            "description": "今年中秋公司为大家准备了精美礼品",
+            "url": "https://example.com/gift",
+            "picurl": "https://picsum.photos/600/300"
+          }
+        ]
+      }
     }
   }'
 ```
@@ -232,7 +251,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "您的验证码已发送，请查收图片",
     "type": "text",
     "extraData": {
-      "url": "https://example.com/captcha.png"
+      "wecom": {
+        "url": "https://example.com/captcha.png"
+      }
     }
   }'
 ```
@@ -248,7 +269,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "您的验证码已发送，请查收图片",
     "type": "text",
     "extraData": {
-      "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+      "wecom": {
+        "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+      }
     }
   }'
 ```
@@ -280,7 +303,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查收本月度报表文件",
     "type": "text",
     "extraData": {
-      "url": "https://example.com/report.pdf"
+      "wecom": {
+        "url": "https://example.com/report.pdf"
+      }
     }
   }'
 ```
@@ -296,7 +321,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查收本月度报表文件",
     "type": "text",
     "extraData": {
-      "base64": "JVBERi0xLjQK..."
+      "wecom": {
+        "base64": "JVBERi0xLjQK..."
+      }
     }
   }'
 ```
@@ -340,15 +367,17 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "系统将于今晚22:00-23:00进行升级维护",
     "type": "text",
     "extraData": {
-      "card_type": "text_notice",
-      "source": { "desc_text": "来自魔法推送" },
-      "main_title": { "title": "系统升级通知" },
-      "sub_title_text": "系统将于今晚22:00-23:00进行升级维护",
-      "horizontal_content_list": [
-        { "keyname": "时间", "value": "2024-01-15 22:00-23:00" },
-        { "keyname": "影响范围", "value": "所有用户" }
-      ],
-      "card_action": { "url": "https://example.com/notice", "type": 1 }
+      "wecom": {
+        "card_type": "text_notice",
+        "source": { "desc_text": "来自魔法推送" },
+        "main_title": { "title": "系统升级通知" },
+        "sub_title_text": "系统将于今晚22:00-23:00进行升级维护",
+        "horizontal_content_list": [
+          { "keyname": "时间", "value": "2024-01-15 22:00-23:00" },
+          { "keyname": "影响范围", "value": "所有用户" }
+        ],
+        "card_action": { "url": "https://example.com/notice", "type": 1 }
+      }
     }
   }'
 ```
@@ -381,7 +410,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "系统告警语音已发送，请查收",
     "type": "text",
     "extraData": {
-      "url": "https://example.com/voice.amr"
+      "wecom": {
+        "url": "https://example.com/voice.amr"
+      }
     }
   }'
 ```
@@ -397,7 +428,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "系统告警语音已发送，请查收",
     "type": "text",
     "extraData": {
-      "base64": "IyAgICAgICAgICAgICAg..."
+      "wecom": {
+        "base64": "IyAgICAgICAgICAgICAg..."
+      }
     }
   }'
 ```
@@ -413,7 +446,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查收语音",
     "type": "text",
     "extraData": {
-      "media_id": "@lALdD..."
+      "wecom": {
+        "media_id": "@lALdD..."
+      }
     }
   }'
 ```
@@ -447,7 +482,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "本周项目进度报告",
     "type": "text",
     "extraData": {
-      "content": "| 项目 | 状态 | 进度 |\n|------|------|------|\n| 任务A | 进行中 | 80% |\n| 任务B | 已完成 | 100% |\n\n- *任务A*: 开发接近尾声\n- **任务C**: 下周启动"
+      "wecom": {
+        "content": "| 项目 | 状态 | 进度 |\n|------|------|------|\n| 任务A | 进行中 | 80% |\n| 任务B | 已完成 | 100% |\n\n- *任务A*: 开发接近尾声\n- **任务C**: 下周启动"
+      }
     }
   }'
 ```

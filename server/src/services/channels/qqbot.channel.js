@@ -45,7 +45,8 @@ class QqbotChannel extends BaseChannel {
 
     // ★ 新增：特有消息类型分支
     if (channelType || (extraData && Object.keys(extraData).length > 0)) {
-      return await this.sendChannelSpecific(channelType || 'media', extraData);
+      const myExtraData = extraData ? extraData[this.channelKey] : null;
+      return await this.sendChannelSpecific(channelType || 'media', myExtraData);
     }
 
     // 以下保持原有的 text/markdown 处理逻辑不变
@@ -477,8 +478,10 @@ class QqbotChannel extends BaseChannel {
           title: '',
           content: '',
           extraData: {
-            file_type: 1,
-            url: 'https://example.com/image.png',
+            qqbot: {
+              file_type: 1,
+              url: 'https://example.com/image.png',
+            }
           },
         },
       },

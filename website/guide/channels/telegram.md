@@ -168,6 +168,24 @@ Telegram 支持以下 HTML 标签：
 
 除了通用的 `text`、`markdown` 和 `html` 类型外，Telegram Bot 还支持以下**特有消息类型**，通过 `extraData` 参数发送：
 
+::: tip 命名空间隔离
+extraData 采用**命名空间隔离**设计，所有特有类型的字段必须放在以渠道标识符为 key 的对象内：
+
+```json
+{
+  "channelType": "photo",
+  "extraData": {
+    "telegram": {
+      "url": "https://example.com/photo.png",
+      "caption": "今日天气实况"
+    }
+  }
+}
+```
+
+各渠道的命名空间 key：`wecom`（企业微信群机器人）、`wecomapp`（企业微信应用）、`telegram`、`feishu`、`qqbot`
+:::
+
 | 类型 | 说明 | 典型场景 |
 |-------------|------|----------|
 | `photo` | 图片消息（URL 或 Base64） | 发送图片、截图、验证码 |
@@ -192,8 +210,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查看今日天气截图",
     "type": "text",
     "extraData": {
-      "url": "https://picsum.photos/600/400",
-      "caption": "今日天气实况"
+      "telegram": {
+        "url": "https://picsum.photos/600/400",
+        "caption": "今日天气实况"
+      }
     }
   }'
 
@@ -206,10 +226,12 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "服务器 CPU 使用率超过 90%，请查看截图",
     "type": "text",
     "extraData": {
-      "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
-      "filename": "screenshot.jpg",
-      "caption": "*服务器截图*",
-      "parse_mode": "Markdown"
+      "telegram": {
+        "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+        "filename": "screenshot.jpg",
+        "caption": "*服务器截图*",
+        "parse_mode": "Markdown"
+      }
     }
   }'
 ```
@@ -238,8 +260,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查收2024年第一季度报告",
     "type": "text",
     "extraData": {
-      "url": "https://example.com/report.pdf",
-      "caption": "2024年第一季度报告"
+      "telegram": {
+        "url": "https://example.com/report.pdf",
+        "caption": "2024年第一季度报告"
+      }
     }
   }'
 
@@ -252,9 +276,11 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查收月度报告文件",
     "type": "text",
     "extraData": {
-      "base64": "JVBERi0xLjQK...",
-      "filename": "report.pdf",
-      "caption": "月度报告"
+      "telegram": {
+        "base64": "JVBERi0xLjQK...",
+        "filename": "report.pdf",
+        "caption": "月度报告"
+      }
     }
   }'
 ```
@@ -281,10 +307,12 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "北京市东城区长安街天安门广场",
     "type": "text",
     "extraData": {
-      "latitude": 39.9042,
-      "longitude": 116.4074,
-      "title": "天安门广场",
-      "address": "北京市东城区长安街"
+      "telegram": {
+        "latitude": 39.9042,
+        "longitude": 116.4074,
+        "title": "天安门广场",
+        "address": "北京市东城区长安街"
+      }
     }
   }'
 ```

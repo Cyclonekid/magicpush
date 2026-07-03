@@ -40,7 +40,8 @@ class TelegramChannel extends BaseChannel {
 
     // 如果是渠道特有类型，委托给专门的处理方法
     if (channelType && channelType !== 'text' && channelType !== 'markdown' && channelType !== 'html') {
-      return await this.sendChannelSpecific(channelType, extraData);
+      const myExtraData = extraData ? extraData[this.channelKey] : null;
+      return await this.sendChannelSpecific(channelType, myExtraData);
     }
 
     // 通用类型处理（保持原有逻辑不变）
@@ -305,8 +306,10 @@ class TelegramChannel extends BaseChannel {
         example: {
           channelType: 'photo',
           extraData: {
-            url: 'https://picsum.photos/600/400',
-            caption: '今日天气实况'
+            telegram: {
+              url: 'https://picsum.photos/600/400',
+              caption: '今日天气实况'
+            }
           }
         }
       },
@@ -324,8 +327,10 @@ class TelegramChannel extends BaseChannel {
         example: {
           channelType: 'document',
           extraData: {
-            url: 'https://example.com/report.pdf',
-            caption: '2024年第一季度报告'
+            telegram: {
+              url: 'https://example.com/report.pdf',
+              caption: '2024年第一季度报告'
+            }
           }
         }
       },
@@ -343,10 +348,12 @@ class TelegramChannel extends BaseChannel {
         example: {
           channelType: 'location',
           extraData: {
-            latitude: 39.9042,
-            longitude: 116.4074,
-            title: '天安门广场',
-            address: '北京市东城区长安街'
+            telegram: {
+              latitude: 39.9042,
+              longitude: 116.4074,
+              title: '天安门广场',
+              address: '北京市东城区长安街'
+            }
           }
         }
       },

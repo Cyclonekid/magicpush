@@ -190,6 +190,23 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 除了通用的 `text`、`markdown` 和 `html` 类型外，企业微信应用还支持以下**特有消息类型**，通过 `extraData` 参数发送：
 
+::: tip 命名空间隔离
+extraData 采用**命名空间隔离**设计，所有特有类型的字段必须放在以渠道标识符为 key 的对象内：
+
+```json
+{
+  "channelType": "image",
+  "extraData": {
+    "wecomapp": {
+      "url": "https://example.com/img.png"
+    }
+  }
+}
+```
+
+各渠道的命名空间 key：`wecom`（企业微信群机器人）、`wecomapp`（企业微信应用）、`telegram`、`feishu`、`qqbot`
+:::
+
 | 类型 | 说明 | 典型场景 |
 |-------------|------|----------|
 | `news` | 图文消息（多条图文链接文章） | 资讯推送、公告通知、产品发布 |
@@ -225,14 +242,16 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "系统将于今晚22:00-23:00进行升级维护",
     "type": "text",
     "extraData": {
-      "articles": [
-        {
-          "title": "系统升级公告",
-          "description": "系统将于今晚22:00-23:00进行升级维护",
-          "url": "https://example.com/notice",
-          "picurl": "https://picsum.photos/600/300"
-        }
-      ]
+      "wecomapp": {
+        "articles": [
+          {
+            "title": "系统升级公告",
+            "description": "系统将于今晚22:00-23:00进行升级维护",
+            "url": "https://example.com/notice",
+            "picurl": "https://picsum.photos/600/300"
+          }
+        ]
+      }
     }
   }'
 ```
@@ -260,10 +279,12 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "您有一条新的审批待处理，请及时查看",
     "type": "text",
     "extraData": {
-      "title": "审批通知",
-      "description": "您有一条新的审批待处理，请及时查看",
-      "url": "https://example.com/approval",
-      "btntxt": "查看详情"
+      "wecomapp": {
+        "title": "审批通知",
+        "description": "您有一条新的审批待处理，请及时查看",
+        "url": "https://example.com/approval",
+        "btntxt": "查看详情"
+      }
     }
   }'
 ```
@@ -290,15 +311,17 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "系统将于今晚22:00-23:00进行升级维护",
     "type": "text",
     "extraData": {
-      "card_type": "text_notice",
-      "source": { "desc_text": "来自魔法推送" },
-      "main_title": { "title": "系统升级通知" },
-      "sub_title_text": "系统将于今晚22:00-23:00进行升级维护",
-      "horizontal_content_list": [
-        { "keyname": "时间", "value": "2024-01-15 22:00-23:00" },
-        { "keyname": "影响范围", "value": "所有用户" }
-      ],
-      "card_action": { "url": "https://example.com/notice", "type": 1 }
+      "wecomapp": {
+        "card_type": "text_notice",
+        "source": { "desc_text": "来自魔法推送" },
+        "main_title": { "title": "系统升级通知" },
+        "sub_title_text": "系统将于今晚22:00-23:00进行升级维护",
+        "horizontal_content_list": [
+          { "keyname": "时间", "value": "2024-01-15 22:00-23:00" },
+          { "keyname": "影响范围", "value": "所有用户" }
+        ],
+        "card_action": { "url": "https://example.com/notice", "type": 1 }
+      }
     }
   }'
 ```
@@ -331,8 +354,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "服务器 CPU 使用率超过 90%，请查看截图",
     "type": "text",
     "extraData": {
-      "url": "https://example.com/screenshot.jpg",
-      "filename": "screenshot.jpg"
+      "wecomapp": {
+        "url": "https://example.com/screenshot.jpg",
+        "filename": "screenshot.jpg"
+      }
     }
   }'
 ```
@@ -348,8 +373,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "服务器 CPU 使用率超过 90%，请查看截图",
     "type": "text",
     "extraData": {
-      "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
-      "filename": "screenshot.jpg"
+      "wecomapp": {
+        "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+        "filename": "screenshot.jpg"
+      }
     }
   }'
 ```
@@ -365,7 +392,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "服务器 CPU 使用率超过 90%",
     "type": "text",
     "extraData": {
-      "media_id": "MEDIA_ID_xxx"
+      "wecomapp": {
+        "media_id": "MEDIA_ID_xxx"
+      }
     }
   }'
 ```
@@ -396,8 +425,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查收2024年第一季度月度报告",
     "type": "text",
     "extraData": {
-      "url": "https://example.com/report.pdf",
-      "filename": "report.pdf"
+      "wecomapp": {
+        "url": "https://example.com/report.pdf",
+        "filename": "report.pdf"
+      }
     }
   }'
 ```
@@ -413,8 +444,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查收2024年第一季度月度报告",
     "type": "text",
     "extraData": {
-      "base64": "JVBERi0xLjQK...",
-      "filename": "report.pdf"
+      "wecomapp": {
+        "base64": "JVBERi0xLjQK...",
+        "filename": "report.pdf"
+      }
     }
   }'
 ```
@@ -430,7 +463,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查收报告",
     "type": "text",
     "extraData": {
-      "media_id": "MEDIA_ID_xxx"
+      "wecomapp": {
+        "media_id": "MEDIA_ID_xxx"
+      }
     }
   }'
 ```
@@ -461,7 +496,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查收语音消息",
     "type": "text",
     "extraData": {
-      "url": "https://example.com/voice.amr"
+      "wecomapp": {
+        "url": "https://example.com/voice.amr"
+      }
     }
   }'
 ```
@@ -477,8 +514,10 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查收语音消息",
     "type": "text",
     "extraData": {
-      "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
-      "filename": "voice.amr"
+      "wecomapp": {
+        "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+        "filename": "voice.amr"
+      }
     }
   }'
 ```
@@ -494,7 +533,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查收语音消息",
     "type": "text",
     "extraData": {
-      "media_id": "MEDIA_ID_xxx"
+      "wecomapp": {
+        "media_id": "MEDIA_ID_xxx"
+      }
     }
   }'
 ```
@@ -527,10 +568,12 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "最新版本功能演示，请查看视频",
     "type": "text",
     "extraData": {
-      "url": "https://example.com/demo.mp4",
-      "filename": "demo.mp4",
-      "title": "产品演示视频",
-      "description": "V2.0 新功能演示"
+      "wecomapp": {
+        "url": "https://example.com/demo.mp4",
+        "filename": "demo.mp4",
+        "title": "产品演示视频",
+        "description": "V2.0 新功能演示"
+      }
     }
   }'
 ```
@@ -546,10 +589,12 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "最新版本功能演示，请查看视频",
     "type": "text",
     "extraData": {
-      "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
-      "filename": "demo.mp4",
-      "title": "产品演示视频",
-      "description": "V2.0 新功能演示"
+      "wecomapp": {
+        "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+        "filename": "demo.mp4",
+        "title": "产品演示视频",
+        "description": "V2.0 新功能演示"
+      }
     }
   }'
 ```
@@ -565,9 +610,11 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查看视频",
     "type": "text",
     "extraData": {
-      "media_id": "MEDIA_ID_xxx",
-      "title": "产品演示视频",
-      "description": "V2.0 新功能演示"
+      "wecomapp": {
+        "media_id": "MEDIA_ID_xxx",
+        "title": "产品演示视频",
+        "description": "V2.0 新功能演示"
+      }
     }
   }'
 ```
@@ -600,16 +647,18 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "系统将于今晚22:00-23:00进行升级维护",
     "type": "text",
     "extraData": {
-      "articles": [
-        {
-          "title": "系统升级公告",
-          "thumb_media_id": "MEDIA_ID_xxxx",
-          "author": "运维团队",
-          "content": "<h3>系统将于今晚升级</h3><p>预计维护时间：22:00-23:00</p><p>影响范围：所有用户</p>",
-          "content_source_url": "https://example.com/notice",
-          "digest": "系统升级通知摘要"
-        }
-      ]
+      "wecomapp": {
+        "articles": [
+          {
+            "title": "系统升级公告",
+            "thumb_media_id": "MEDIA_ID_xxxx",
+            "author": "运维团队",
+            "content": "<h3>系统将于今晚升级</h3><p>预计维护时间：22:00-23:00</p><p>影响范围：所有用户</p>",
+            "content_source_url": "https://example.com/notice",
+            "digest": "系统升级通知摘要"
+          }
+        ]
+      }
     }
   }'
 ```
@@ -643,16 +692,18 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "您的订单已发货",
     "type": "text",
     "extraData": {
-      "appid": "wxa1234567890abcdef",
-      "page": "pages/order/detail?orderId=12345",
-      "title": "订单状态更新",
-      "description": "您的订单已发货",
-      "emphasis_first_item": true,
-      "content_items": [
-        { "key": "订单号", "value": "ORD-20240115-001" },
-        { "key": "状态", "value": "已发货" },
-        { "key": "快递公司", "value": "顺丰速运" }
-      ]
+      "wecomapp": {
+        "appid": "wxa1234567890abcdef",
+        "page": "pages/order/detail?orderId=12345",
+        "title": "订单状态更新",
+        "description": "您的订单已发货",
+        "emphasis_first_item": true,
+        "content_items": [
+          { "key": "订单号", "value": "ORD-20240115-001" },
+          { "key": "状态", "value": "已发货" },
+          { "key": "快递公司", "value": "顺丰速运" }
+        ]
+      }
     }
   }'
 ```

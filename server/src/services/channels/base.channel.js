@@ -6,8 +6,9 @@ const { SocksProxyAgent } = require('socks-proxy-agent');
  * 所有具体渠道适配器都需要继承此类
  */
 class BaseChannel {
-  constructor(config) {
+  constructor(config, channelKey) {
     this.config = config;
+    this.channelKey = channelKey;
   }
 
   /**

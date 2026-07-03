@@ -21,7 +21,8 @@ class WecomChannel extends BaseChannel {
 
     // 如果是渠道特有类型，委托给专门的处理方法
     if (channelType) {
-      return await this.sendChannelSpecific(channelType, extraData);
+      const myExtraData = extraData ? extraData[this.channelKey] : null;
+      return await this.sendChannelSpecific(channelType, myExtraData);
     }
 
     // 通用类型处理（保持原有逻辑不变）
@@ -423,14 +424,16 @@ class WecomChannel extends BaseChannel {
         example: {
           channelType: 'news',
           extraData: {
-            articles: [
-              {
-                title: '中秋节礼品到',
-                description: '今年中秋公司为大家准备了精美礼品',
-                url: 'https://example.com/gift',
-                picurl: 'https://example.com/mid-autumn.jpg'
-              }
-            ]
+            wecom: {
+              articles: [
+                {
+                  title: '中秋节礼品到',
+                  description: '今年中秋公司为大家准备了精美礼品',
+                  url: 'https://example.com/gift',
+                  picurl: 'https://example.com/mid-autumn.jpg'
+                }
+              ]
+            }
           }
         }
       },
@@ -447,8 +450,10 @@ class WecomChannel extends BaseChannel {
         example: {
           channelType: 'image',
           extraData: {
-            url: 'https://example.com/screenshot.jpg'
-            // 或者用 base64: { base64: 'iVBORw0KGgoAAAANS...', md5: 'a1b2c3d4...' }
+            wecom: {
+              url: 'https://example.com/screenshot.jpg'
+              // 或者用 base64: { base64: 'iVBORw0KGgoAAAANS...', md5: 'a1b2c3d4...' }
+            }
           }
         }
       },
@@ -465,9 +470,11 @@ class WecomChannel extends BaseChannel {
         example: {
           channelType: 'file',
           extraData: {
-            url: 'https://example.com/report.pdf'
-            // 或者用 base64: { base64: 'JVBERi0xLjQK...' }
-            // 或者用 media_id: { media_id: '@lALdD...' }
+            wecom: {
+              url: 'https://example.com/report.pdf'
+              // 或者用 base64: { base64: 'JVBERi0xLjQK...' }
+              // 或者用 media_id: { media_id: '@lALdD...' }
+            }
           }
         }
       },
@@ -484,9 +491,11 @@ class WecomChannel extends BaseChannel {
         example: {
           channelType: 'voice',
           extraData: {
-            url: 'https://example.com/voice.amr'
-            // 或者用 base64: { base64: 'IyAgICAg...' }
-            // 或者用 media_id: { media_id: '@lALdD...' }
+            wecom: {
+              url: 'https://example.com/voice.amr'
+              // 或者用 base64: { base64: 'IyAgICAg...' }
+              // 或者用 media_id: { media_id: '@lALdD...' }
+            }
           }
         }
       },
@@ -501,7 +510,9 @@ class WecomChannel extends BaseChannel {
         example: {
           channelType: 'markdown_v2',
           extraData: {
-            content: '| 项目 | 状态 | 进度 |\n|------|------|------|\n| 任务A | 进行中 | 80% |\n| 任务B | 已完成 | 100% |'
+            wecom: {
+              content: '| 项目 | 状态 | 进度 |\n|------|------|------|\n| 任务A | 进行中 | 80% |\n| 任务B | 已完成 | 100% |'
+            }
           }
         }
       },
@@ -531,21 +542,23 @@ class WecomChannel extends BaseChannel {
         example: {
           channelType: 'template_card',
           extraData: {
-            card_type: 'text_notice',
-            source: {
-              desc_text: '来自魔法推送'
-            },
-            main_title: {
-              title: '系统升级通知'
-            },
-            sub_title_text: '系统将于今晚22:00-23:00进行升级维护',
-            horizontal_content_list: [
-              { keyname: '时间', value: '2024-01-15 22:00-23:00' },
-              { keyname: '影响范围', value: '所有用户' },
-            ],
-            card_action: {
-              url: 'https://example.com/notice',
-              type: 1
+            wecom: {
+              card_type: 'text_notice',
+              source: {
+                desc_text: '来自魔法推送'
+              },
+              main_title: {
+                title: '系统升级通知'
+              },
+              sub_title_text: '系统将于今晚22:00-23:00进行升级维护',
+              horizontal_content_list: [
+                { keyname: '时间', value: '2024-01-15 22:00-23:00' },
+                { keyname: '影响范围', value: '所有用户' },
+              ],
+              card_action: {
+                url: 'https://example.com/notice',
+                type: 1
+              }
             }
           }
         }

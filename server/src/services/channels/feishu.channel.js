@@ -90,7 +90,8 @@ class FeishuChannel extends BaseChannel {
 
     // 如果是渠道特有类型，委托给专门的处理方法
     if (channelType && channelType !== 'text' && channelType !== 'markdown') {
-      return await this.sendChannelSpecific(channelType, extraData);
+      const myExtraData = extraData ? extraData[this.channelKey] : null;
+      return await this.sendChannelSpecific(channelType, myExtraData);
     }
 
     // HTML类型：剥离HTML标签，转为纯文本发送
@@ -372,12 +373,14 @@ class FeishuChannel extends BaseChannel {
         example: {
           channelType: 'post',
           extraData: {
-            title: '项目更新通知',
-            content: [
-              [{ tag: 'text', text: '项目有新的更新：' }],
-              [{ tag: 'a', text: '查看详情', href: 'https://example.com/update' }],
-              [{ tag: 'at', text: '', user_id: 'ou_xxx' }],
-            ]
+            feishu: {
+              title: '项目更新通知',
+              content: [
+                [{ tag: 'text', text: '项目有新的更新：' }],
+                [{ tag: 'a', text: '查看详情', href: 'https://example.com/update' }],
+                [{ tag: 'at', text: '', user_id: 'ou_xxx' }],
+              ]
+            }
           }
         }
       },
@@ -398,20 +401,22 @@ class FeishuChannel extends BaseChannel {
         example: {
           channelType: 'interactive_card',
           extraData: {
-            card: {
-              header: {
-                title: { tag: 'plain_text', content: '系统通知' },
-                template: 'blue'
-              },
-              elements: [
-                { tag: 'div', text: { tag: 'lark_md', content: '**服务器状态**: 正常运行\n**CPU使用率**: 45%' } },
-                {
-                  tag: 'action',
-                  actions: [
-                    { tag: 'button', text: { tag: 'plain_text', content: '查看详情' }, url: 'https://example.com', type: 'primary' }
-                  ]
-                }
-              ]
+            feishu: {
+              card: {
+                header: {
+                  title: { tag: 'plain_text', content: '系统通知' },
+                  template: 'blue'
+                },
+                elements: [
+                  { tag: 'div', text: { tag: 'lark_md', content: '**服务器状态**: 正常运行\n**CPU使用率**: 45%' } },
+                  {
+                    tag: 'action',
+                    actions: [
+                      { tag: 'button', text: { tag: 'plain_text', content: '查看详情' }, url: 'https://example.com', type: 'primary' }
+                    ]
+                  }
+                ]
+              }
             }
           }
         }
@@ -428,7 +433,9 @@ class FeishuChannel extends BaseChannel {
         example: {
           channelType: 'image',
           extraData: {
-            base64: '/9j/4AAQSkZJRgABAQAAAQABAAD...'
+            feishu: {
+              base64: '/9j/4AAQSkZJRgABAQAAAQABAAD...'
+            }
           }
         }
       },
@@ -443,7 +450,9 @@ class FeishuChannel extends BaseChannel {
         example: {
           channelType: 'share_chat',
           extraData: {
-            share_chat_id: 'oc_xxxxxxxx'
+            feishu: {
+              share_chat_id: 'oc_xxxxxxxx'
+            }
           }
         }
       },

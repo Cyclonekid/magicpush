@@ -151,6 +151,23 @@ CPU 使用率超过 90%，请及时处理！
 
 除了通用的 `text` 和 `markdown` 类型外，飞书群机器人还支持以下**特有消息类型**，通过 `extraData` 参数发送：
 
+::: tip 命名空间隔离
+extraData 采用**命名空间隔离**设计，所有特有类型的字段必须放在以渠道标识符为 key 的对象内：
+
+```json
+{
+  "channelType": "interactive_card",
+  "extraData": {
+    "feishu": {
+      "card": { ... }
+    }
+  }
+}
+```
+
+各渠道的命名空间 key：`wecom`（企业微信群机器人）、`wecomapp`（企业微信应用）、`telegram`、`feishu`、`qqbot`
+:::
+
 | 类型 | 说明 | 典型场景 |
 |-------------|------|----------|
 | `post` | 富文本消息（多段落、链接、@人） | 格式丰富的内容推送 |
@@ -175,15 +192,17 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "项目有新的更新，请查看详情",
     "type": "text",
     "extraData": {
-      "title": "项目更新通知",
-      "content": [
-        [
-          { "tag": "text", "text": "项目有新的更新：" }
-        ],
-        [
-          { "tag": "a", "text": "查看详情", "href": "https://example.com/update" }
+      "feishu": {
+        "title": "项目更新通知",
+        "content": [
+          [
+            { "tag": "text", "text": "项目有新的更新：" }
+          ],
+          [
+            { "tag": "a", "text": "查看详情", "href": "https://example.com/update" }
+          ]
         ]
-      ]
+      }
     }
   }'
 ```
@@ -216,23 +235,25 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "服务器状态：正常运行，CPU使用率：45%",
     "type": "text",
     "extraData": {
-      "card": {
-        "header": {
-          "title": { "tag": "plain_text", "content": "系统通知" },
-          "template": "blue"
-        },
-        "elements": [
-          {
-            "tag": "div",
-            "text": { "tag": "lark_md", "content": "**服务器状态**: 正常运行\n**CPU使用率**: 45%" }
+      "feishu": {
+        "card": {
+          "header": {
+            "title": { "tag": "plain_text", "content": "系统通知" },
+            "template": "blue"
           },
-          {
-            "tag": "action",
-            "actions": [
-              { "tag": "button", "text": { "tag": "plain_text", "content": "查看详情" }, "url": "https://example.com", "type": "primary" }
-            ]
-          }
-        ]
+          "elements": [
+            {
+              "tag": "div",
+              "text": { "tag": "lark_md", "content": "**服务器状态**: 正常运行\n**CPU使用率**: 45%" }
+            },
+            {
+              "tag": "action",
+              "actions": [
+                { "tag": "button", "text": { "tag": "plain_text", "content": "查看详情" }, "url": "https://example.com", "type": "primary" }
+              ]
+            }
+          ]
+        }
       }
     }
   }'
@@ -260,7 +281,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "请查看分享的图片",
     "type": "text",
     "extraData": {
-      "image_key": "img_v2_xxxx"
+      "feishu": {
+        "image_key": "img_v2_xxxx"
+      }
     }
   }'
 
@@ -273,7 +296,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "您的验证码已发送，请查收图片",
     "type": "text",
     "extraData": {
-      "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD..."
+      "feishu": {
+        "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD..."
+      }
     }
   }'
 ```
@@ -298,7 +323,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "content": "邀请您加入项目交流群",
     "type": "text",
     "extraData": {
-      "share_chat_id": "oc_xxxxxxxx"
+      "feishu": {
+        "share_chat_id": "oc_xxxxxxxx"
+      }
     }
   }'
 ```

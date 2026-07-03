@@ -118,7 +118,7 @@
                 v-model="form.extraData"
                 type="textarea"
                 :rows="4"
-                placeholder='请输入 JSON 格式的额外数据，如：{"articles":[{"title":"标题","description":"描述","url":"https://example.com","picurl":""}]}'
+                placeholder='请输入 JSON 格式的额外数据（命名空间隔离格式），如：{"wecom":{"url":"https://example.com/img.png"},"telegram":{"caption":"图片说明"}}'
                 maxlength="10000"
                 show-word-limit
               />

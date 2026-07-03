@@ -65,7 +65,7 @@ function getChannelAdapter(type, config, channelId) {
   if (!AdapterClass) {
     throw new Error(`不支持的渠道类型: ${type}`);
   }
-  return new AdapterClass(config, channelId);
+  return new AdapterClass(config, channelId, type);
 }
 
 /**

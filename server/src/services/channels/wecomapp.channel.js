@@ -96,7 +96,8 @@ class WecomappChannel extends BaseChannel {
 
     // 如果是渠道特有类型，委托给专门的处理方法
     if (channelType && channelType !== 'text' && channelType !== 'markdown') {
-      return await this.sendChannelSpecific(channelType, extraData);
+      const myExtraData = extraData ? extraData[this.channelKey] : null;
+      return await this.sendChannelSpecific(channelType, myExtraData);
     }
 
     const accessToken = await this._getAccessToken();
@@ -635,14 +636,16 @@ class WecomappChannel extends BaseChannel {
         example: {
           channelType: 'news',
           extraData: {
-            articles: [
-              {
-                title: '系统升级公告',
-                description: '系统将于今晚22:00-23:00进行升级维护，届时服务将短暂不可用',
-                url: 'https://example.com/notice',
-                picurl: 'https://picsum.photos/600/300'
-              }
-            ]
+            wecomapp: {
+              articles: [
+                {
+                  title: '系统升级公告',
+                  description: '系统将于今晚22:00-23:00进行升级维护，届时服务将短暂不可用',
+                  url: 'https://example.com/notice',
+                  picurl: 'https://picsum.photos/600/300'
+                }
+              ]
+            }
           }
         }
       },
@@ -660,10 +663,12 @@ class WecomappChannel extends BaseChannel {
         example: {
           channelType: 'text_card',
           extraData: {
-            title: '审批通知',
-            description: '您有一条新的审批待处理，请及时查看',
-            url: 'https://example.com/approval',
-            btntxt: '查看详情'
+            wecomapp: {
+              title: '审批通知',
+              description: '您有一条新的审批待处理，请及时查看',
+              url: 'https://example.com/approval',
+              btntxt: '查看详情'
+            }
           }
         }
       },
@@ -696,15 +701,17 @@ class WecomappChannel extends BaseChannel {
         example: {
           channelType: 'template_card',
           extraData: {
-            card_type: 'text_notice',
-            source: { desc_text: '来自魔法推送' },
-            main_title: { title: '系统升级通知' },
-            sub_title_text: '系统将于今晚22:00-23:00进行升级维护',
-            horizontal_content_list: [
-              { keyname: '时间', value: '2024-01-15 22:00-23:00' },
-              { keyname: '影响范围', value: '所有用户' },
-            ],
-            card_action: { url: 'https://example.com/notice', type: 1 }
+            wecomapp: {
+              card_type: 'text_notice',
+              source: { desc_text: '来自魔法推送' },
+              main_title: { title: '系统升级通知' },
+              sub_title_text: '系统将于今晚22:00-23:00进行升级维护',
+              horizontal_content_list: [
+                { keyname: '时间', value: '2024-01-15 22:00-23:00' },
+                { keyname: '影响范围', value: '所有用户' },
+              ],
+              card_action: { url: 'https://example.com/notice', type: 1 }
+            }
           }
         }
       },
@@ -722,9 +729,11 @@ class WecomappChannel extends BaseChannel {
         example: {
           channelType: 'image',
           extraData: {
-            url: 'https://example.com/image.jpg'
-            // 或者用 base64: { base64: '/9j/4AAQ...', filename: 'screenshot.jpg' }
-            // 或者用 media_id: { media_id: 'MEDIA_ID_xxx' }
+            wecomapp: {
+              url: 'https://example.com/image.jpg'
+              // 或者用 base64: { base64: '/9j/4AAQ...', filename: 'screenshot.jpg' }
+              // 或者用 media_id: { media_id: 'MEDIA_ID_xxx' }
+            }
           }
         }
       },
@@ -742,10 +751,12 @@ class WecomappChannel extends BaseChannel {
         example: {
           channelType: 'file',
           extraData: {
-            url: 'https://example.com/report.pdf',
-            filename: 'report.pdf'
-            // 或者用 base64: { base64: 'JVBERi0xLjQK...', filename: 'report.pdf' }
-            // 或者用 media_id: { media_id: 'MEDIA_ID_xxx' }
+            wecomapp: {
+              url: 'https://example.com/report.pdf',
+              filename: 'report.pdf'
+              // 或者用 base64: { base64: 'JVBERi0xLjQK...', filename: 'report.pdf' }
+              // 或者用 media_id: { media_id: 'MEDIA_ID_xxx' }
+            }
           }
         }
       },
@@ -763,9 +774,11 @@ class WecomappChannel extends BaseChannel {
         example: {
           channelType: 'voice',
           extraData: {
-            url: 'https://example.com/voice.amr'
-            // 或者用 base64: { base64: '/9j/4AAQ...', filename: 'voice.amr' }
-            // 或者用 media_id: { media_id: 'MEDIA_ID_xxx' }
+            wecomapp: {
+              url: 'https://example.com/voice.amr'
+              // 或者用 base64: { base64: '/9j/4AAQ...', filename: 'voice.amr' }
+              // 或者用 media_id: { media_id: 'MEDIA_ID_xxx' }
+            }
           }
         }
       },
@@ -785,12 +798,14 @@ class WecomappChannel extends BaseChannel {
         example: {
           channelType: 'video',
           extraData: {
-            url: 'https://example.com/demo.mp4',
-            filename: 'demo.mp4',
-            title: '产品演示视频',
-            description: '最新版本的功能演示'
-            // 或者用 base64: { base64: '/9j/4AAQ...', filename: 'demo.mp4', title: '...' }
-            // 或者用 media_id: { media_id: 'MEDIA_ID_xxx', title: '...' }
+            wecomapp: {
+              url: 'https://example.com/demo.mp4',
+              filename: 'demo.mp4',
+              title: '产品演示视频',
+              description: '最新版本的功能演示'
+              // 或者用 base64: { base64: '/9j/4AAQ...', filename: 'demo.mp4', title: '...' }
+              // 或者用 media_id: { media_id: 'MEDIA_ID_xxx', title: '...' }
+            }
           }
         }
       },
@@ -818,16 +833,18 @@ class WecomappChannel extends BaseChannel {
         example: {
           channelType: 'mpnews',
           extraData: {
-            articles: [
-              {
-                title: '系统升级公告',
-                thumb_media_id: 'MEDIA_ID_xxxx',
-                author: '运维团队',
-                content: '<h3>系统将于今晚升级</h3><p>预计维护时间 22:00-23:00</p>',
-                content_source_url: 'https://example.com/notice',
-                digest: '系统升级通知摘要'
-              }
-            ]
+            wecomapp: {
+              articles: [
+                {
+                  title: '系统升级公告',
+                  thumb_media_id: 'MEDIA_ID_xxxx',
+                  author: '运维团队',
+                  content: '<h3>系统将于今晚升级</h3><p>预计维护时间 22:00-23:00</p>',
+                  content_source_url: 'https://example.com/notice',
+                  digest: '系统升级通知摘要'
+                }
+              ]
+            }
           }
         }
       },
@@ -856,16 +873,18 @@ class WecomappChannel extends BaseChannel {
         example: {
           channelType: 'miniprogram_notice',
           extraData: {
-            appid: 'wxa1234567890abcdef',
-            page: 'pages/order/detail?orderId=12345',
-            title: '订单状态更新',
-            description: '您的订单已发货',
-            emphasis_first_item: true,
-            content_items: [
-              { key: '订单号', value: 'ORD-20240115-001' },
-              { key: '状态', value: '已发货' },
-              { key: '快递公司', value: '顺丰速运' },
-            ]
+            wecomapp: {
+              appid: 'wxa1234567890abcdef',
+              page: 'pages/order/detail?orderId=12345',
+              title: '订单状态更新',
+              description: '您的订单已发货',
+              emphasis_first_item: true,
+              content_items: [
+                { key: '订单号', value: 'ORD-20240115-001' },
+                { key: '状态', value: '已发货' },
+                { key: '快递公司', value: '顺丰速运' },
+              ]
+            }
           }
         }
       },
