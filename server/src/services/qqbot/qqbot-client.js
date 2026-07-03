@@ -210,8 +210,9 @@ class QqbotClient {
   async sendGroupMessage(groupId, message) {
     let body;
 
-    // QQ机器人Markdown消息需要使用 markdown 对象包裹（官方文档要求）
+    // QQ机器人消息格式处理
     if (message.msgType === 2) {
+      // Markdown消息：需要使用 markdown 对象包裹（官方文档要求）
       body = {
         msg_type: 2,
         markdown: {
@@ -219,6 +220,13 @@ class QqbotClient {
         },
       };
       logger.info(`[DEBUG] 构造的Markdown请求体: ${JSON.stringify(body, null, 2)}`);
+    } else if (message.msgType === 7 && message.media) {
+      // 富媒体消息：使用 media 字段传递 file_info
+      body = {
+        msg_type: 7,
+        media: message.media,
+      };
+      logger.info(`[DEBUG] 构造的富媒体请求体: ${JSON.stringify(body, null, 2)}`);
     } else {
       body = { content: message.content };
       if (message.msgType !== undefined) {
@@ -233,7 +241,9 @@ class QqbotClient {
       body.msg_seq = message.msgSeq;
     }
 
-    logger.info(`QQBot 发送群消息: groupId=${groupId}, type=${message.msgType === 2 ? 'markdown' : 'text'}, contentLength=${message.content?.length || 0}`);
+    logger.info(`QQBot 发送群消息: groupId=${groupId}, type=${
+      message.msgType === 2 ? 'markdown' : message.msgType === 7 ? 'rich_media' : 'text'
+    }, contentLength=${message.content?.length || 0}`);
     
     try {
       const response = await axios.post(
@@ -267,8 +277,9 @@ class QqbotClient {
   async sendC2CMessage(userId, message) {
     let body;
 
-    // QQ机器人Markdown消息需要使用 markdown 对象包裹（官方文档要求）
+    // QQ机器人消息格式处理
     if (message.msgType === 2) {
+      // Markdown消息：需要使用 markdown 对象包裹（官方文档要求）
       body = {
         msg_type: 2,
         markdown: {
@@ -276,6 +287,13 @@ class QqbotClient {
         },
       };
       logger.info(`[DEBUG] 构造的Markdown请求体: ${JSON.stringify(body, null, 2)}`);
+    } else if (message.msgType === 7 && message.media) {
+      // 富媒体消息：使用 media 字段传递 file_info
+      body = {
+        msg_type: 7,
+        media: message.media,
+      };
+      logger.info(`[DEBUG] 构造的富媒体请求体: ${JSON.stringify(body, null, 2)}`);
     } else {
       body = { content: message.content };
       if (message.msgType !== undefined) {
@@ -290,7 +308,9 @@ class QqbotClient {
       body.msg_seq = message.msgSeq;
     }
 
-    logger.info(`QQBot 发送 C2C 消息: userId=${userId}, type=${message.msgType === 2 ? 'markdown' : 'text'}, contentLength=${message.content?.length || 0}`);
+    logger.info(`QQBot 发送 C2C 消息: userId=${userId}, type=${
+      message.msgType === 2 ? 'markdown' : message.msgType === 7 ? 'rich_media' : 'text'
+    }, contentLength=${message.content?.length || 0}`);
 
     try {
       const response = await axios.post(
@@ -305,6 +325,89 @@ class QqbotClient {
       logger.error(`[ERROR]   Status: ${error.response?.status}`);
       logger.error(`[ERROR]   Response Data: ${JSON.stringify(error.response?.data, null, 2)}`);
       logger.error(`[ERROR]   Request Body (前500字符): ${JSON.stringify(body).substring(0, 500)}`);
+      throw error;
+    }
+  }
+
+  /**
+   * 上传富媒体资源
+   * 先调用此接口获取 file_info，再通过发送消息接口的 media 字段使用
+   * API 文档: https://bot.qq.com/wiki/develop/api-v2/server-inter/message/send-receive/rich-media.html
+   *
+   * @param {string} targetType - 目标类型: 'group'(群聊) | 'c2c'(单聊)
+   * @param {string} targetId - 目标 ID（群 openid 或用户 openid）
+   * @param {number} fileType - 媒体类型: 1(图片) | 2(视频) | 3(语音) | 4(文件)
+   * @param {Object} mediaInput - 媒体输入
+   * @param {string} [mediaInput.url] - 媒体资源的公网可访问 URL（推荐）
+   * @param {string} [mediaInput.file_data] - 文件的 Base64 编码内容（无URL时使用）
+   * @returns {Promise<Object>} 返回 { file_uuid, file_info, ttl }
+   */
+  async uploadRichMedia(targetType, targetId, fileType, mediaInput) {
+    // 参数校验
+    if (!targetType || !['group', 'c2c'].includes(targetType)) {
+      throw new Error(`uploadRichMedia: targetType 必须为 'group' 或 'c2c'，当前值: ${targetType}`);
+    }
+    if (!targetId || typeof targetId !== 'string') {
+      throw new Error('uploadRichMedia: targetId 不能为空且必须为字符串');
+    }
+    if (!fileType || ![1, 2, 3, 4].includes(fileType)) {
+      throw new Error(`uploadRichMedia: fileType 必须为 1(图片)|2(视频)|3(语音)|4(文件)，当前值: ${fileType}`);
+    }
+    if (!mediaInput || (!mediaInput.url && !mediaInput.file_data)) {
+      throw new Error('uploadRichMedia: 必须提供 url 或 file_data 其中之一');
+    }
+
+    // 构造上传端点（群聊和单聊使用不同路径）
+    const endpoint = targetType === 'group'
+      ? `/v2/groups/${targetId}/files`
+      : `/v2/users/${targetId}/files`;
+
+    // 构造请求体
+    const body = {
+      file_type: fileType,
+    };
+
+    if (mediaInput.url) {
+      body.url = mediaInput.url;
+    } else if (mediaInput.file_data) {
+      body.file_data = mediaInput.file_data;
+    }
+
+    logger.info(`QQBot 上传富媒体: targetType=${targetType}, fileType=${fileType}, hasUrl=${!!mediaInput.url}, hasFileData=${!!mediaInput.file_data}`);
+
+    try {
+      const config = await this._requestConfig();
+      // 上传大文件可能较慢，timeout 设为 30s
+      config.timeout = 30000;
+
+      const response = await axios.post(
+        `${this.baseUrl}${endpoint}`,
+        body,
+        config
+      );
+
+      const data = response.data;
+
+      // 验证返回数据
+      if (!data || !data.file_info) {
+        logger.error(`[ERROR] QQBot 富媒体上传响应异常: ${JSON.stringify(data)}`);
+        throw new Error(`QQBot 富媒体上传失败: 未返回有效的 file_info，响应=${JSON.stringify(data)}`);
+      }
+
+      logger.info(`QQBot 富媒体上传成功: file_uuid=${data.file_uuid || 'N/A'}, ttl=${data.ttl || 'N/A'}`);
+
+      return {
+        file_uuid: data.file_uuid,
+        file_info: data.file_info,
+        ttl: data.ttl,
+      };
+    } catch (error) {
+      // 打印详细错误信息
+      logger.error(`[ERROR] QQBot 富媒体上传失败详情:`);
+      logger.error(`[ERROR]   Target: ${targetType}/${targetId}`);
+      logger.error(`[ERROR]   FileType: ${fileType}`);
+      logger.error(`[ERROR]   Status: ${error.response?.status}`);
+      logger.error(`[ERROR]   Response Data: ${JSON.stringify(error.response?.data, null, 2)}`);
       throw error;
     }
   }
