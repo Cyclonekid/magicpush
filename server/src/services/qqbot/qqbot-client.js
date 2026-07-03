@@ -196,94 +196,6 @@ class QqbotClient {
   }
 
   /**
-   * 创建私信会话
-   * POST /users/@me/dms
-   *
-   * @param {string} recipientId - 接收用户的 ID（openid）
-   * @param {string} [sourceGuildId] - 来源频道 ID（可选，部分场景需要）
-   * @returns {Promise<{id: string}>} - 返回私信频道 guild_id
-   */
-  async createDMS(recipientId, sourceGuildId) {
-    const body = {
-      recipient_id: recipientId,
-    };
-    if (sourceGuildId) {
-      body.source_guild_id = sourceGuildId;
-    }
-
-    logger.info(`QQBot 创建私信会话: recipientId=${recipientId}`);
-    const response = await axios.post(
-      `${this.baseUrl}/users/@me/dms`,
-      body,
-      await this._requestConfig()
-    );
-
-    const data = response.data;
-    if (!data || !data.id) {
-      throw new Error(`QQBot 创建私信会话失败: ${JSON.stringify(data)}`);
-    }
-
-    logger.info(`QQBot 私信会话创建成功: guildId=${data.id}`);
-    return data;
-  }
-
-  /**
-   * 发送私信消息
-   * POST /dms/{guild_id}/messages
-   *
-   * @param {string} guildId - 私信频道 ID（由 createDMS 返回）
-   * @param {Object} message
-   * @param {string} message.content - 消息文本内容
-   * @param {string} [message.msgId] - 回复的消息 ID（可选）
-   * @returns {Promise<Object>} - 发送结果
-   */
-  async sendDMSMessage(guildId, message) {
-    const body = { content: message.content };
-    if (message.msgId) {
-      body.msg_id = message.msgId;
-    }
-
-    logger.info(`QQBot 发送私信: guildId=${guildId}`);
-    const response = await axios.post(
-      `${this.baseUrl}/dms/${guildId}/messages`,
-      body,
-      await this._requestConfig()
-    );
-
-    return response.data;
-  }
-
-  /**
-   * 发送子频道消息
-   * POST /channels/{channel_id}/messages
-   *
-   * @param {string} channelId - 子频道 ID
-   * @param {Object} message
-   * @param {string} message.content - 消息文本内容
-   * @param {number} [message.msgType] - 消息类型: 0(文本) 2(markdown)
-   * @param {string} [message.msgId] - 回复的消息 ID（可选）
-   * @returns {Promise<Object>} - 发送结果
-   */
-  async sendChannelMessage(channelId, message) {
-    const body = { content: message.content };
-    if (message.msgType !== undefined) {
-      body.msg_type = message.msgType;
-    }
-    if (message.msgId) {
-      body.msg_id = message.msgId;
-    }
-
-    logger.info(`QQBot 发送频道消息: channelId=${channelId}`);
-    const response = await axios.post(
-      `${this.baseUrl}/channels/${channelId}/messages`,
-      body,
-      await this._requestConfig()
-    );
-
-    return response.data;
-  }
-
-  /**
    * 发送群聊消息
    * POST /v2/groups/{group_id}/messages
    *
@@ -296,10 +208,24 @@ class QqbotClient {
    * @returns {Promise<Object>} - 发送结果
    */
   async sendGroupMessage(groupId, message) {
-    const body = { content: message.content };
-    if (message.msgType !== undefined) {
-      body.msg_type = message.msgType;
+    let body;
+
+    // QQ机器人Markdown消息需要使用 markdown 对象包裹（官方文档要求）
+    if (message.msgType === 2) {
+      body = {
+        msg_type: 2,
+        markdown: {
+          content: message.content,
+        },
+      };
+      logger.info(`[DEBUG] 构造的Markdown请求体: ${JSON.stringify(body, null, 2)}`);
+    } else {
+      body = { content: message.content };
+      if (message.msgType !== undefined) {
+        body.msg_type = message.msgType;
+      }
     }
+
     if (message.eventId) {
       body.event_id = message.eventId;
     }
@@ -307,14 +233,23 @@ class QqbotClient {
       body.msg_seq = message.msgSeq;
     }
 
-    logger.info(`QQBot 发送群消息: groupId=${groupId}`);
-    const response = await axios.post(
-      `${this.baseUrl}/v2/groups/${groupId}/messages`,
-      body,
-      await this._requestConfig()
-    );
-
-    return response.data;
+    logger.info(`QQBot 发送群消息: groupId=${groupId}, type=${message.msgType === 2 ? 'markdown' : 'text'}, contentLength=${message.content?.length || 0}`);
+    
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/v2/groups/${groupId}/messages`,
+        body,
+        await this._requestConfig()
+      );
+      return response.data;
+    } catch (error) {
+      // 打印详细的错误响应
+      logger.error(`[ERROR] QQBot API 响应错误详情:`);
+      logger.error(`[ERROR]   Status: ${error.response?.status}`);
+      logger.error(`[ERROR]   Response Data: ${JSON.stringify(error.response?.data, null, 2)}`);
+      logger.error(`[ERROR]   Request Body (前500字符): ${JSON.stringify(body).substring(0, 500)}`);
+      throw error;
+    }
   }
 
   /**
@@ -330,10 +265,24 @@ class QqbotClient {
    * @returns {Promise<Object>} - 发送结果
    */
   async sendC2CMessage(userId, message) {
-    const body = { content: message.content };
-    if (message.msgType !== undefined) {
-      body.msg_type = message.msgType;
+    let body;
+
+    // QQ机器人Markdown消息需要使用 markdown 对象包裹（官方文档要求）
+    if (message.msgType === 2) {
+      body = {
+        msg_type: 2,
+        markdown: {
+          content: message.content,
+        },
+      };
+      logger.info(`[DEBUG] 构造的Markdown请求体: ${JSON.stringify(body, null, 2)}`);
+    } else {
+      body = { content: message.content };
+      if (message.msgType !== undefined) {
+        body.msg_type = message.msgType;
+      }
     }
+
     if (message.eventId) {
       body.event_id = message.eventId;
     }
@@ -341,14 +290,23 @@ class QqbotClient {
       body.msg_seq = message.msgSeq;
     }
 
-    logger.info(`QQBot 发送 C2C 消息: userId=${userId}`);
-    const response = await axios.post(
-      `${this.baseUrl}/v2/users/${userId}/messages`,
-      body,
-      await this._requestConfig()
-    );
+    logger.info(`QQBot 发送 C2C 消息: userId=${userId}, type=${message.msgType === 2 ? 'markdown' : 'text'}, contentLength=${message.content?.length || 0}`);
 
-    return response.data;
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/v2/users/${userId}/messages`,
+        body,
+        await this._requestConfig()
+      );
+      return response.data;
+    } catch (error) {
+      // 打印详细的错误响应
+      logger.error(`[ERROR] QQBot API 响应错误详情:`);
+      logger.error(`[ERROR]   Status: ${error.response?.status}`);
+      logger.error(`[ERROR]   Response Data: ${JSON.stringify(error.response?.data, null, 2)}`);
+      logger.error(`[ERROR]   Request Body (前500字符): ${JSON.stringify(body).substring(0, 500)}`);
+      throw error;
+    }
   }
 
   /**

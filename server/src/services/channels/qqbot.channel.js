@@ -4,13 +4,9 @@ const QqbotClient = require('../qqbot/qqbot-client');
 /**
  * QQ 官方机器人渠道适配器
  *
- * 支持四种推送模式：
- * - 子频道消息 (channel)：直接发送到指定子频道
+ * 支持两种推送模式：
  * - 群聊消息 (group)：发送到指定 QQ 群（需 @机器人）
  * - C2C 单聊消息 (c2c)：发送到指定用户的消息列表
- * - 私信消息 (dms)：通过私信频道发送（旧版方式，需先创建会话）
- *
- * 推荐使用 group/c2c 模式，API 更新更稳定
  *
  * 鉴权方式：Authorization: QQBot ${accessToken}（Access Token 自动管理）
  */
@@ -22,7 +18,7 @@ class QqbotChannel extends BaseChannel {
    * @param {Object} config - 渠道配置
    * @param {string} config.appId - 机器人 AppID
    * @param {string} config.token - 应用密钥 AppSecret（用于自动获取 Access Token）
-   * @param {string} config.msgType - 消息类型: 'dms'(私信) | 'channel'(子频道) | 'group'(群聊) | 'c2c'(单聊)
+   * @param {string} config.msgType - 消息类型: 'group'(群聊) | 'c2c'(单聊)
    * @param {string} config.targetId - 目标 ID（根据 msgType 不同含义不同）
    * @param {string} [config.sourceGuildId] - 来源频道ID（私信模式可选）
    * @param {string} [config.proxyUrl] - 代理地址
@@ -32,14 +28,11 @@ class QqbotChannel extends BaseChannel {
     super(config);
     this.appId = config.appId;
     this.clientSecret = config.token; // 字段名保持为 token 以兼容已有数据，但语义是 clientSecret
-    this.msgType = config.msgType || 'channel';
+    this.msgType = config.msgType || 'group';
     this.targetId = config.targetId;
-    this.sourceGuildId = config.sourceGuildId;
     this.proxyUrl = config.proxyUrl;
     this.channelId = channelId;
 
-    // 私信会话缓存，避免每次发消息都创建会话
-    this._dmsGuildIdCache = null;
     // 群/C2C 消息序号计数器，用于去重
     this._msgSeq = 0;
   }
@@ -49,13 +42,14 @@ class QqbotChannel extends BaseChannel {
     let text = title ? `${title}\n\n${content}` : content;
 
     // QQ 消息类型处理
-    // channel/group/c2c 都支持 markdown，dms 私信不支持 markdown，需要转为纯文本
+    // 群聊和单聊都支持 markdown
     if (type === 'html') {
       text = this._stripHtml(text);
-    } else if (type === 'markdown' && this.msgType === 'dms') {
-      // 私信不支持 markdown，降级为纯文本
-      text = this._stripMarkdown(text);
     }
+
+    // 清理文本：移除前后空白、合并多余空行
+    text = text.trim();
+    text = text.replace(/\n{3,}/g, '\n\n');
 
     // 消息长度限制：QQ限制单条消息最大 5000 字符
     if (text.length > QqbotChannel.MAX_MESSAGE_LENGTH) {
@@ -64,9 +58,20 @@ class QqbotChannel extends BaseChannel {
       console.warn(`[QQBot] 消息已截断: ${originalLength} → ${text.length} 字符`);
     }
 
+    // 空内容检查
+    if (!text || text.length === 0) {
+      throw new Error('消息内容不能为空');
+    }
+
+    console.log(`[QQBot] 准备发送消息: type=${type}, msgType=${this.msgType}, contentLength=${text.length}`);
+    if (type === 'markdown') {
+      // 打印前200个字符用于调试
+      console.log(`[QQBot] Markdown内容预览: ${text.substring(0, 200)}...`);
+    }
+
     // 计算当前场景支持的 msg_type
-    // group/c2c/channel 都支持 markdown(2)，dms 只支持纯文本(0)
-    const qqMsgType = (this.msgType === 'group' || this.msgType === 'c2c' || this.msgType === 'channel')
+    // 群聊和单聊都支持文本(0)和 markdown(2)
+    const qqMsgType = (this.msgType === 'group' || this.msgType === 'c2c')
       ? (type === 'markdown' ? 2 : 0)
       : undefined;
 
@@ -90,35 +95,12 @@ class QqbotChannel extends BaseChannel {
             msgType: qqMsgType,
             msgSeq: ++this._msgSeq,
           });
-        case 'dms':
-          return await this._sendDMS(client, text);
-        case 'channel':
         default:
-          return await client.sendChannelMessage(this.targetId, {
-            content: text,
-            msgType: qqMsgType, // ✅ 修复：子频道现在也支持传递 msg_type
-          });
+          throw new Error(`不支持的消息类型: ${this.msgType}，仅支持 group(群聊) 或 c2c(单聊)`);
       }
     } catch (error) {
       throw this._translateError(error);
     }
-  }
-
-  /**
-   * 发送私信消息
-   * 先获取或创建私信会话，再发送消息
-   */
-  async _sendDMS(client, text) {
-    let guildId = this._dmsGuildIdCache;
-
-    if (!guildId) {
-      const dms = await client.createDMS(this.targetId, this.sourceGuildId);
-      guildId = dms.id;
-      // 缓存私信频道 ID，有效期内可复用
-      this._dmsGuildIdCache = guildId;
-    }
-
-    return client.sendDMSMessage(guildId, { content: text });
   }
 
   /**
@@ -181,6 +163,8 @@ class QqbotChannel extends BaseChannel {
       '304005': { message: '频道成员不存在' },
 
       // 消息相关
+      '304061': { message: '无效的消息内容，请检查Markdown格式是否符合QQ规范（可能包含不支持的语法或特殊字符）' },
+      '40034011': { message: '无效的Markdown格式，请确保使用正确的markdown对象结构' },
       '43001': { message: '消息内容为空' },
       '43002': { message: '消息内容过长（超过5000字符限制）' },
       '43003': { message: '消息格式错误' },
@@ -224,8 +208,8 @@ class QqbotChannel extends BaseChannel {
     if (!config.token || config.token.trim() === '') {
       return { valid: false, message: 'AppSecret 不能为空' };
     }
-    if (!config.msgType || !['dms', 'channel', 'group', 'c2c'].includes(config.msgType)) {
-      return { valid: false, message: '消息类型必须是"私信"、"子频道"、"群聊"或"单聊"' };
+    if (!config.msgType || !['group', 'c2c'].includes(config.msgType)) {
+      return { valid: false, message: '消息类型必须是"群聊"或"单聊"' };
     }
     // targetId 不再强制要求，通过 WebSocket 绑定自动获取
     return { valid: true, message: '' };
@@ -249,7 +233,7 @@ class QqbotChannel extends BaseChannel {
   }
 
   static getDescription() {
-    return '通过 QQ 官方机器人推送消息，支持群聊、单聊、子频道和私信';
+    return '通过 QQ 官方机器人推送消息，支持群聊和单聊';
   }
 
   static getConfigFields() {
@@ -278,18 +262,8 @@ class QqbotChannel extends BaseChannel {
         options: [
           { value: 'group', label: '群聊消息（推荐）' },
           { value: 'c2c', label: '单聊消息/消息列表' },
-          { value: 'channel', label: '子频道消息（QQ频道）' },
-          { value: 'dms', label: '私信消息（旧版方式）' },
         ],
-        description: '群聊和单聊推荐使用；子频道用于 QQ 频道场景；私信为旧版兼容方案',
-      },
-      {
-        name: 'sourceGuildId',
-        label: '来源频道 ID',
-        type: 'text',
-        required: false,
-        placeholder: '可选，仅私信模式需要',
-        description: '仅私信模式(dms)需要，用于创建私信会话的来源频道 ID',
+        description: '群聊和单聊均为官方标准 API，可根据使用场景选择',
       },
       {
         name: 'proxyUrl',
