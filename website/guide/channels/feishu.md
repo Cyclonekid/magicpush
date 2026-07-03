@@ -126,6 +126,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 |---------|------|
 | `text` | 纯文本消息（默认） |
 | `markdown` | 交互式卡片消息（飞书将 Markdown 渲染为卡片） |
+| `html` | HTML 格式消息（MagicPush 自动剥离标签转为纯文本发送） |
 
 ### 3.2 卡片消息示例
 

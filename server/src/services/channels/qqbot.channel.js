@@ -55,7 +55,7 @@ class QqbotChannel extends BaseChannel {
     // QQ 消息类型处理
     // 群聊和单聊都支持 markdown
     if (type === 'html') {
-      text = this._stripHtml(text);
+      text = BaseChannel.stripHtmlTags(text);
     }
 
     // 清理文本：移除前后空白、合并多余空行
@@ -303,23 +303,7 @@ class QqbotChannel extends BaseChannel {
       .trim();
   }
 
-  /**
-   * 剥离 HTML 标签，转为纯文本
-   */
-  _stripHtml(html) {
-    return html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<p>/gi, '\n')
-      .replace(/<\/p>/gi, '')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
+
 
   /**
    * 翻译 QQ API 错误码为用户友好的错误信息

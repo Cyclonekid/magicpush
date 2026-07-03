@@ -115,7 +115,7 @@ class WecomappChannel extends BaseChannel {
       body.msgtype = 'text';
       let text = content;
       if (type === 'html') {
-        text = this._stripHtml(content);
+        text = BaseChannel.stripHtmlTags(content);
       }
       const fullText = title ? `${title}\n\n${text}` : text;
       body.text = { content: fullText };
@@ -549,20 +549,7 @@ class WecomappChannel extends BaseChannel {
     return { success: true, messageId: data.msgid };
   }
 
-  _stripHtml(html) {
-    return html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<p>/gi, '\n')
-      .replace(/<\/p>/gi, '')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
+
 
   validate(config) {
     if (!config.corpid || config.corpid.trim() === '') {

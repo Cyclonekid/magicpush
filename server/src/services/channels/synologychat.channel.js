@@ -38,7 +38,7 @@ class SynologyChatChannel extends BaseChannel {
     if (type === 'markdown') {
       text = title ? `**${title}**\n\n${content}` : content;
     } else if (type === 'html') {
-      text = title ? `${title}\n${this._stripHtml(content)}` : this._stripHtml(content);
+      text = title ? `${title}\n${BaseChannel.stripHtmlTags(content)}` : BaseChannel.stripHtmlTags(content);
     } else {
       text = title ? `${title}\n\n${content}` : content;
     }
@@ -70,20 +70,7 @@ class SynologyChatChannel extends BaseChannel {
     return data;
   }
 
-  _stripHtml(html) {
-    return html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<p>/gi, '\n')
-      .replace(/<\/p>/gi, '')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
+
 
   validate(config) {
     if (!config.serverUrl || config.serverUrl.trim() === '') {

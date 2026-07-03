@@ -42,7 +42,7 @@ class YuabaobotChannel extends BaseChannel {
 
     // HTML 标签清理
     if (type === 'html') {
-      text = this._stripHtml(text);
+      text = BaseChannel.stripHtmlTags(text);
     }
 
     // Markdown 清理（元宝支持部分 markdown，但保险起见做基本处理）
@@ -209,21 +209,7 @@ class YuabaobotChannel extends BaseChannel {
     ];
   }
 
-  _stripHtml(text) {
-    return text
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n')
-      .replace(/<\/h[1-6]>/gi, '\n')
-      .replace(/<\/li>/gi, '\n')
-      .replace(/<\/tr>/gi, '\n')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/gi, ' ')
-      .replace(/&lt;/gi, '<')
-      .replace(/&gt;/gi, '>')
-      .replace(/&amp;/gi, '&')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
+
 }
 
 module.exports = YuabaobotChannel;

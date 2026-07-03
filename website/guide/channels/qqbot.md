@@ -149,6 +149,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 |---------|------|---------|
 | `text` | 纯文本消息（默认） | 所有场景 |
 | `markdown` | Markdown 格式消息 | **群聊/单聊均支持** ✅ |
+| `html` | HTML 格式消息（MagicPush 自动剥离标签转为纯文本） | 所有场景 |
 
 > ✅ **重要**：群聊和单聊模式都完整支持 Markdown 格式！MagicPush 会自动将 Markdown 内容转换为符合 QQ 官方规范的格式（使用 `markdown` 对象包裹 + `msg_type: 2`）。
 

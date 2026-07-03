@@ -15,48 +15,6 @@ class FeishuChannel extends BaseChannel {
     this.secret = config.secret || '';
   }
 
-  /**
-   * 从HTML中剥离标签，保留纯文本内容
-   */
-  stripHtml(html) {
-    if (!html || typeof html !== 'string') return html;
-
-    // 处理换行元素：块级元素替换为换行符
-    let text = html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n\n')
-      .replace(/<\/div>/gi, '\n')
-      .replace(/<\/li>/gi, '\n')
-      .replace(/<\/h[1-6]>/gi, '\n\n')
-      .replace(/<\/tr>/gi, '\n');
-
-    // 移除所有剩余的HTML标签
-    text = text.replace(/<[^>]+>/g, '');
-
-    // 解码常见HTML实体
-    const entities = {
-      '&amp;': '&',
-      '&lt;': '<',
-      '&gt;': '>',
-      '&quot;': '"',
-      '&#39;': "'",
-      '&nbsp;': ' ',
-      '&#160;': ' ',
-      '&ensp;': ' ',
-      '&emsp;': '  ',
-    };
-    for (const [entity, char] of Object.entries(entities)) {
-      text = text.split(entity).join(char);
-    }
-
-    // 清理多余空白和空行
-    text = text.replace(/[ \t]+/g, ' ')           // 多个空格合并为一个
-                .replace(/\n[ \t]+/g, '\n')       // 行首多余空格
-                .replace(/\n{3,}/g, '\n\n')       // 多于2个连续换行合并为2个
-                .trim();
-
-    return text;
-  }
 
   /**
    * 生成飞书签名
@@ -96,7 +54,7 @@ class FeishuChannel extends BaseChannel {
 
     // HTML类型：剥离HTML标签，转为纯文本发送
     if (type === 'html') {
-      content = this.stripHtml(content);
+      content = BaseChannel.stripHtmlTags(content);
       type = 'text';
     }
 

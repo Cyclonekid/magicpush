@@ -25,7 +25,7 @@ class WecomChannel extends BaseChannel {
       return await this.sendChannelSpecific(channelType, myExtraData);
     }
 
-    // 通用类型处理（保持原有逻辑不变）
+    // 通用类型处理
     let payload;
 
     if (type === 'markdown') {
@@ -35,8 +35,18 @@ class WecomChannel extends BaseChannel {
           content: title ? `# ${title}\n${content}` : content,
         },
       };
+    } else if (type === 'html') {
+      // 企业微信群机器人不支持 HTML，降级为纯文本
+      const plainText = BaseChannel.stripHtmlTags(content);
+      const text = title ? `${title}\n\n${plainText}` : plainText;
+      payload = {
+        msgtype: 'text',
+        text: {
+          content: text,
+        },
+      };
     } else {
-      // text类型
+      // text 类型
       const text = title ? `${title}\n\n${content}` : content;
       payload = {
         msgtype: 'text',
@@ -393,7 +403,7 @@ class WecomChannel extends BaseChannel {
   }
 
   static getDescription() {
-    return '企业微信群机器人，支持文本、Markdown（增强版）、图片、图文、文件、语音及模板卡片等8种消息类型';
+    return '支持8种消息类型';
   }
 
   static getSupportedTypes() {
@@ -595,12 +605,12 @@ class WecomChannel extends BaseChannel {
       },
       {
         name: '_docLinks',
-        label: '官方文档',
+        label: '参考链接',
         type: 'links',
         required: false,
         links: [
           {
-            label: '查看企业微信群机器人创建指南',
+            label: '官方文档',
             url: 'https://developer.work.weixin.qq.com/document/path/99110',
           },
         ],

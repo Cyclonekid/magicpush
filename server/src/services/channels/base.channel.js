@@ -84,6 +84,34 @@ class BaseChannel {
   }
 
   /**
+   * 剥离 HTML 标签，将 HTML 内容转换为纯文本
+   * 用于不支持 HTML 渠道的降级处理
+   * @param {string} html - HTML 字符串
+   * @returns {string} - 纯文本内容
+   */
+  static stripHtmlTags(html) {
+    if (typeof html !== 'string') return String(html || '');
+    return html
+      // 将 <br> / <br/> 换行符转为换行
+      .replace(/<br\s*\/?>/gi, '\n')
+      // 将块级元素转为换行
+      .replace(/<\/(div|p|li|h[1-6]|tr|blockquote|pre|hr)[^>]*>/gi, '\n')
+      // 移除所有剩余的 HTML 标签
+      .replace(/<[^>]+>/g, '')
+      // 解码常见 HTML 实体
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      // 合并连续空白和多余换行
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  /**
    * 根据代理URL创建代理Agent
    * @param {string} proxyUrl - 代理URL，如 http://127.0.0.1:7890 或 socks5://user:pass@host:port
    * @returns {Object|null} - HttpsProxyAgent 或 SocksProxyAgent 实例，无效时返回null

@@ -129,6 +129,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 |---------|------|
 | `text` | **文本消息**（默认） |
 | `markdown` | **Markdown 格式消息** |
+| `html` | **HTML 格式消息**（MagicPush 自动剥离标签转为纯文本发送） |
 
 ### 3.2 Markdown 消息示例
 
