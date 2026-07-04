@@ -261,6 +261,33 @@ class WecomappChannel extends BaseChannel {
   }
 
   /**
+   * 解析 mpnews 封面图数据源
+   * 支持三种输入（优先级从高到低）：
+   *   1. thumb_media_id — 已有素材 ID
+   *   2. thumb_url — 公网可访问的图片 URL
+   *   3. thumb_base64 — Base64 编码字符串
+   * 返回 { mediaId, uploadOptions }
+   */
+  _resolveThumbInput(article) {
+    if (article.thumb_media_id) {
+      return { mediaId: article.thumb_media_id, uploadOptions: null };
+    }
+
+    const options = {
+      base64Data: article.thumb_base64,
+      url: article.thumb_url,
+      filename: article.thumb_filename || 'thumb.jpg',
+    };
+
+    // 至少提供一种数据源
+    if (!options.base64Data && !options.url) {
+      return { mediaId: null, uploadOptions: null };
+    }
+
+    return { mediaId: null, uploadOptions: options };
+  }
+
+  /**
    * 发送图文消息
    * 文档: https://developer.work.weixin.qq.com/document/path/90236#%E5%9B%BE%E6%96%87%E6%B6%88%E6%81%AF
    */
@@ -457,6 +484,7 @@ class WecomappChannel extends BaseChannel {
   /**
    * 发送图文消息（mpnews）
    * 与 news 不同，mpnews 支持更丰富的排版，文章内容基于素材库中的图文消息
+   * 封面图支持三种输入方式: thumb_media_id(已有素材) / thumb_url(自动下载上传) / thumb_base64(自动解码上传)
    * 文档: https://developer.work.weixin.qq.com/document/path/90236#%E5%9B%BE%E6%96%87%E6%B6%88%E6%81%AF-(mpnews)
    */
   async sendMpnews(data) {
@@ -464,23 +492,46 @@ class WecomappChannel extends BaseChannel {
       throw new Error('mpnews 图文消息必须包含 articles 数组');
     }
 
+    // 处理每篇文章的封面图上传（支持三种数据源）
+    const processedArticles = await Promise.all(
+      data.articles.map(async (article) => {
+        const processed = { ...article };
+
+        // 优先级：thumb_media_id > thumb_url / thumb_base64
+        if (!processed.thumb_media_id) {
+          const { mediaId, uploadOptions } = this._resolveThumbInput(article);
+          if (!mediaId && !uploadOptions) {
+            throw new Error(`文章 "${article.title || '未命名'}" 必须提供封面图: thumb_media_id、thumb_url 或 thumb_base64`);
+          }
+          if (!mediaId) {
+            logger.info(`mpnews 正在上传封面图: ${uploadOptions.url ? 'downloading url' : 'uploading base64'}, article=${article.title || '未命名'}`);
+            processed.thumb_media_id = await this._uploadMedia('image', uploadOptions);
+          } else {
+            processed.thumb_media_id = mediaId;
+          }
+        }
+
+        return {
+          title: processed.title || '',
+          thumb_media_id: processed.thumb_media_id,
+          author: processed.author || '',
+          content: processed.content || '',
+          content_source_url: processed.content_source_url || '',
+          digest: processed.digest || '',
+        };
+      })
+    );
+
     const body = {
       touser: this.touser,
       agentid: this.agentid,
       msgtype: 'mpnews',
       mpnews: {
-        articles: data.articles.map(article => ({
-          title: article.title || '',
-          thumb_media_id: article.thumb_media_id || '',
-          author: article.author || '',
-          content: article.content || '',
-          content_source_url: article.content_source_url || '',
-          digest: article.digest || '',
-        })),
+        articles: processedArticles,
       },
     };
 
-    logger.info(`企业微信应用发送 mpnews 图文消息: touser=${this.touser}, articles=${data.articles.length}`);
+    logger.info(`企业微信应用发送 mpnews 图文消息: touser=${this.touser}, articles=${processedArticles.length}`);
     const result = await this._sendBody(body);
     return { ...result, type: 'mpnews' };
   }
@@ -800,7 +851,7 @@ class WecomappChannel extends BaseChannel {
         value: 'mpnews',
         label: 'mpnews 图文消息',
         icon: '📑',
-        description: '图文消息（mpnews），支持富文本内容，需要先上传封面图获取 thumb_media_id',
+        description: '图文消息（mpnews），支持富文本内容，封面图支持 media_id、URL 或 Base64 自动上传',
         fields: [
           {
             name: 'articles',
@@ -809,7 +860,9 @@ class WecomappChannel extends BaseChannel {
             required: true,
             itemFields: [
               { name: 'title', label: '标题', type: 'text', required: true, maxLength: 512 },
-              { name: 'thumb_media_id', label: '封面素材ID', type: 'text', required: true, description: '通过上传接口获得的缩略图/封面 media_id' },
+              { name: 'thumb_media_id', label: '已有封面素材ID', type: 'text', required: false, description: '已上传过的封面图 media_id，填此字段可跳过重新上传' },
+              { name: 'thumb_url', label: '封面图URL', type: 'url', required: false, description: '公网可访问的封面图 URL，系统自动下载并上传（与 thumb_base64 二选一）' },
+              { name: 'thumb_base64', label: '封面图Base64编码', type: 'textarea', required: false, description: '封面图的 Base64 编码字符串（不含前缀），与 thumb_url 二选一' },
               { name: 'author', label: '作者', type: 'text', required: false },
               { name: 'content', label: '正文HTML', type: 'textarea', required: true, description: '支持 HTML 标签的文章正文' },
               { name: 'content_source_url', label: '原文链接', type: 'url', required: false },
@@ -824,7 +877,9 @@ class WecomappChannel extends BaseChannel {
               articles: [
                 {
                   title: '系统升级公告',
-                  thumb_media_id: 'MEDIA_ID_xxxx',
+                  thumb_url: 'https://example.com/cover.jpg',
+                  // 或者用 thumb_base64: '/9j/4AAQ...'
+                  // 或者用 thumb_media_id: 'MEDIA_ID_xxxx'
                   author: '运维团队',
                   content: '<h3>系统将于今晚升级</h3><p>预计维护时间 22:00-23:00</p>',
                   content_source_url: 'https://example.com/notice',

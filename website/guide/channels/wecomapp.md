@@ -216,15 +216,15 @@ extraData 采用**命名空间隔离**设计，所有特有类型的字段必须
 | `file` | 文件消息（支持 media_id / Base64 / URL 上传） | 发送报表、PDF 文档 |
 | `voice` | 语音消息（支持 media_id / Base64 / URL 上传，AMR 格式） | 语音通知、语音播报 |
 | `video` | 视频消息（支持 media_id / Base64 / URL 上传，MP4 格式） | 视频演示、操作教程 |
-| `mpnews` | 图文消息 mpnews（支持富文本 HTML 正文） | 富文本资讯推送、图文详情页 |
+| `mpnews` | 图文消息 mpnews（支持富文本 HTML 正文，封面图支持 media_id / URL / Base64 上传） | 富文本资讯推送、图文详情页 |
 | `miniprogram_notice` | 小程序通知消息（可跳转小程序页面） | 订单状态更新、服务通知 |
 
 ::: tip 使用方式
-特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可，无需额外指定类型标识。对于图片、文件、语音、视频类型的消息，**支持三种数据源**（按优先级排序）：
+特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可，无需额外指定类型标识。对于图片、文件、语音、视频以及 **mpnews 封面图**类型的消息，**支持三种数据源**（按优先级排序）：
 
-1. **`media_id`** — 已上传过的素材 ID，直接使用，**跳过重新上传**
-2. **`base64`** — Base64 编码字符串，后端自动解码后上传至企业微信
-3. **`url`** — 公网可访问的资源 URL，**后端自动下载后上传**
+1. **`media_id`** / **`thumb_media_id`** — 已上传过的素材 ID，直接使用，**跳过重新上传**
+2. **`base64`** / **`thumb_base64`** — Base64 编码字符串，后端自动解码后上传至企业微信
+3. **`url`** / **`thumb_url`** — 公网可访问的资源 URL，**后端自动下载后上传**
 
 三者至少提供一种即可。推荐优先使用 `media_id` 或 `url`，避免在请求体中传输大量 Base64 数据。
 :::
@@ -636,7 +636,64 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 #### mpnews 图文消息
 
-与普通 news 不同，mpnews 支持富文本正文内容（HTML），需要先通过素材上传接口获取封面图的 `thumb_media_id`：
+与普通 news 不同，mpnews 支持富文本正文内容（HTML），**封面图支持三种数据源自动上传**（与图片消息类似）：
+
+**方式一：使用 thumb_url（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "系统升级公告",
+    "content": "系统将于今晚22:00-23:00进行升级维护",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "articles": [
+          {
+            "title": "系统升级公告",
+            "thumb_url": "https://example.com/cover.jpg",
+            "author": "运维团队",
+            "content": "<h3>系统将于今晚升级</h3><p>预计维护时间：22:00-23:00</p><p>影响范围：所有用户</p>",
+            "content_source_url": "https://example.com/notice",
+            "digest": "系统升级通知摘要"
+          }
+        ]
+      }
+    }
+  }'
+```
+
+**方式二：使用 thumb_base64**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "系统升级公告",
+    "content": "系统将于今晚22:00-23:00进行升级维护",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "articles": [
+          {
+            "title": "系统升级公告",
+            "thumb_base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+            "thumb_filename": "cover.jpg",
+            "author": "运维团队",
+            "content": "<h3>系统将于今晚升级</h3><p>预计维护时间：22:00-23:00</p><p>影响范围：所有用户</p>",
+            "content_source_url": "https://example.com/notice",
+            "digest": "系统升级通知摘要"
+          }
+        ]
+      }
+    }
+  }'
+```
+
+**方式三：使用已有 thumb_media_id（跳过上传，最快）**
 
 ```bash
 curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
@@ -663,20 +720,25 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
   }'
 ```
 
-**extraData 字段说明**：
+**articles[].extraData 字段说明（封面图三选一）**：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | articles | Array | 是 | 文章数组 |
 | articles[].title | String | 是 | 文章标题（最长 512 字符） |
-| articles[].thumb_media_id | String | 是 | 封面图素材 ID（需先通过上传接口获取） |
+| articles[].thumb_media_id | String | 条件必填* | 已上传过的封面素材 ID，填此字段可跳过重新上传 |
+| articles[].thumb_url | String | 条件必填* | 公网可访问的封面图 URL，后端自动下载后上传 |
+| articles[].thumb_base64 | String | 条件必填* | 封面图的 Base64 编码字符串（不含 data:image 前缀） |
+| articles[].thumb_filename | String | 否 | 封面图文件名（如 `cover.jpg`，默认 `thumb.jpg`） |
 | articles[].author | String | 否 | 作者名称 |
 | articles[].content | String | 是 | 正文 HTML 内容（支持完整 HTML 标签） |
 | articles[].content_source_url | String | 否 | 阅读原文 URL |
 | articles[].digest | String | 否 | 摘要文本（最长 120 字符） |
 
+\* `thumb_media_id`、`thumb_url`、`thumb_base64` 三者至少提供一种。优先推荐 `thumb_media_id` 或 `thumb_url`。
+
 :::: tip 与 news 的区别
-`news` 类型适合简单的图文链接列表，而 `mpnews` 支持完整的富文本 HTML 正文内容，展示效果更丰富。但 mpnews 需要预先上传封面图获取 `thumb_media_id`，使用门槛稍高。
+`news` 类型适合简单的图文链接列表，而 `mpnews` 支持完整的富文本 HTML 正文内容，展示效果更丰富。现在 mpnews 的封面图已支持 **URL / Base64 自动上传**，无需预先手动获取 `thumb_media_id`，使用门槛大幅降低。
 ::::
 
 #### miniprogram_notice 小程序通知消息
