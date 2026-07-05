@@ -761,7 +761,7 @@ const fillChannelSpecificExample = (type) => {
         qqbot: {
           channelType: 'media',
           file_type: 1,
-          url: 'https://example.com/image.png',
+          url: 'https://picsum.photos/600/300',
         }
       }, null, 2),
     },

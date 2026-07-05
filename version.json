@@ -1,1 +1,10 @@
-{"name": "magicpush", "version": "1.13.0", "displayName": "MagicPush", "description": "支持多渠道消息推送的统一管理平台", "repository": {"type": "git", "url": "https://github.com/magiccode1412/magicpush"}}
+{
+    "name": "magicpush",
+    "version": "1.13.0",
+    "displayName": "MagicPush",
+    "description": "支持多渠道消息推送的统一管理平台",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/magiccode1412/magicpush"
+    }
+}
