@@ -13,8 +13,12 @@ maintainer_url        = https://github.com/magiccode1412
 desktop_uidir         = ui
 desktop_applaunchname = magicpush.Application
 service_port          = "${wizard_app_port}"
-changelog             = """1. 企业微信应用渠道添加代理支持（支持 HTTP/HTTPS/SOCKS5 代理，解决需要固定 IP 的场景）
-2. 新增 ShowDoc 推送渠道
-3. 新增自动清理推送记录功能（可配置保留天数），默认关闭
-4. 修改设置页面布局为列表布局
+changelog             = """1. 新增推送渠道-QQ机器人
+2. 新增支持特有消息类型，已支持：飞书/TG/QQ机器人/企微机器人/企微应用
+3. 修复请求错误返回结果中data字段为null的问题
+4. 小爱音箱支持扫码登录
+5. 修复添加推送渠道弹窗内容溢出问题
+6. 拆分渠道API为独立模块
+7. 移除更新日志页面，在关于页面通过超链接可以查看
+8. 移除冗余渠道支持说明
 """
