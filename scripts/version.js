@@ -24,6 +24,7 @@ const webPackage = path.join(rootDir, 'web/package.json');
 const webVersionUtils = path.join(rootDir, 'web/src/utils/version.js');
 const changelogFile = path.join(rootDir, 'website/guide/changelog.md');
 const gitChangelogFile = path.join(rootDir, 'CHANGELOG.md');
+const fnappManifest = path.join(rootDir, 'fnapp/manifest');
 
 /**
  * 读取 version.json
@@ -198,7 +199,15 @@ function syncVersion(newVersion, changes = []) {
     console.log('✅ 更新 web/src/utils/version.js');
   }
 
-  // 5. 追加更新日志到文档站
+  // 5. 更新 fnapp/manifest
+  if (fs.existsSync(fnappManifest)) {
+    let content = fs.readFileSync(fnappManifest, 'utf-8');
+    content = content.replace(/(^version\s*=\s*)[\d.]+/, `$1${newVersion}`);
+    fs.writeFileSync(fnappManifest, content, 'utf-8');
+    console.log(`✅ 更新 ${path.relative(rootDir, fnappManifest)}`);
+  }
+
+  // 6. 追加更新日志到文档站
   if (changes.length > 0) {
     appendChangelog(newVersion, changes);
   }
