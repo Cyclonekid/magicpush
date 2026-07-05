@@ -509,17 +509,6 @@ class QqbotChannel extends BaseChannel {
         placeholder: '如 http://127.0.0.1:7890 或 socks5://127.0.0.1:1080',
         description: '可选，用于访问 QQ API 的代理地址（国内服务器通常不需要）',
       },
-      {
-        name: 'defaultChannelSpecificType',
-        label: '默认特有消息类型',
-        type: 'select',
-        required: false,
-        options: [
-          { value: '', label: '不设置（走通用消息类型）' },
-          { value: 'media', label: '富媒体消息 (media) - 图片/视频/语音/文件' },
-        ],
-        description: '选择后，推送时将始终使用此特有消息类型，需配合 extraData 使用。不选则根据请求的 type 字段判断（text/markdown）',
-      },
     ];
   }
 }

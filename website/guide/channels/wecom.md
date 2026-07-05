@@ -89,7 +89,6 @@ https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxxx-xxxx-xxxx-xxxx-xxx
 | 字段 | 说明 | 示例 |
 |------|------|------|
 | **机器人 Key** | 机器人 Webhook Key 或完整 Webhook 地址 | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` 或完整 URL |
-| **默认特有消息类型**（可选） | 默认使用设置值，不设置则走通用消息类型 | `news` |
 
 > 💡 **提示**：MagicPush 支持两种填写方式：
 > - 只填写 Key 字符串（推荐，更简洁）
@@ -161,7 +160,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 除了通用的 `text` 和 `markdown` 类型外，企业微信群机器人还支持以下**特有消息类型**，通过 `extraData` 参数发送：
 
 ::: tip 命名空间隔离
-extraData 采用**命名空间隔离**设计，所有特有类型的字段必须放在以渠道标识符为 key 的对象内：
+extraData 采用**命名空间隔离 + 类型自包含**设计，`channelType` 必须放在对应渠道的命名空间对象内：
 
 ```json
 {
@@ -187,7 +186,7 @@ extraData 采用**命名空间隔离**设计，所有特有类型的字段必须
 | `template_card` | **模板卡片**（交互式） | 告警卡片、任务通知、审批提醒 |
 
 ::: tip 使用方式
-特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可，无需额外指定类型标识。
+特有消息类型需要在 API 请求中通过 `extraData[namespace].channelType` 指定类型，同时在同一命名空间内携带该类型的结构化数据。
 
 对于图片、文件、语音类型的消息，**支持多种数据输入方式**：
 
@@ -214,6 +213,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "wecom": {
+        "channelType": "news",
         "articles": [
           {
             "title": "中秋节礼品到",
@@ -253,6 +253,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "wecom": {
+        "channelType": "image",
         "url": "https://example.com/captcha.png"
       }
     }
@@ -501,9 +502,6 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 > - 客户端版本需 ≥ **4.1.36** 才能正常渲染，否则显示为纯文本
 > - 相比普通 Markdown，额外支持：**表格、斜体、有序/无序列表、独立代码块、图片插入**
 
-::: tip 默认特有消息类型配置
-在渠道设置中可以配置 **默认特有消息类型**，选择后该渠道的所有请求将默认使用指定的特有类型（需配合 extraData）。不设置则走通用消息分支。
-:::
 
 ---
 

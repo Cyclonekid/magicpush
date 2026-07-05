@@ -587,22 +587,6 @@ class WecomChannel extends BaseChannel {
         description: '在企业微信群中添加机器人后获取的Key，支持直接粘贴完整Webhook地址',
       },
       {
-        name: 'defaultChannelSpecificType',
-        label: '默认特有消息类型',
-        type: 'select',
-        required: false,
-        options: [
-          { value: '', label: '不设置（走通用消息类型）' },
-          { value: 'news', label: '图文消息 (news)' },
-          { value: 'image', label: '图片消息 (image)' },
-          { value: 'file', label: '文件消息 (file)' },
-          { value: 'voice', label: '语音消息 (voice)' },
-          { value: 'markdown_v2', label: 'Markdown增强版 (markdown_v2)' },
-          { value: 'template_card', label: '模板卡片 (template_card)' },
-        ],
-        description: '选择后，推送时将始终使用此特有消息类型，需配合 extraData 使用。不选则根据请求的 type 字段判断（text/markdown）',
-      },
-      {
         name: '_docLinks',
         label: '参考链接',
         type: 'links',

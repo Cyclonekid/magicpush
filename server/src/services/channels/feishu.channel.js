@@ -436,20 +436,6 @@ class FeishuChannel extends BaseChannel {
         description: '启用签名校验时的密钥',
       },
       {
-        name: 'defaultChannelSpecificType',
-        label: '默认特有消息类型',
-        type: 'select',
-        required: false,
-        options: [
-          { value: '', label: '不设置（走通用消息类型）' },
-          { value: 'post', label: '富文本消息 (post)' },
-          { value: 'interactive_card', label: '交互卡片 (interactive_card)' },
-          { value: 'image', label: '图片消息 (image)' },
-          { value: 'share_chat', label: '群名片分享 (share_chat)' },
-        ],
-        description: '选择后，推送时将始终使用此特有消息类型，需配合 extraData 使用。不选则根据请求的 type 字段判断（text/markdown/html）',
-      },
-      {
         name: '_docLinks',
         label: '官方文档',
         type: 'links',

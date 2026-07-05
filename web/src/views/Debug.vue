@@ -117,8 +117,8 @@
               <el-input
                 v-model="form.extraData"
                 type="textarea"
-                :rows="4"
-                placeholder='请输入 JSON 格式的额外数据（命名空间隔离格式），如：{"wecom":{"url":"https://example.com/img.png"},"telegram":{"caption":"图片说明"}}'
+                :rows="6"
+                placeholder='请输入 JSON 格式的额外数据（命名空间格式），需包含 channelType 指定特有类型：&#10;{&#10;  "wecomapp": {&#10;    "channelType": "template_card",&#10;    "card_type": "text_notice",&#10;    "main_title": { "title": "标题" }&#10;  }&#10;}'
                 maxlength="10000"
                 show-word-limit
               />
@@ -184,6 +184,22 @@
             <el-button @click="fillExample('text')">文本示例</el-button>
             <el-button @click="fillExample('markdown')">Markdown 示例</el-button>
             <el-button @click="fillExample('html')">HTML 示例</el-button>
+            <el-divider direction="vertical" />
+            <el-dropdown @command="fillChannelSpecificExample" trigger="click">
+              <el-button type="success">
+                特有类型示例
+                <el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="wecomapp-template-card">企业微信应用 - 模板卡片</el-dropdown-item>
+                  <el-dropdown-item command="wecom-news">企业微信群 - 图文消息</el-dropdown-item>
+                  <el-dropdown-item command="telegram-photo">Telegram - 图片</el-dropdown-item>
+                  <el-dropdown-item command="qqbot-media">QQ机器人 - 富媒体</el-dropdown-item>
+                  <el-dropdown-item command="feishu-post">飞书 - 富文本</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
             <el-button @click="clearForm">清空</el-button>
           </div>
         </div>
@@ -348,6 +364,7 @@ import {
   Zap,
   Copy,
   Globe,
+  ArrowDown,
 } from 'lucide-vue-next'
 
 const endpoints = ref([])
@@ -683,7 +700,96 @@ const clearForm = () => {
   form.title = ''
   form.content = ''
   form.type = 'text'
+  form.extraData = ''
   response.value = null
+}
+
+const fillChannelSpecificExample = (type) => {
+  const examples = {
+    'wecomapp-template-card': {
+      title: '企业微信应用 - 模板卡片测试',
+      content: '',
+      type: 'text',
+      extraData: JSON.stringify({
+        wecomapp: {
+          channelType: 'template_card',
+          card_type: 'text_notice',
+          source: { desc_text: '来自调试工具' },
+          main_title: { title: '系统升级通知' },
+          sub_title_text: '系统将于今晚22:00-23:00进行维护',
+          horizontal_content_list: [
+            { keyname: '时间', value: new Date().toLocaleString() },
+            { keyname: '影响范围', value: '所有用户' },
+          ],
+          card_action: { url: 'https://example.com/notice', type: 1 },
+        }
+      }, null, 2),
+    },
+    'wecom-news': {
+      title: '',
+      content: '',
+      type: 'text',
+      extraData: JSON.stringify({
+        wecom: {
+          channelType: 'news',
+          articles: [{
+            title: '系统维护通知',
+            description: '系统将于今晚22:00-23:00进行升级维护，届时服务将短暂不可用',
+            url: 'https://example.com/notice',
+            picurl: 'https://picsum.photos/600/300',
+          }],
+        }
+      }, null, 2),
+    },
+    'telegram-photo': {
+      title: '',
+      content: '',
+      type: 'text',
+      extraData: JSON.stringify({
+        telegram: {
+          channelType: 'photo',
+          url: 'https://picsum.photos/800/600',
+          caption: '图片说明 - ' + new Date().toLocaleString(),
+        }
+      }, null, 2),
+    },
+    'qqbot-media': {
+      title: '',
+      content: '',
+      type: 'text',
+      extraData: JSON.stringify({
+        qqbot: {
+          channelType: 'media',
+          file_type: 1,
+          url: 'https://example.com/image.png',
+        }
+      }, null, 2),
+    },
+    'feishu-post': {
+      title: '',
+      content: '',
+      type: 'text',
+      extraData: JSON.stringify({
+        feishu: {
+          channelType: 'post',
+          title: '项目更新',
+          content: [
+            [{ tag: 'text', text: '以下任务已完成：' }],
+            [{ tag: 'text', text: '• 用户认证模块重构' }],
+            [{ tag: 'text', text: '• API 性能优化' }],
+          ],
+        }
+      }, null, 2),
+    },
+  }
+
+  const example = examples[type]
+  if (example) {
+    form.title = example.title
+    form.content = example.content
+    form.type = example.type
+    form.extraData = example.extraData
+  }
 }
 
 const fillInboundExample = (type) => {

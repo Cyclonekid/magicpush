@@ -120,20 +120,15 @@ class PushService {
   static async pushToChannel(userId, endpointId, channel, message, clientIp) {
     let { title, content, type, url, extraData } = message;
 
-    // 渠道级默认配置：使用渠道配置中的 defaultChannelSpecificType（仅限特有消息类型）
-    let channelType = null;
-    if (channel.config) {
-      const config = typeof channel.config === 'string' ? JSON.parse(channel.config) : channel.config;
+    // 从 extraData 的渠道命名空间动态获取 channelType（类型与数据自包含设计）
+    const nsKey = channel.channel_type;
+    let resolvedChannelType = null;
+    let resolvedExtraData = null;
 
-      // 兼容旧字段名 defaultChannelType，优先读取新字段名 defaultChannelSpecificType
-      const configuredType = config.defaultChannelSpecificType || config.defaultChannelType;
-      if (configuredType) {
-        channelType = configuredType;
-        // 如果有默认的额外数据且请求未指定，则使用默认值
-        if (!extraData && config.defaultExtraData) {
-          extraData = config.defaultExtraData;
-        }
-      }
+    if (extraData && nsKey && extraData[nsKey]) {
+      const namespaceData = extraData[nsKey];
+      resolvedChannelType = namespaceData.channelType || null;
+      resolvedExtraData = namespaceData;
     }
 
     // 消息免打扰检查：如果当前在免打扰时段内，记录日志但不实际推送
@@ -195,7 +190,7 @@ class PushService {
     try {
       // 获取适配器并发送（传递完整消息对象以支持渠道特有类型）
       const adapter = getChannelAdapter(channel.channel_type, channel.config, channel.id);
-      const result = await adapter.send({ title, content, type, url, channelType, extraData });
+      const result = await adapter.send({ title, content, type, url, channelType: resolvedChannelType, extraData: resolvedExtraData });
 
       // 更新记录为成功
       await PushLogModel.updateStatus(log.id, 'success', result, null);

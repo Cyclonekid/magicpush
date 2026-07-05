@@ -87,7 +87,6 @@ outline: deep
 |------|------|------|
 | **Webhook 地址** | 飞书机器人的完整 Webhook 地址 | `https://open.feishu.cn/open-apis/bot/v2/hook/...` |
 | **Secret 密钥（可选）** | 签名校验密钥，留空则不校验签名 | `xxxxxxxxxxxxxxxxxxxx` |
-| **默认特有消息类型**（可选） | 默认使用设置值，不设置则走通用消息类型 | `interactive_card` |
 
 > 💡 **签名校验说明**：
 > - 如果在飞书机器人设置中启用了「签名校验」，**必须**填写 Secret
@@ -153,14 +152,15 @@ CPU 使用率超过 90%，请及时处理！
 除了通用的 `text` 和 `markdown` 类型外，飞书群机器人还支持以下**特有消息类型**，通过 `extraData` 参数发送：
 
 ::: tip 命名空间隔离
-extraData 采用**命名空间隔离**设计，所有特有类型的字段必须放在以渠道标识符为 key 的对象内：
+extraData 采用**命名空间隔离 + 类型自包含**设计，`channelType` 必须放在对应渠道的命名空间对象内：
 
 ```json
 {
   "channelType": "interactive_card",
   "extraData": {
     "feishu": {
-      "card": { ... }
+      "channelType": "interactive_card",
+        "card": { ... }
     }
   }
 }
@@ -177,7 +177,7 @@ extraData 采用**命名空间隔离**设计，所有特有类型的字段必须
 | `share_chat` | 群名片分享 | 分享群聊邀请 |
 
 ::: tip 使用方式
-特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可。
+特有消息类型需要在 API 请求中通过 `extraData[namespace].channelType` 指定类型，同时在同一命名空间内携带该类型的结构化数据。
 :::
 
 #### post 富文本消息
@@ -194,6 +194,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "feishu": {
+        "channelType": "post",
         "title": "项目更新通知",
         "content": [
           [
@@ -237,6 +238,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "feishu": {
+        "channelType": "interactive_card",
         "card": {
           "header": {
             "title": { "tag": "plain_text", "content": "系统通知" },
@@ -283,6 +285,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "feishu": {
+        "channelType": "image",
         "image_key": "img_v2_xxxx"
       }
     }
@@ -325,6 +328,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "feishu": {
+        "channelType": "share_chat",
         "share_chat_id": "oc_xxxxxxxx"
       }
     }
@@ -337,9 +341,6 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 |------|------|------|------|
 | share_chat_id | String | 是 | 目标群聊的 open_chat_id |
 
-::: tip 默认特有消息类型配置
-在渠道设置中可以配置 **默认特有消息类型**，选择后该渠道的所有请求将默认使用指定的特有类型（需配合 extraData）。不设置则走通用消息分支。
-:::
 
 ---
 

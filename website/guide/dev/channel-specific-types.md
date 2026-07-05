@@ -8,7 +8,7 @@
 
 - [1. 概念与动机](#1-概念与动机)
   - [1.1 通用消息类型的局限](#11-通用消息类型的局限)
-  - [1.2 type 扩展机制](#12-type-扩展机制)
+  - [1.2 extraData 扩展机制与命名空间设计](#12-extradata-扩展机制与命名空间设计)
   - [1.3 数据流全景](#13-数据流全景)
 - [2. 基类接口规范](#2-基类接口规范)
   - [2.1 getSupportedTypes()](#21-getsupportedtypes)
@@ -18,7 +18,6 @@
   - [3.1 改造 send() 方法](#31-改造-send-方法)
   - [3.2 实现 sendChannelSpecific() 路由](#32-实现-sendchannelspecific-路由)
   - [3.3 实现各类型的发送方法](#33-实现各类型的发送方法)
-  - [3.4 覆写配置字段](#34-覆写配置字段)
 - [4. 完整示例：为企业微信应用添加模板卡片](#4-完整示例为企业微信应用添加模板卡片)
 - [5. 已实现渠道速查表](#5-已实现渠道速查表)
 - [6. 测试与验证](#6-测试与验证)
@@ -51,18 +50,43 @@
 
 如果只用 `text` / `markdown` / `html`，这些平台特色能力完全无法触达。
 
-### 1.2 extraData 扩展机制
+### 1.2 extraData 扩展机制与命名空间设计
 
-为了解决上述局限，系统通过 `extraData` 字段支持特有消息类型：
+为了解决上述局限，系统通过 `extraData` 字段支持特有消息类型。**核心设计理念：类型与数据自包含**。
 
 | 参数 | 类型 | 说明 | 示例值 |
 |------|------|------|--------|
 | `type` | `string` | 通用消息格式（仅 `text`/`markdown`/`html`） | `'text'` / `'markdown'` / `'html'` |
-| `extraData` | `Object` | 特有消息类型的结构化参数（可选） | `{ articles: [...] }` |
+| `extraData` | `Object` | 特有消息类型的结构化参数（可选） | 见下方示例 |
 
-**核心规则**：
-- 当请求中**只包含通用字段**（title/content/type）时，走原有的通用处理分支 —— 行为不变，完全向后兼容
-- 当请求中**包含 `extraData`** 时，适配器将根据 extraData 的内容或渠道配置的默认类型调用对应的特有类型处理方法
+**新架构的核心规则**：
+
+- ✅ **类型在调用时指定**: `channelType` 不再依赖渠道配置，而是直接在 `extraData` 的渠道命名空间内传入
+- ✅ **类型+数据自包含**: 每个请求的 `extraData[namespace]` 既包含类型标识又包含参数数据
+- ✅ **多渠道独立**: 同一个推送请求可以为不同渠道指定不同的特有类型
+- ✅ **向后兼容**: 当请求中不包含 `extraData[namespace].channelType` 时，走原有的通用处理分支
+
+**API 调用方式（新）**：
+
+```javascript
+{
+  title: '服务器告警',
+  content: '',
+  type: 'text',  // 可忽略或任意值
+  extraData: {
+    qqbot: {
+      channelType: 'media',       // ★ 在命名空间内指定类型
+      file_type: 1,               // ★ 类型所需的参数
+      url: 'https://example.com/image.png'
+    },
+    wecomapp: {
+      channelType: 'template_card',  // ★ 不同渠道可以不同类型
+      card_type: 'text_notice',
+      main_title: { title: '告警' }
+    }
+  }
+}
+```
 
 ### 1.3 数据流全景
 
@@ -72,24 +96,33 @@
     ├── title: "标题"
     ├── content: "正文"
     ├── type: "text"                      ← 通用消息格式（可选，默认 text）
-    └── extraData: { articles: [...] }    ← 特有类型参数（可选，用于发送特有类型）
+    └── extraData: {                       ← 特有类型参数（可选）
+        qqbot: {
+          channelType: 'media',           ← ★ 类型标识在命名空间内
+          file_type: 1,
+          url: '...'
+        }
+      }
     │
     ▼
 push.service.js (推送调度引擎)
     │
-    ├── 从渠道配置读取 defaultChannelSpecificType（如已配置）
-    │   兼容旧字段名 defaultChannelType
-    ├── 提取 extraData
-    └── adapter.send({ title, content, type, channelType, extraData })
+    ├── 从 extraData 渠道命名空间提取 channelType  ← ★ 新逻辑
+    │   const nsKey = channel.channel_type;
+    │   if (extraData?.[nsKey]?.channelType) {
+    │     resolvedChannelType = extraData[nsKey].channelType;
+    │     resolvedExtraData = extraData[nsKey];
+    │   }
+    └── adapter.send({ ..., channelType: resolvedChannelType, extraData: resolvedExtraData })
             │
             ▼
         适配器 send(message) 内部:
             │
-            ├── 有 channelType?           ★ 仅当渠道配置了特有类型时才进入
+            ├── 有 channelType?           ★ 从 extraData 动态获取的类型
             │   └── YES → this.sendChannelSpecific(channelType, myExtraData)
             │               │
+            │               ├── case 'media':      → sendMedia(extraData)
             │               ├── case 'news':      → sendNews(extraData)
-            │               ├── case 'image':     → sendImage(extraData)
             │               ├── case 'template_card': → sendTemplateCard(extraData)
             │               └── ...               → 对应的专属发送方法
             │
@@ -159,7 +192,7 @@ static getChannelSpecificTypes() {
 
 | 属性 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `value` | `string` | 是 | 特有类型的标识符（对应渠道配置中的 `channelType`），如 `'news'`、`'photo'` |
+| `value` | `string` | 是 | 特有类型的标识符（对应 `extraData[namespace].channelType`），如 `'news'`、`'photo'` |
 | `label` | `string` | 是 | 前端显示名称 |
 | `icon` | `string` | 否 | 图标 emoji，前端 UI 使用 |
 | `description` | `string` | 否 | 一句话描述该类型的用途 |
@@ -260,9 +293,9 @@ async send(message) {
 async send(message) {
   const { title, content, type = 'text', channelType, extraData } = message;
 
-  // ★ 新增：如果有 channelType（来自渠道配置的 defaultChannelSpecificType），走特有类型处理
+  // ★ 如果有 channelType（来自 extraData 命名空间），走特有类型处理
   if (channelType) {
-    const myExtraData = extraData ? extraData[this.channelKey] : null;
+    const myExtraData = extraData || null;  // extraData 已经是命名空间内的数据
     return await this.sendChannelSpecific(channelType, myExtraData);
   }
 
@@ -276,10 +309,9 @@ async send(message) {
 ```
 
 **关键要点**：
-- 从 message 中**解构出 `channelType`（来自渠道配置的 `defaultChannelSpecificType`）和 `extraData`**
-- 判断条件简化为：当存在 `channelType` 时进入特有分支（不再通过 extraData 推断）
+- 从 message 中解构出 `channelType`（由 push.service.js 从 `extraData[namespace].channelType` 提取）和 `extraData`（已经是命名空间内的数据）
+- 判断条件：当存在 `channelType` 时进入特有分支
 - `channelType` 仅表示**特有消息类型**，通用类型（text/markdown/html）由 `type` 字段控制，两者职责清晰分离
-- `extraData` 中各渠道的数据通过 **命名空间隔离**（如 `extraData.qqbot`、`extraData.telegram`），由构造函数传入的 `channelKey` 决定取哪个命名空间
 - 通用类型分支的逻辑**不做任何修改**，保证向后兼容
 
 ### 3.2 实现 sendChannelSpecific() 路由
@@ -290,7 +322,7 @@ async send(message) {
 /**
  * 处理渠道特有类型的消息
  * @param {string} type - 特有类型标识
- * @param {Object} extraData - 特有类型参数
+ * @param {Object} extraData - 特有类型参数（已经是命名空间内的数据）
  */
 async sendChannelSpecific(type, extraData) {
   switch (type) {
@@ -322,7 +354,7 @@ async sendChannelSpecific(type, extraData) {
 ```javascript
 /**
  * 发送图文消息
- * @param {Object} data - 来自 extraData 的参数对象
+ * @param {Object} data - 来自 extraData 命名空间的参数对象
  */
 async sendNews(data) {
   // 1. 参数校验（防御性编程）
@@ -360,38 +392,7 @@ async sendNews(data) {
 | multipart 表单上传 | FormData → POST (multipart) | telegram photo/document |
 | 需要签名/时间戳 | 构造 body → 加签 → POST | feishu post/image/share_chat |
 
-### 3.4 覆写配置字段
-
-在 `getConfigFields()` 返回的数组末尾追加一个 `defaultChannelSpecificType` 选择器，允许用户在渠道配置层面设定默认使用的**特有消息类型**：
-
-```javascript
-static getConfigFields() {
-  return [
-    // ... 原有的配置字段 ...
-
-    // ★ 新增：默认特有消息类型选择器（仅包含特有类型，不混入通用类型）
-    {
-      name: 'defaultChannelSpecificType',
-      label: '默认特有消息类型',
-      type: 'select',
-      required: false,
-      options: [
-        { value: '', label: '不设置（走通用消息类型）' },
-        // --- 特有类型（从 getChannelSpecificTypes 动态获取）---
-        { value: 'news', label: '图文消息 (news)' },
-        { value: 'template_card', label: '模板卡片 (template_card)' },
-        { value: 'image', label: '图片消息 (image)' },
-      ],
-      description: '选择后，推送时将始终使用此特有消息类型，需配合 extraData 使用。不选则根据请求的 type 字段判断（text/markdown/html）',
-    },
-  ];
-}
-```
-
-> **注意**：
-> - `options` 中**不再包含通用类型**（`text`、`markdown`、`html`），这些由 `type` 字段控制
-> - `options` 的 value 必须与 `getChannelSpecificTypes()` 中的 value 保持一致
-> - 第一个选项为空字符串 `''`，表示"不设置"，此时走通用分支
+> **注意**: 新架构下不再需要在 `getConfigFields()` 中添加 `defaultChannelSpecificType` 配置字段。所有类型选择都在调用时通过 `extraData[namespace].channelType` 指定。
 
 ---
 
@@ -453,16 +454,20 @@ static getChannelSpecificTypes() {
       ],
       example: {
         title: '系统升级通知',
+        content: '',
         extraData: {
-          card_type: 'text_notice',
-          source: { desc_text: '来自魔法推送' },
-          main_title: { title: '系统升级通知' },
-          sub_title_text: '系统将于今晚22:00-23:00进行升级维护',
-          horizontal_content_list: [
-            { keyname: '时间', value: '2024-01-15 22:00-23:00' },
-            { keyname: '影响范围', value: '所有用户' },
-          ],
-          card_action: { url: 'https://example.com/notice', type: 1 }
+          wecomapp: {                    // ★ 注意：example 也使用命名空间格式
+            channelType: 'template_card', // ★ 类型在命名空间内
+            card_type: 'text_notice',
+            source: { desc_text: '来自魔法推送' },
+            main_title: { title: '系统升级通知' },
+            sub_title_text: '系统将于今晚22:00-23:00进行升级维护',
+            horizontal_content_list: [
+              { keyname: '时间', value: '2024-01-15 22:00-23:00' },
+              { keyname: '影响范围', value: '所有用户' },
+            ],
+            card_action: { url: 'https://example.com/notice', type: 1 }
+          }
         }
       }
     },
@@ -537,66 +542,52 @@ async sendTemplateCard(data) {
 }
 ```
 
-### 4.5 更新 getConfigFields()
-
-在配置字段数组中追加 `defaultChannelSpecificType` 选项：
-
-```javascript
-static getConfigFields() {
-  return [
-    // ... 原有字段 (corpid, corpsecret, agentid, touser, proxyUrl) ...
-
-    {
-      name: 'defaultChannelSpecificType',
-      label: '默认特有消息类型',
-      type: 'select',
-      required: false,
-      options: [
-        { value: '', label: '不设置（走通用消息类型）' },
-        { value: 'news', label: '图文消息 (news)' },
-        { value: 'text_card', label: '文本卡片 (text_card)' },
-        { value: 'template_card', label: '模板卡片 (template_card)' },  // ★ 新增
-        { value: 'image', label: '图片消息 (image)' },
-        { value: 'file', label: '文件消息 (file)' },
-      ],
-      description: '选择后，推送时将始终使用此特有消息类型，需配合 extraData 使用。不选则根据请求的 type 字段判断（text/markdown/html）',
-    },
-  ];
-}
-```
-
 ---
 
 ## 5. 已实现渠道速查表
 
 以下是当前已完成特有类型实现的渠道及其支持的全部类型一览。
 
-### 5.1 企业微信群机器人 (`wecom.channel.js`)
+### 5.1 QQ 机器人 (`qqbot.channel.js`)
+
+| 类型标识 (channelType) | 名称 | extraData 关键字段 | 说明 |
+|---------|------|-------------------|------|
+| `media` | 富媒体消息 | `file_type`, `url` 或 `file_data` | 图片/视频/语音/文件（需先上传） |
+
+通用类型：`text` / `markdown` / `html`
+
+### 5.2 企业微信群机器人 (`wecom.channel.js`)
 
 | 类型标识 (channelType) | 名称 | extraData 关键字段 | 说明 |
 |---------|------|-------------------|------|
 | `news` | 图文消息 | `articles[{title,url,picurl}]` | 多条图文链接 |
-| `image` | 图片 | `base64`, `md5` | Base64 编码直接发送 |
-| `file` | 文件 | `base64`, `md5` | 同上 |
+| `image` | 图片 | `base64`, `md5` 或 `url` | Base64 编码或 URL 自动下载 |
+| `file` | 文件 | `base64`, `md5`, `media_id` 或 `url` | 需上传获取 media_id |
+| `voice` | 语音 | 同上 | AMR 格式 |
+| `markdown_v2` | Markdown增强版 | `content` | 支持表格等丰富语法 |
 | `template_card` | 模板卡片 | `card_type`, `source`, `main_title`, ... | 三种卡片样式 |
 
 通用类型：`text` / `markdown` / `html`
 
-### 5.2 企业微信应用 (`wecomapp.channel.js`)
+### 5.3 企业微信应用 (`wecomapp.channel.js`)
 
 | 类型标识 (channelType) | 名称 | extraData 关键字段 | 说明 |
 |---------|------|-------------------|------|
 | `news` | 图文消息 | `articles[{title,description,url,picurl}]` | 多条图文链接 |
 | `text_card` | 文本卡片 | `title`, `description`, `url`, `btntxt` | 带跳转的卡片 |
 | `template_card` | 模板卡片 | `card_type`, `source`, `main_title`, ... | 三种卡片样式 |
-| `image` | 图片 | `base64`, `filename` | 需先上传获取 media_id |
-| `file` | 文件 | `base64`, `filename` | 同上 |
+| `image` | 图片 | `media_id`, `base64`, `url`, `filename` | 需先上传获取 media_id |
+| `file` | 文件 | 同上 | 同上 |
+| `voice` | 语音 | 同上 | AMR 格式 |
+| `video` | 视频 | 同上 | MP4 格式 |
+| `mpnews` | mpnews 图文 | `articles[{title,content,...}]` | 富文本内容，封面图需上传 |
+| `miniprogram_notice` | 小程序通知 | `appid`, `page`, `content_items`, ... | 小程序卡片 |
 
 通用类型：`text` / `markdown` / `html`
 
 > **与群机器人的区别**：企业微信应用的 image/file 需要先调用临时素材上传 API（`_uploadMedia()`）获取 `media_id` 再发送；群机器人可以直接将 base64 写入请求体。
 
-### 5.3 飞书群机器人 (`feishu.channel.js`)
+### 5.4 飞书群机器人 (`feishu.channel.js`)
 
 | 类型标识 (channelType) | 名称 | extraData 关键字段 | 说明 |
 |---------|------|-------------------|------|
@@ -609,7 +600,7 @@ static getConfigFields() {
 
 > 飞书所有请求需要携带 `timestamp` + `sign` 签名。
 
-### 5.4 Telegram Bot (`telegram.channel.js`)
+### 5.5 Telegram Bot (`telegram.channel.js`)
 
 | 类型标识 (channelType) | 名称 | extraData 关键字段 | 说明 |
 |---------|------|-------------------|------|
@@ -627,14 +618,31 @@ static getConfigFields() {
 
 ### 6.1 通过 Debug 页面测试
 
-项目内置了调试工具页面（`Debug.vue`），可以在其中直接选择消息类型并填写 `extraData` JSON 进行测试：
+项目内置了调试工具页面（`Debug.vue`），可以在其中直接填写 `extraData` JSON 进行测试：
 
 1. 启动开发环境，打开前端页面
 2. 进入「调试」页面
 3. 选择目标渠道
-4. 选择消息类型（通用类型或特有类型）
-5. 如选择特有类型，在 `extraData` 编辑框中粘贴 JSON 数据
-6. 点击发送
+4. 在 `extraData` 编辑框中使用**新格式**（包含渠道命名空间和 `channelType` 字段）
+5. 点击发送
+
+**extraData 新格式示例**：
+
+```json
+{
+  "wecomapp": {
+    "channelType": "template_card",
+    "card_type": "text_notice",
+    "source": { "desc_text": "来自魔法推送" },
+    "main_title": { "title": "服务器告警" },
+    "sub_title_text": "CPU 使用率超过 80%",
+    "horizontal_content_list": [
+      { "keyname": "主机", "value": "web-server-01" },
+      { "keyname": "当前值", "value": "87%" }
+    ]
+  }
+}
+```
 
 ### 6.2 通过 API 测试
 
@@ -644,19 +652,21 @@ curl -X POST http://localhost:3000/api/push \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <your-token>" \
   -d '{
-    "channelId": <channel-id>,
     "title": "系统通知",
     "content": "",
     "extraData": {
-      "card_type": "text_notice",
-      "source": { "desc_text": "来自 MagicPush" },
-      "main_title": { "title": "服务器告警" },
-      "sub_title_text": "CPU 使用率超过 80%",
-      "horizontal_content_list": [
-        { "keyname": "主机", "value": "web-server-01" },
-        { "keyname": "当前值", "value": "87%" }
-      ],
-      "card_action": { "url": "https://example.com/dashboard", "type": 1 }
+      "wecomapp": {
+        "channelType": "template_card",
+        "card_type": "text_notice",
+        "source": { "desc_text": "来自 MagicPush" },
+        "main_title": { "title": "服务器告警" },
+        "sub_title_text": "CPU 使用率超过 80%",
+        "horizontal_content_list": [
+          { "keyname": "主机", "value": "web-server-01" },
+          { "keyname": "当前值", "value": "87%" }
+        ],
+        "card_action": { "url": "https://example.com/dashboard", "type": 1 }
+      }
     }
   }'
 
@@ -667,8 +677,11 @@ curl -X POST http://localhost:3000/api/push \
     "channelId": <channel-id>,
     "title": "",
     "extraData": {
-      "url": "https://picsum.photos/800/600",
-      "caption": "今日截图"
+      "telegram": {
+        "channelType": "photo",
+        "url": "https://picsum.photos/800/600",
+        "caption": "今日截图"
+      }
     }
   }'
 
@@ -679,11 +692,39 @@ curl -X POST http://localhost:3000/api/push \
     "channelId": <channel-id>,
     "title": "",
     "extraData": {
-      "title": "项目周报",
-      "content": [[
-        [{ "tag": "text", "text": "本周完成以下工作：" }],
-        [{ "tag": "at", "user_id": "ou_xxxxx" }]
-      ]]
+      "feishu": {
+        "channelType": "post",
+        "title": "项目周报",
+        "content": [[
+          [{ "tag": "text", "text": "本周完成以下工作：" }],
+          [{ "tag": "at", "user_id": "ou_xxxxx" }]
+        ]]
+      }
+    }
+  }'
+
+# 同时向多个渠道发送不同类型（多渠独立类型）
+curl -X POST http://localhost:3000/api/push \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "重要通知",
+    "content": "系统将于今晚维护",
+    "extraData": {
+      "qqbot": {
+        "channelType": "media",
+        "file_type": 1,
+        "url": "https://example.com/notice-image.png"
+      },
+      "telegram": {
+        "channelType": "photo",
+        "url": "https://example.com/notice-photo.jpg",
+        "caption": "维护通知"
+      },
+      "wecomapp": {
+        "channelType": "template_card",
+        "card_type": "text_notice",
+        "main_title": { "title": "维护通知" }
+      }
     }
   }'
 ```
@@ -705,11 +746,11 @@ describe('WecomappChannel 特有消息类型', () => {
     });
   });
 
-  test('getChannelSpecificTypes 应返回 5 种类型', () => {
+  test('getChannelSpecificTypes 应返回多种类型', () => {
     const types = WecomappChannel.getChannelSpecificTypes();
-    expect(types).toHaveLength(5);
+    expect(types.length).toBeGreaterThan(0);
     expect(types.map(t => t.value)).toEqual(
-      expect.arrayContaining(['news', 'text_card', 'template_card', 'image', 'file'])
+      expect.arrayContaining(['news', 'template_card', 'image'])
     );
   });
 
@@ -738,18 +779,43 @@ describe('WecomappChannel 特有消息类型', () => {
 
 不会。两者的职责清晰分离：
 - `type`（text/markdown/html）仅控制**通用消息格式**的渲染方式
-- `channelType`（由渠道配置的 `defaultChannelSpecificType` 设定）控制是否走**特有类型**分支
-- `extraData` 用于携带**特有消息类型**的结构化数据
+- `channelType`（由 `push.service.js` 从 `extraData[namespace].channelType` 提取）控制是否走**特有类型**分支
+- `extraData[namespace]` 用于携带**特有消息类型**的结构化数据和类型标识
 
-当请求中包含 `channelType` 时，系统会路由到对应的 `sendChannelSpecific()` 处理方法，与 `type` 字段互不干扰。
+当 `extraData[namespace]` 中包含 `channelType` 字段时，系统会路由到对应的 `sendChannelSpecific()` 处理方法，与 `type` 字段互不干扰。
 
 ### Q: channelType 是从哪里来的？
 
-`channelType` 不是 API 调用者传入的，而是 **`push.service.js` 根据渠道配置自动读取并注入** 的：
+**新架构（v2+）**：`channelType` 由**调用方在 `extraData` 的渠道命名空间内指定**，不再依赖渠道配置：
 
-1. 优先读取渠道配置中的新字段名 `defaultChannelSpecificType`
-2. 兼容读取旧字段名 `defaultChannelType`（向后兼容）
-3. 如果两者都没有，`channelType` 保持为 `null`，走通用分支
+```javascript
+// 调用方在 extraData 中指定类型
+extraData: {
+  wecomapp: {
+    channelType: 'template_card',  // ★ 这里指定
+    card_type: 'text_notice',
+    // ...
+  }
+}
+```
+
+`push.service.js` 会自动从 `extraData[channel_type].channelType` 提取该值并注入到适配器调用中。
+
+### Q: 旧版本的 defaultChannelSpecificType 配置还能用吗？
+
+不能。旧版架构（通过渠道配置 `defaultChannelSpecificType` 设定默认类型）已被完全移除。如果需要使用特有消息类型，请改用在 `extraData` 命名空间内指定 `channelType` 的新方式。
+
+迁移示例：
+
+```javascript
+// ❌ 旧方式（已废弃）
+// 渠道配置: { defaultChannelSpecificType: 'template_card' }
+// API 调用: { title: '', extraData: { card_type: 'text_notice', ... } }
+
+// ✅ 新方式（推荐）
+// 渠道配置: （无需配置特有类型相关字段）
+// API 调用: { title: '', extraData: { wecomapp: { channelType: 'template_card', card_type: 'text_notice', ... } } }
+```
 
 ### Q: extraData 的大小有限制吗？
 
@@ -765,9 +831,8 @@ describe('WecomappChannel 特有消息类型', () => {
 1. **在 `getChannelSpecificTypes()` 的返回数组中追加新的类型定义**
 2. **在 `sendChannelSpecific()` 的 switch 中添加新 case**
 3. **实现对应的 `sendXxx(data)` 方法**
-4. **（可选）在 `getConfigFields()` 的 `defaultChannelSpecificType` 选项中追加新选项**
 
-无需修改基类、无需修改 push.service.js、无需修改数据库结构。
+无需修改基类、无需修改 push.service.js、无需修改数据库结构、**无需修改 getConfigFields()**。
 
 ### Q: 构造函数需要传 channelKey 吗？
 
@@ -785,7 +850,22 @@ constructor(config, channelId) {
 }
 ```
 
-基类通过 `this.channelKey` 存储此值，在 `send()` 中用于提取正确的命名空间数据（如 `extraData.qqbot`、`extraData.telegram`）。
+基类通过 `this.channelKey` 存储此值。但在新架构下，`push.service.js` 已经提前解析好命名空间数据，适配器的 `send()` 方法接收到的 `extraData` 已经是正确的命名空间数据，`this.channelKey` 主要用于日志和调试目的。
+
+### Q: 同一个请求能否为不同渠道指定不同的特有类型？
+
+**可以！这是新架构的核心优势之一**。由于类型和数据都自包含在每个渠道的命名空间内，同一个推送请求可以为不同渠道发送完全不同的消息类型：
+
+```javascript
+{
+  title: '重要通知',
+  extraData: {
+    qqbot: { channelType: 'media', file_type: 1, url: '...' },         // QQ 发富媒体
+    telegram: { channelType: 'photo', url: '...', caption: '...' },     // Telegram 发图片
+    wecomapp: { channelType: 'template_card', card_type: 'text_notice', ... }  // 企业微信发卡片
+  }
+}
+```
 
 ### Q: 前端如何获取特有类型定义供用户选择？
 

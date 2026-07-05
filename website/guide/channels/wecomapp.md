@@ -124,7 +124,6 @@ outline: deep
 | **应用 Secret** | 自建应用的凭证密钥 | 点击应用详情中的「查看」获取 |
 | **应用 AgentId** | 企业应用 ID（整型数字） | `1000002` |
 | **接收成员** | 成员 UserID（多个用 `\|` 分隔）或 `@all` | `zhangsan` 或 `zhangsan\|lisi` 或 `@all` |
-| **默认特有消息类型**（可选） | 默认使用设置值，不设置则走通用消息类型 | `news` |
 | **代理地址**（可选） | 如需通过代理访问企业微信 API | `http://127.0.0.1:7890` |
 
 填写完成后，给渠道起一个易于辨识的**名称**（如「生产环境告警推送」），点击「**保存**」。
@@ -191,7 +190,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 除了通用的 `text`、`markdown` 和 `html` 类型外，企业微信应用还支持以下**特有消息类型**，通过 `extraData` 参数发送：
 
 ::: tip 命名空间隔离
-extraData 采用**命名空间隔离**设计，所有特有类型的字段必须放在以渠道标识符为 key 的对象内：
+extraData 采用**命名空间隔离 + 类型自包含**设计，`channelType` 必须放在对应渠道的命名空间对象内：
 
 ```json
 {
@@ -220,7 +219,7 @@ extraData 采用**命名空间隔离**设计，所有特有类型的字段必须
 | `miniprogram_notice` | 小程序通知消息（可跳转小程序页面） | 订单状态更新、服务通知 |
 
 ::: tip 使用方式
-特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可，无需额外指定类型标识。对于图片、文件、语音、视频以及 **mpnews 封面图**类型的消息，**支持三种数据源**（按优先级排序）：
+特有消息类型需要在 API 请求中通过 `extraData[namespace].channelType` 指定类型，同时在同一命名空间内携带该类型的结构化数据。对于图片、文件、语音、视频以及 **mpnews 封面图**类型的消息，**支持三种数据源**（按优先级排序）：
 
 1. **`media_id`** / **`thumb_media_id`** — 已上传过的素材 ID，直接使用，**跳过重新上传**
 2. **`base64`** / **`thumb_base64`** — Base64 编码字符串，后端自动解码后上传至企业微信
@@ -243,6 +242,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "wecomapp": {
+        "channelType": "news",
         "articles": [
           {
             "title": "系统升级公告",
@@ -650,6 +650,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "wecomapp": {
+        "channelType": "mpnews",
         "articles": [
           {
             "title": "系统升级公告",
@@ -677,6 +678,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "wecomapp": {
+        "channelType": "mpnews",
         "articles": [
           {
             "title": "系统升级公告",
@@ -705,6 +707,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "wecomapp": {
+        "channelType": "mpnews",
         "articles": [
           {
             "title": "系统升级公告",
@@ -785,9 +788,6 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 > 💡 **提示**：使用前需要在企业微信管理后台将对应的小程序应用关联到企业，并确保用户有权限访问该小程序。
 
-::: tip 默认特有消息类型配置
-在渠道设置中可以配置 **默认特有消息类型**，选择后该渠道的所有请求将默认使用指定的特有类型（需配合 extraData）。不设置则走通用消息分支。
-:::
 
 ---
 

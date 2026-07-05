@@ -379,19 +379,6 @@ class TelegramChannel extends BaseChannel {
         description: '目标聊天ID（用户ID或群组ID）',
       },
       {
-        name: 'defaultChannelSpecificType',
-        label: '默认特有消息类型',
-        type: 'select',
-        required: false,
-        options: [
-          { value: '', label: '不设置（走通用消息类型）' },
-          { value: 'photo', label: '图片消息 (photo)' },
-          { value: 'document', label: '文件消息 (document)' },
-          { value: 'location', label: '位置消息 (location)' },
-        ],
-        description: '选择后，推送时将始终使用此特有消息类型，需配合 extraData 使用。不选则根据请求的 type 字段判断（text/markdown/html）',
-      },
-      {
         name: 'proxyUrl',
         label: '代理地址',
         type: 'text',

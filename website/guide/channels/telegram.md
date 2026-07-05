@@ -96,7 +96,6 @@ Telegram Bot 是 Telegram 官方提供的机器人平台，通过 BotFather 创�
 |------|------|------|
 | **Bot Token** | 从 BotFather 获取的 Bot Token | `123456789:ABCdefGHIJKlmNoPQRsTUVwxyZ` |
 | **Chat ID** | 目标聊天 ID（用户 ID 或群组 ID） | `123456789` 或 `-1001234567890` |
-| **默认特有消息类型**（可选） | 默认使用设置值，不设置则走通用消息类型 | `photo` |
 | **代理地址**（可选） | 用于访问 Telegram API 的代理地址 | `http://127.0.0.1:7890` |
 
 > 💡 **关于代理**：
@@ -169,7 +168,7 @@ Telegram 支持以下 HTML 标签：
 除了通用的 `text`、`markdown` 和 `html` 类型外，Telegram Bot 还支持以下**特有消息类型**，通过 `extraData` 参数发送：
 
 ::: tip 命名空间隔离
-extraData 采用**命名空间隔离**设计，所有特有类型的字段必须放在以渠道标识符为 key 的对象内：
+extraData 采用**命名空间隔离 + 类型自包含**设计，`channelType` 必须放在对应渠道的命名空间对象内：
 
 ```json
 {
@@ -193,7 +192,7 @@ extraData 采用**命名空间隔离**设计，所有特有类型的字段必须
 | `location` | 位置消息（经纬度） | 分享地理位置、定位打卡 |
 
 ::: tip 使用方式
-特有消息类型需要在 API 请求中通过 `extraData` 携带该类型的结构化数据即可。Telegram 的图片和文件支持直接传入 URL 或 Base64 编码。
+特有消息类型需要在 API 请求中通过 `extraData[namespace].channelType` 指定类型，同时在同一命名空间内携带该类型的结构化数据。Telegram 的图片和文件支持直接传入 URL 或 Base64 编码。
 :::
 
 #### photo 图片消息
@@ -211,6 +210,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "telegram": {
+        "channelType": "photo",
         "url": "https://picsum.photos/600/400",
         "caption": "今日天气实况"
       }
@@ -261,6 +261,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "telegram": {
+        "channelType": "document",
         "url": "https://example.com/report.pdf",
         "caption": "2024年第一季度报告"
       }
@@ -308,6 +309,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
     "type": "text",
     "extraData": {
       "telegram": {
+        "channelType": "location",
         "latitude": 39.9042,
         "longitude": 116.4074,
         "title": "天安门广场",
@@ -326,9 +328,6 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 | title | String | 否 | 显示在位置上方的地点名称（最长 256 字符） |
 | address | String | 否 | 详细地址信息 |
 
-::: tip 默认特有消息类型配置
-在渠道设置中可以配置 **默认特有消息类型**，选择后该渠道的所有请求将默认使用指定的特有类型（需配合 extraData）。不设置则走通用消息分支。
-:::
 
 ---
 
