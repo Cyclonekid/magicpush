@@ -145,6 +145,7 @@ class UserController {
           isActive: ep.is_active === 1,
           inboundConfig: ep.inbound_config || null,
           keywordFilter: ep.keyword_filter || null,
+          doNotDisturb: ep.do_not_disturb || null,
           channelIds: endpointChannels
             .filter(ec => ec.endpoint_id === ep.id)
             .map(ec => ec.channel_name),
@@ -220,6 +221,7 @@ class UserController {
             is_active: ep.isActive !== false,
             inbound_config: ep.inboundConfig ? JSON.stringify(ep.inboundConfig) : null,
             keyword_filter: ep.keywordFilter ? JSON.stringify(ep.keywordFilter) : null,
+            do_not_disturb: ep.doNotDisturb ? JSON.stringify(ep.doNotDisturb) : null,
           });
 
           // 绑定渠道
