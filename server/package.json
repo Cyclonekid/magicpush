@@ -1,6 +1,6 @@
 {
   "name": "magicpush-server",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "MagicPush 后端服务",
   "main": "src/app.js",
   "packageManager": "pnpm@10.33.4",
@@ -18,6 +18,7 @@
     "express": "^4.18.2",
     "express-rate-limit": "^8.3.2",
     "express-validator": "^7.0.1",
+    "form-data": "^4.0.6",
     "https-proxy-agent": "^7.0.2",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^8.0.3",

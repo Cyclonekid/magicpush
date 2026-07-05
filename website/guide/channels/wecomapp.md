@@ -8,20 +8,29 @@ outline: deep
 
 本教程将指导你如何在 MagicPush（魔法推送）中配置**企业微信应用消息**推送渠道，实现向指定成员或全员推送消息。
 
+::: warning 使用必看
+创建企业微信自建应用并正常调用 API，需要满足以下条件：
+
+- **域名备案要求**：需要有固定IP地址；应用必须绑定已备案的域名，且**备案主体需与企业主体一致或有强关联关系**
+- 如果不具备上述条件（如使用海外服务器、无备案域名等），建议改用 **[企业微信群机器人](./wecom)** 渠道，仅需一个 Webhook Key 即可使用
+:::
+
 ## 概述
 
 ### 什么是企业微信应用推送？
 
-企业微信应用消息推送是通过在企业微信管理后台创建**自建应用**，调用企业微信开放 API 向指定成员发送消息的能力。与「企业微信群机器人」渠道不同：
+企业微信应用消息推送是通过在企业微信管理后台创建**自建应用**，调用企业微信开放 API 向指定成员发送消息的能力。
 
-| 对比项 | 企业微信群机器人 | 企业微信应用（本渠道） |
-|--------|-------------------|---------------------|
-| 推送目标 | 群聊 | **个人** / 部门 / 标签 / 全员 |
-| 鉴权方式 | Webhook Key（静态） | access_token（动态刷新，7200秒有效期） |
-| 配置复杂度 | 仅需一个 Key | 需要 corpid + corpsecret + agentid |
-| 消息格式 | text、markdown | text、markdown |
-| 适用场景 | 群内通知 | **个人通知、告警推送、系统通知** |
-| 频率限制 | 20条/分钟 | ~30次/分钟/人 |
+**渠道特性**：
+
+| 特性 | 说明 |
+|------|------|
+| 推送目标 | **个人** / 部门 / 标签 / 全员 |
+| 鉴权方式 | access_token（动态刷新，7200秒有效期） |
+| 配置复杂度 | 需要 corpid + corpsecret + agentid |
+| 支持消息类型 | 文本消息、**markdown 消息**、图文消息、图片消息、视频消息、文件消息、语音消息、mpnews 图文消息、文本卡片消息、模板卡片消息、小程序通知消息 |
+| 适用场景 | 个人通知、告警推送、系统通知 |
+| 频率限制 | ~30次/分钟/人 |
 
 ### 前置条件
 
@@ -176,6 +185,610 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 - 引用（`> text`）
 - 字体颜色：`<font color="info">绿色</font>`、`<font color="comment">灰色</font>`、`<font color="warning">橙红色</font>`
 
+### 3.3 特有消息类型
+
+除了通用的 `text`、`markdown` 和 `html` 类型外，企业微信应用还支持以下**特有消息类型**，通过 `extraData` 参数发送：
+
+::: tip 命名空间隔离
+extraData 采用**命名空间隔离 + 类型自包含**设计，`channelType` 必须放在对应渠道的命名空间对象内：
+
+```json
+{
+  "channelType": "image",
+  "extraData": {
+    "wecomapp": {
+      "url": "https://example.com/img.png"
+    }
+  }
+}
+```
+
+各渠道的命名空间 key：`wecom`（企业微信群机器人）、`wecomapp`（企业微信应用）、`telegram`、`feishu`、`qqbot`
+:::
+
+| 类型 | 说明 | 典型场景 |
+|-------------|------|----------|
+| `news` | 图文消息（多条图文链接文章） | 资讯推送、公告通知、产品发布 |
+| `text_card` | 文本卡片（带标题和跳转链接） | 审批通知、简短提醒 |
+| `template_card` | 模板卡片（交互式卡片） | 告警通知、任务提醒、数据报告 |
+| `image` | 图片消息（支持 media_id / Base64 / URL 上传） | 截图分享、验证码图片 |
+| `file` | 文件消息（支持 media_id / Base64 / URL 上传） | 发送报表、PDF 文档 |
+| `voice` | 语音消息（支持 media_id / Base64 / URL 上传，AMR 格式） | 语音通知、语音播报 |
+| `video` | 视频消息（支持 media_id / Base64 / URL 上传，MP4 格式） | 视频演示、操作教程 |
+| `mpnews` | 图文消息 mpnews（支持富文本 HTML 正文，封面图支持 media_id / URL / Base64 上传） | 富文本资讯推送、图文详情页 |
+| `miniprogram_notice` | 小程序通知消息（可跳转小程序页面） | 订单状态更新、服务通知 |
+
+::: tip 使用方式
+特有消息类型需要在 API 请求中通过 `extraData[namespace].channelType` 指定类型，同时在同一命名空间内携带该类型的结构化数据。对于图片、文件、语音、视频以及 **mpnews 封面图**类型的消息，**支持三种数据源**（按优先级排序）：
+
+1. **`media_id`** / **`thumb_media_id`** — 已上传过的素材 ID，直接使用，**跳过重新上传**
+2. **`base64`** / **`thumb_base64`** — Base64 编码字符串，后端自动解码后上传至企业微信
+3. **`url`** / **`thumb_url`** — 公网可访问的资源 URL，**后端自动下载后上传**
+
+三者至少提供一种即可。推荐优先使用 `media_id` 或 `url`，避免在请求体中传输大量 Base64 数据。
+:::
+
+#### news 图文消息
+
+适用于展示带封面图的多条图文资讯：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "系统升级公告",
+    "content": "系统将于今晚22:00-23:00进行升级维护",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "channelType": "news",
+        "articles": [
+          {
+            "title": "系统升级公告",
+            "description": "系统将于今晚22:00-23:00进行升级维护",
+            "url": "https://example.com/notice",
+            "picurl": "https://picsum.photos/600/300"
+          }
+        ]
+      }
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| articles | Array | 是 | 文章数组 |
+| articles[].title | String | 是 | 文章标题（最长 128 字符） |
+| articles[].description | String | 否 | 文章描述（最长 512 字符） |
+| articles[].url | String | 否 | 点击跳转链接 |
+| articles[].picurl | String | 否 | 封面图 URL |
+
+#### text_card 文本卡片
+
+适用于审批通知等需要点击跳转的简短消息：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "审批通知",
+    "content": "您有一条新的审批待处理，请及时查看",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "title": "审批通知",
+        "description": "您有一条新的审批待处理，请及时查看",
+        "url": "https://example.com/approval",
+        "btntxt": "查看详情"
+      }
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | String | 是 | 卡片标题（最长 128 字符） |
+| description | String | 否 | 卡片描述文本（最长 512 字符） |
+| url | String | 否 | 点击按钮后的跳转链接 |
+| btntxt | String | 否 | 按钮文字（默认"详情"，最长 16 字符） |
+
+#### template_card 模板卡片
+
+支持三种样式的交互式卡片：文本通知、图文通知、按钮互动：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "系统升级通知",
+    "content": "系统将于今晚22:00-23:00进行升级维护",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "card_type": "text_notice",
+        "source": { "desc_text": "来自魔法推送" },
+        "main_title": { "title": "系统升级通知" },
+        "sub_title_text": "系统将于今晚22:00-23:00进行升级维护",
+        "horizontal_content_list": [
+          { "keyname": "时间", "value": "2024-01-15 22:00-23:00" },
+          { "keyname": "影响范围", "value": "所有用户" }
+        ],
+        "card_action": { "url": "https://example.com/notice", "type": 1 }
+      }
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| card_type | String | 是 | 卡片类型：`text_notice` / `news_notice` / `button_interaction` |
+| source | Object | 否 | 来源信息 `{ desc_text: "描述" }` |
+| main_title | Object | 否 | 主标题 `{ title: "内容" }` |
+| sub_title_text | String | 否 | 副标题（最长 256 字符） |
+| horizontal_content_list | Array | 否 | 键值对列表 `[{ keyname, value }]` |
+| card_action | Object | 否 | 操作按钮 `{ url, type }` |
+| task_list | Array | 否 | 任务列表（button_interaction 类型常用） |
+| card_selection | Object | 否 | 选择器配置 |
+
+#### image 图片消息
+
+支持三种方式发送图片（MagicPush 会自动处理上传）：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "服务器截图",
+    "content": "服务器 CPU 使用率超过 90%，请查看截图",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "url": "https://example.com/screenshot.jpg",
+        "filename": "screenshot.jpg"
+      }
+    }
+  }'
+```
+
+**方式二：使用 Base64**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "服务器截图",
+    "content": "服务器 CPU 使用率超过 90%，请查看截图",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+        "filename": "screenshot.jpg"
+      }
+    }
+  }'
+```
+
+**方式三：使用已有 media_id（跳过上传，最快）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "服务器截图",
+    "content": "服务器 CPU 使用率超过 90%",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "media_id": "MEDIA_ID_xxx"
+      }
+    }
+  }'
+```
+
+**extraData 字段说明（三选一）**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| media_id | String | 条件必填* | 已上传过的素材 ID，填此字段可跳过重新上传 |
+| url | String | 条件必填* | 公网可访问的图片 URL，后端自动下载后上传 |
+| base64 | String | 条件必填* | 图片的 Base64 编码字符串（不含 data:image 前缀） |
+| filename | String | 否 | 文件名（如 `photo.jpg`） |
+
+\* `media_id`、`url`、`base64` 三者至少提供一种。优先推荐 `media_id` 或 `url`。
+
+#### file 文件消息
+
+支持三种方式发送文件（MagicPush 会自动处理上传）：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "月度报告",
+    "content": "请查收2024年第一季度月度报告",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "url": "https://example.com/report.pdf",
+        "filename": "report.pdf"
+      }
+    }
+  }'
+```
+
+**方式二：使用 Base64**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "月度报告",
+    "content": "请查收2024年第一季度月度报告",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "base64": "JVBERi0xLjQK...",
+        "filename": "report.pdf"
+      }
+    }
+  }'
+```
+
+**方式三：使用已有 media_id（跳过上传，最快）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "月度报告",
+    "content": "请查收报告",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "media_id": "MEDIA_ID_xxx"
+      }
+    }
+  }'
+```
+
+**extraData 字段说明（三选一）**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| media_id | String | 条件必填* | 已上传过的素材 ID，填此字段可跳过重新上传 |
+| url | String | 条件必填* | 公网可访问的文件 URL，后端自动下载后上传 |
+| base64 | String | 条件必填* | 文件的 Base64 编码字符串 |
+| filename | String | 否 | 文件名（如 `report.pdf`） |
+
+\* `media_id`、`url`、`base64` 三者至少提供一种。优先推荐 `media_id` 或 `url`。
+
+#### voice 语音消息
+
+支持三种方式发送语音（MagicPush 会自动处理上传）：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "语音通知",
+    "content": "请查收语音消息",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "url": "https://example.com/voice.amr"
+      }
+    }
+  }'
+```
+
+**方式二：使用 Base64**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "语音通知",
+    "content": "请查收语音消息",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+        "filename": "voice.amr"
+      }
+    }
+  }'
+```
+
+**方式三：使用已有 media_id**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "语音通知",
+    "content": "请查收语音消息",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "media_id": "MEDIA_ID_xxx"
+      }
+    }
+  }'
+```
+
+**extraData 字段说明（三选一）**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| media_id | String | 条件必填* | 已上传过的素材 ID，填此字段可跳过重新上传 |
+| url | String | 条件必填* | 公网可访问的语音文件 URL，后端自动下载后上传 |
+| base64 | String | 条件必填* | 语音的 Base64 编码字符串（AMR 格式） |
+| filename | String | 否 | 文件名（如 `voice.amr`） |
+
+\* `media_id`、`url`、`base64` 三者至少提供一种。优先推荐 `media_id` 或 `url`。
+
+> ⚠️ **注意**：语音文件仅支持 AMR 格式，文件大小不超过 **2MB**，播放时长不超过 **60秒**。
+
+#### video 视频消息
+
+支持三种方式发送视频（MagicPush 会自动处理上传）：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "产品演示视频",
+    "content": "最新版本功能演示，请查看视频",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "url": "https://example.com/demo.mp4",
+        "filename": "demo.mp4",
+        "title": "产品演示视频",
+        "description": "V2.0 新功能演示"
+      }
+    }
+  }'
+```
+
+**方式二：使用 Base64**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "产品演示视频",
+    "content": "最新版本功能演示，请查看视频",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+        "filename": "demo.mp4",
+        "title": "产品演示视频",
+        "description": "V2.0 新功能演示"
+      }
+    }
+  }'
+```
+
+**方式三：使用已有 media_id**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "产品演示视频",
+    "content": "请查看视频",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "media_id": "MEDIA_ID_xxx",
+        "title": "产品演示视频",
+        "description": "V2.0 新功能演示"
+      }
+    }
+  }'
+```
+
+**extraData 字段说明（三选一）**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| media_id | String | 条件必填* | 已上传过的素材 ID，填此字段可跳过重新上传 |
+| url | String | 条件必填* | 公网可访问的视频文件 URL，后端自动下载后上传 |
+| base64 | String | 条件必填* | 视频的 Base64 编码字符串（MP4 格式） |
+| filename | String | 否 | 文件名（如 `demo.mp4`） |
+| title | String | 否 | 视频消息标题（显示在卡片上） |
+| description | String | 否 | 视频消息描述文字 |
+
+\* `media_id`、`url`、`base64` 三者至少提供一种。优先推荐 `media_id` 或 `url`。
+
+> ⚠️ **注意**：视频文件仅支持 MP4 格式，文件大小不超过 **10MB**。
+
+#### mpnews 图文消息
+
+与普通 news 不同，mpnews 支持富文本正文内容（HTML），**封面图支持三种数据源自动上传**（与图片消息类似）：
+
+**方式一：使用 thumb_url（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "系统升级公告",
+    "content": "系统将于今晚22:00-23:00进行升级维护",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "channelType": "mpnews",
+        "articles": [
+          {
+            "title": "系统升级公告",
+            "thumb_url": "https://example.com/cover.jpg",
+            "author": "运维团队",
+            "content": "<h3>系统将于今晚升级</h3><p>预计维护时间：22:00-23:00</p><p>影响范围：所有用户</p>",
+            "content_source_url": "https://example.com/notice",
+            "digest": "系统升级通知摘要"
+          }
+        ]
+      }
+    }
+  }'
+```
+
+**方式二：使用 thumb_base64**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "系统升级公告",
+    "content": "系统将于今晚22:00-23:00进行升级维护",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "channelType": "mpnews",
+        "articles": [
+          {
+            "title": "系统升级公告",
+            "thumb_base64": "/9j/4AAQSkZJRgABAQAAAQABAAD...",
+            "thumb_filename": "cover.jpg",
+            "author": "运维团队",
+            "content": "<h3>系统将于今晚升级</h3><p>预计维护时间：22:00-23:00</p><p>影响范围：所有用户</p>",
+            "content_source_url": "https://example.com/notice",
+            "digest": "系统升级通知摘要"
+          }
+        ]
+      }
+    }
+  }'
+```
+
+**方式三：使用已有 thumb_media_id（跳过上传，最快）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "系统升级公告",
+    "content": "系统将于今晚22:00-23:00进行升级维护",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "channelType": "mpnews",
+        "articles": [
+          {
+            "title": "系统升级公告",
+            "thumb_media_id": "MEDIA_ID_xxxx",
+            "author": "运维团队",
+            "content": "<h3>系统将于今晚升级</h3><p>预计维护时间：22:00-23:00</p><p>影响范围：所有用户</p>",
+            "content_source_url": "https://example.com/notice",
+            "digest": "系统升级通知摘要"
+          }
+        ]
+      }
+    }
+  }'
+```
+
+**articles[].extraData 字段说明（封面图三选一）**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| articles | Array | 是 | 文章数组 |
+| articles[].title | String | 是 | 文章标题（最长 512 字符） |
+| articles[].thumb_media_id | String | 条件必填* | 已上传过的封面素材 ID，填此字段可跳过重新上传 |
+| articles[].thumb_url | String | 条件必填* | 公网可访问的封面图 URL，后端自动下载后上传 |
+| articles[].thumb_base64 | String | 条件必填* | 封面图的 Base64 编码字符串（不含 data:image 前缀） |
+| articles[].thumb_filename | String | 否 | 封面图文件名（如 `cover.jpg`，默认 `thumb.jpg`） |
+| articles[].author | String | 否 | 作者名称 |
+| articles[].content | String | 是 | 正文 HTML 内容（支持完整 HTML 标签） |
+| articles[].content_source_url | String | 否 | 阅读原文 URL |
+| articles[].digest | String | 否 | 摘要文本（最长 120 字符） |
+
+\* `thumb_media_id`、`thumb_url`、`thumb_base64` 三者至少提供一种。优先推荐 `thumb_media_id` 或 `thumb_url`。
+
+:::: tip 与 news 的区别
+`news` 类型适合简单的图文链接列表，而 `mpnews` 支持完整的富文本 HTML 正文内容，展示效果更丰富。现在 mpnews 的封面图已支持 **URL / Base64 自动上传**，无需预先手动获取 `thumb_media_id`，使用门槛大幅降低。
+::::
+
+#### miniprogram_notice 小程序通知消息
+
+发送小程序通知卡片，点击可跳转至指定小程序页面：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "订单状态更新",
+    "content": "您的订单已发货",
+    "type": "text",
+    "extraData": {
+      "wecomapp": {
+        "appid": "wxa1234567890abcdef",
+        "page": "pages/order/detail?orderId=12345",
+        "title": "订单状态更新",
+        "description": "您的订单已发货",
+        "emphasis_first_item": true,
+        "content_items": [
+          { "key": "订单号", "value": "ORD-20240115-001" },
+          { "key": "状态", "value": "已发货" },
+          { "key": "快递公司", "value": "顺丰速运" }
+        ]
+      }
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| appid | String | 是 | 小程序 AppID（必须是已关联到企业的应用） |
+| page | String | 是 | 小程序页面路径（如 `pages/index/index`） |
+| title | String | 否 | 通知标题（最长 32 字符；不填则使用 content_items 第一项 key） |
+| description | String | 否 | 描述文字（最长 128 字符） |
+| emphasis_first_item | Boolean | 否 | 是否放大显示 content_items 第一项（默认 true） |
+| content_items | Array | 否 | 键值对列表 `[{key, value}]`（最多 10 项） |
+| content_items[].key | String | 是 | 键名（最长 20 字符） |
+| content_items[].value | String | 是 | 值（最长 30 字符） |
+
+> 💡 **提示**：使用前需要在企业微信管理后台将对应的小程序应用关联到企业，并确保用户有权限访问该小程序。
+
+
 ---
 
 ## 技术细节
@@ -190,6 +803,16 @@ MagicPush 自动管理 access_token 的生命周期：
 4. **容错**：如果发送时发现 token 失效（errcode 42001 或 40014），自动清除缓存并重新获取
 
 服务重启后 token 缓存会丢失，首次发送时会自动重新获取，无需人工干预。
+
+### 媒体上传机制
+
+对于图片、文件、语音、视频类型的消息，MagicPush 的上传流程如下：
+
+1. **`media_id`**：直接使用已有素材 ID，跳过上传步骤
+2. **`url` 模式**：后端通过 HTTP GET 下载远程资源（支持代理），将响应内容转为 Buffer 后通过 `multipart/form-data` 上传至企业微信 `/cgi-bin/media/upload` 接口
+3. **`base64` 模式**：后端将 Base64 字符串解码为 Buffer 后上传
+
+> ⚠️ **注意**：使用 `url` 方式时，目标 URL 必须是公网可访问的地址。下载超时时间为 30 秒。如果服务器配置了代理，下载过程会自动走代理通道。
 
 ### 频率限制
 
@@ -263,14 +886,14 @@ MagicPush 不会对频率做额外限制，请确保推送频率在企业微信�
 
 支持的代理协议：`http://`、`https://`、`socks4://`、`socks5://`
 
-### Q: 与「企业微信群机器人」渠道有什么区别？我该选哪个？
+### Q: 什么时候应该选择本渠道？
 
-| 场景 | 推荐渠道 |
-|------|---------|
-| 需要推送到群聊，配置简单 | 企业微信群机器人 |
-| 需要推送到**个人**，每个人独立接收 | **企业微信应用**（本渠道） |
-| 需要通知企业**全员** | **企业微信应用**（设置 touser 为 @all） |
-| 需要较高的消息频率 | 企业微信群机器人 |
+| 场景 | 说明 |
+|------|------|
+| 需要推送到**个人**，每个人独立接收 | ✅ 本渠道支持 |
+| 需要通知企业**全员** | ✅ 设置 touser 为 @all |
+| 需要推送到部门或标签分组 | ✅ 本渠道支持 |
+| 需要较高的消息频率（~30次/分钟/人） | ✅ 本渠道支持 |
 
 ---
 

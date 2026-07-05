@@ -85,7 +85,7 @@ class MisoundChannel extends BaseChannel {
       text = this._stripMarkdown(text);
     }
     if (type === 'html') {
-      text = this._stripHtml(text);
+      text = BaseChannel.stripHtmlTags(text);
     }
 
     // 截断过长的文本（小爱音箱 TTS 有长度限制）
@@ -132,20 +132,7 @@ class MisoundChannel extends BaseChannel {
       .trim();
   }
 
-  _stripHtml(html) {
-    return html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<p>/gi, '\n')
-      .replace(/<\/p>/gi, '')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
+
 
   validate(config) {
     if (!config.userId || config.userId.trim() === '') {

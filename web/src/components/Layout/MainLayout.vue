@@ -151,7 +151,6 @@ import {
   BookOpen,
   Bug,
   Info,
-  History,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -266,7 +265,6 @@ const menuItems = computed(() => {
     { name: '接口调试', path: '/debug', icon: Bug },
     { name: '渠道管理', path: '/channels', icon: Share2 },
     { name: '推送记录', path: '/logs', icon: FileText },
-    { name: '更新日志', path: '/changelog', icon: History },
     { name: '设置', path: '/settings', icon: Settings },
     { name: '关于', path: '/about', icon: Info },
   ]

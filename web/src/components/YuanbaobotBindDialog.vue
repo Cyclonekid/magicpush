@@ -103,7 +103,7 @@
 import { ref, watch, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Loading, SuccessFilled, CircleCloseFilled } from '@element-plus/icons-vue'
-import { getYuanbaobotBindStatus, retryYuanbaobotBind } from '@/api/channel'
+import { getYuanbaobotBindStatus, retryYuanbaobotBind } from '@/api/yuanbaobot'
 
 const props = defineProps({
   visible: Boolean,

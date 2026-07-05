@@ -115,6 +115,7 @@ request.interceptors.response.use(
 const doLogout = () => {
   if (isRedirecting) return // 防止重复跳转
   isRedirecting = true
+  const authStore = useAuthStore()
   authStore.logout()
   router.push('/login').finally(() => {
     isRedirecting = false

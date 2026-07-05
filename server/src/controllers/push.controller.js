@@ -26,7 +26,7 @@ class PushController {
 
       // 支持 POST body 或 GET query 参数
       const source = req.method === 'GET' ? req.query : req.body;
-      const { title, content, type = 'text' } = source;
+      const { title, content, type = 'text', extraData } = source;
       const url = source.url || '';
 
       // 获取真实IP
@@ -38,7 +38,7 @@ class PushController {
         return req.ip;
       };
 
-      const result = await PushService.pushByToken(token, { title, content, type, url }, getRealIP(req));
+      const result = await PushService.pushByToken(token, { title, content, type, url, extraData }, getRealIP(req));
 
       if (result.success) {
         return ResponseUtil.success(res, result, '推送成功');
@@ -57,7 +57,7 @@ class PushController {
   static async pushByEndpoint(req, res) {
     try {
       const endpointId = parseInt(req.params.endpointId);
-      const { title, content, type = 'text' } = req.body;
+      const { title, content, type = 'text', extraData } = req.body;
       const url = req.body.url || '';
 
       // 获取真实IP
@@ -72,7 +72,7 @@ class PushController {
       const result = await PushService.pushByEndpoint(
         endpointId,
         req.user.userId,
-        { title, content, type, url },
+        { title, content, type, url, extraData },
         getRealIP(req)
       );
 
@@ -96,7 +96,7 @@ class PushController {
   static async pushByChannel(req, res) {
     try {
       const channelId = parseInt(req.params.channelId);
-      const { title, content, type = 'text' } = req.body;
+      const { title, content, type = 'text', extraData } = req.body;
       const url = req.body.url || '';
 
       // 获取真实IP
@@ -111,7 +111,7 @@ class PushController {
       const result = await PushService.pushByChannel(
         channelId,
         req.user.userId,
-        { title, content, type, url },
+        { title, content, type, url, extraData },
         getRealIP(req)
       );
 

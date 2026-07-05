@@ -12,16 +12,18 @@ outline: deep
 
 ### 什么是企业微信群机器人？
 
-企业微信群机器人是企业微信内置的群聊机器人功能，可以在群中自动发送消息通知。与「企业微信应用」渠道不同：
+企业微信群机器人是企业微信内置的群聊机器人功能，可以在群中自动发送消息通知。
 
-| 对比项 | 企业微信应用 | 企业微信群机器人（本渠道） |
-|--------|--------------|----------------------------|
-| 推送目标 | 个人 / 部门 / 标签 / 全员 | **群聊** |
-| 鉴权方式 | corpid + corpsecret + access_token | **Webhook Key（静态）** |
-| 配置复杂度 | 需要 corpid + corpsecret + agentid | **仅需一个 Key** |
-| 消息格式 | text、markdown | text、markdown |
-| 适用场景 | 个人通知、告警推送 | **群内通知、团队协作** |
-| 频率限制 | ~30次/分钟/人 | **20条/分钟/机器人** |
+**渠道特性**：
+
+| 特性 | 说明 |
+|------|------|
+| 推送目标 | **群聊** |
+| 鉴权方式 | **Webhook Key（静态）** |
+| 配置复杂度 | **仅需一个 Key** |
+| 支持消息类型 | **文本**、**Markdown** / **Markdown（增强版）**、图片、图文、文件、语音、模板卡片 |
+| 适用场景 | 群内通知、团队协作 |
+| 频率限制 | **20条/分钟/机器人** |
 
 ### 前置条件
 
@@ -36,11 +38,11 @@ outline: deep
 
 1. 打开企业微信，进入需要添加机器人的**群聊**
 2. 点击右上角 **「···」** 菜单按钮
-3. 在菜单中找到并点击 **「群机器人」**
+3. 在菜单中找到并点击 **「消息推送」**
 4. 点击 **「添加机器人」** → **「新建机器人」**
 5. 填写机器人信息：
    - **机器人名称**：如 `MagicPush 通知`
-   - **所属群组**：当前群（不可修改）
+   - **简介**：如 `用于接收 MagicPush 推送的通知`
 6. 点击 **「添加」**
 
 ### 1.2 获取机器人 Key
@@ -124,8 +126,9 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 | type 值 | 说明 |
 |---------|------|
-| `text` | 纯文本消息（默认） |
-| `markdown` | Markdown 格式消息 |
+| `text` | **文本消息**（默认） |
+| `markdown` | **Markdown 格式消息** |
+| `html` | **HTML 格式消息**（MagicPush 自动剥离标签转为纯文本发送） |
 
 ### 3.2 Markdown 消息示例
 
@@ -152,6 +155,354 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 > ⚠️ **注意**：企业微信群机器人的 Markdown 是语法子集，不支持链接、图片、列表等元素。
 
+### 3.3 特有消息类型
+
+除了通用的 `text` 和 `markdown` 类型外，企业微信群机器人还支持以下**特有消息类型**，通过 `extraData` 参数发送：
+
+::: tip 命名空间隔离
+extraData 采用**命名空间隔离 + 类型自包含**设计，`channelType` 必须放在对应渠道的命名空间对象内：
+
+```json
+{
+  "channelType": "image",
+  "extraData": {
+    "wecom": {
+      "url": "https://example.com/img.png"
+    }
+  }
+}
+```
+
+各渠道的命名空间 key：`wecom`（企业微信群机器人）、`wecomapp`（企业微信应用）、`telegram`、`feishu`、`qqbot`
+:::
+
+| 类型 | 说明 | 典型场景 |
+|-------------|------|----------|
+| `news` | **图文消息**（带封面图和跳转链接） | 资讯推送、公告通知、活动宣传 |
+| `image` | **图片消息**（Base64 或 URL 内联发送） | 发送截图、验证码图片等 |
+| `file` | **文件消息**（需上传获取 media_id，≤20MB） | 发送报告、Excel 等文件 |
+| `voice` | **语音消息**（需上传获取 media_id，AMR 格式） | 发送语音通知（≤60秒） |
+| `markdown_v2` | **Markdown增强版**（支持表格、列表、代码块） | 周报汇报、数据报告、格式化通知 |
+| `template_card` | **模板卡片**（交互式） | 告警卡片、任务通知、审批提醒 |
+
+::: tip 使用方式
+特有消息类型需要在 API 请求中通过 `extraData[namespace].channelType` 指定类型，同时在同一命名空间内携带该类型的结构化数据。
+
+对于图片、文件、语音类型的消息，**支持多种数据输入方式**：
+
+- **`image` 图片**：支持 `base64`（内联到 JSON）或 `url`（后端自动下载转 Base64 后内联）
+- **`file` 文件 / `voice` 语音**：只接受 `media_id` 发送，但可通过以下任一方式获取：
+  - 直接提供已有的 `media_id`
+  - 提供 `base64`，后端自动上传并返回 `media_id`
+  - 提供 `url`，后端自动下载后上传并返回 `media_id`
+
+推荐优先使用 `url` 方式，避免在请求体中传输大量 Base64 数据。
+:::
+
+#### news 图文消息
+
+适用于需要展示封面图、标题描述和点击跳转链接的场景：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "中秋节礼品到",
+    "content": "今年中秋公司为大家准备了精美礼品",
+    "type": "text",
+    "extraData": {
+      "wecom": {
+        "channelType": "news",
+        "articles": [
+          {
+            "title": "中秋节礼品到",
+            "description": "今年中秋公司为大家准备了精美礼品",
+            "url": "https://example.com/gift",
+            "picurl": "https://picsum.photos/600/300"
+          }
+        ]
+      }
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| articles | Array | 是 | 文章数组（支持多条） |
+| articles[].title | String | 是 | 文章标题（最长 128 字符） |
+| articles[].description | String | 否 | 文章描述（最长 512 字符） |
+| articles[].url | String | 否 | 点击后跳转的链接地址 |
+| articles[].picurl | String | 否 | 封面图 URL |
+
+#### image 图片消息
+
+群机器人图片支持在 JSON 中直接内联 Base64 数据，也支持通过 URL 自动下载：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "验证码图片",
+    "content": "您的验证码已发送，请查收图片",
+    "type": "text",
+    "extraData": {
+      "wecom": {
+        "channelType": "image",
+        "url": "https://example.com/captcha.png"
+      }
+    }
+  }'
+```
+
+**方式二：使用 Base64**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "验证码图片",
+    "content": "您的验证码已发送，请查收图片",
+    "type": "text",
+    "extraData": {
+      "wecom": {
+        "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+      }
+    }
+  }'
+```
+
+**extraData 字段说明（二选一）**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| url | String | 条件必填* | 公网可访问的图片 URL，后端自动下载后转 Base64 内联 |
+| base64 | String | 条件必填* | 图片的 Base64 编码字符串（不含 `data:image` 前缀） |
+| md5 | String | 否 | 图片内容的 MD5 值（可选校验用） |
+
+\* `url` 和 `base64` 二者至少提供一种。
+
+#### file 文件消息
+
+> ⚠️ **注意**：群机器人文件类型**不支持** Base64 内联，必须通过上传获取 `media_id` 后发送。MagicPush 会自动处理上传流程。
+
+支持三种方式（三选一）：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "月度报表",
+    "content": "请查收本月度报表文件",
+    "type": "text",
+    "extraData": {
+      "wecom": {
+        "url": "https://example.com/report.pdf"
+      }
+    }
+  }'
+```
+
+**方式二：使用 Base64**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "月度报表",
+    "content": "请查收本月度报表文件",
+    "type": "text",
+    "extraData": {
+      "wecom": {
+        "base64": "JVBERi0xLjQK..."
+      }
+    }
+  }'
+```
+
+**方式三：使用已有 media_id（跳过上传）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "月度报表",
+    "content": "请查收报表",
+    "type": "text",
+    "extraData": {
+      "media_id": "@lALdD..."
+    }
+  }'
+```
+
+**extraData 字段说明（三选一）**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| media_id | String | 条件必填* | 已上传的媒体 ID（优先使用，跳过重新上传） |
+| url | String | 条件必填* | 公网可访问的文件 URL，后端自动下载后上传获取 media_id |
+| base64 | String | 条件必填* | 文件的 Base64 编码字符串，后端自动上传获取 media_id |
+
+\* 三者至少提供一种。
+
+#### template_card 模板卡片
+
+发送交互式模板卡片，支持文本通知、图文通知和按钮互动三种样式：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "系统升级通知",
+    "content": "系统将于今晚22:00-23:00进行升级维护",
+    "type": "text",
+    "extraData": {
+      "wecom": {
+        "card_type": "text_notice",
+        "source": { "desc_text": "来自魔法推送" },
+        "main_title": { "title": "系统升级通知" },
+        "sub_title_text": "系统将于今晚22:00-23:00进行升级维护",
+        "horizontal_content_list": [
+          { "keyname": "时间", "value": "2024-01-15 22:00-23:00" },
+          { "keyname": "影响范围", "value": "所有用户" }
+        ],
+        "card_action": { "url": "https://example.com/notice", "type": 1 }
+      }
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| card_type | String | 是 | 卡片类型：`text_notice` / `news_notice` / `button_interaction` |
+| source | Object | 否 | 来源信息 `{ desc_text: "来源描述" }` |
+| main_title | Object | 否 | 主标题 `{ title: "标题内容" }` |
+| sub_title_text | String | 否 | 副标题（最长 256 字符） |
+| horizontal_content_list | Array | 否 | 键值对列表 `[{ keyname, value }]` |
+| card_action | Object | 否 | 操作按钮 `{ url: "跳转URL", type: 1 }` |
+
+#### voice 语音消息
+
+> ⚠️ **注意**：群机器人语音类型必须通过上传获取 `media_id` 后发送。MagicPush 会自动处理上传流程。
+
+支持三种方式（三选一）：
+
+**方式一：使用 URL（推荐）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "语音通知",
+    "content": "系统告警语音已发送，请查收",
+    "type": "text",
+    "extraData": {
+      "wecom": {
+        "url": "https://example.com/voice.amr"
+      }
+    }
+  }'
+```
+
+**方式二：使用 Base64**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "语音通知",
+    "content": "系统告警语音已发送，请查收",
+    "type": "text",
+    "extraData": {
+      "wecom": {
+        "base64": "IyAgICAgICAgICAgICAg..."
+      }
+    }
+  }'
+```
+
+**方式三：使用已有 media_id（跳过上传）**
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "语音通知",
+    "content": "请查收语音",
+    "type": "text",
+    "extraData": {
+      "wecom": {
+        "media_id": "@lALdD..."
+      }
+    }
+  }'
+```
+
+**extraData 字段说明（三选一）**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| media_id | String | 条件必填* | 已上传的媒体 ID（优先使用，跳过重新上传） |
+| url | String | 条件必填* | 公网可访问的语音文件 URL，后端自动下载后上传获取 media_id |
+| base64 | String | 条件必填* | 语音的 Base64 编码字符串（AMR 格式），后端自动上传获取 media_id |
+
+\* 三者至少提供一种。
+
+> ⚠️ **注意**：语音文件限制：
+> - 大小不超过 **2M**
+> - 播放长度不超过 **60秒**
+> - 格式仅支持 **AMR**
+> - `media_id` 有效期为 **3天**
+
+#### markdown_v2 Markdown增强版
+
+发送支持表格、斜体、列表等更丰富语法的 Markdown 消息：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "周报汇总",
+    "content": "本周项目进度报告",
+    "type": "text",
+    "extraData": {
+      "wecom": {
+        "content": "| 项目 | 状态 | 进度 |\n|------|------|------|\n| 任务A | 进行中 | 80% |\n| 任务B | 已完成 | 100% |\n\n- *任务A*: 开发接近尾声\n- **任务C**: 下周启动"
+      }
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| content | String | 是 | Markdown_v2 内容（最长 4096 字节） |
+
+> ⚠️ **注意**：
+> - **不支持**字体颜色和 `@群成员` 语法
+> - 客户端版本需 ≥ **4.1.36** 才能正常渲染，否则显示为纯文本
+> - 相比普通 Markdown，额外支持：**表格、斜体、有序/无序列表、独立代码块、图片插入**
+
+
 ---
 
 ## 技术细节
@@ -167,12 +518,28 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 如果发送频率超过限制，会返回错误码 `88888`。MagicPush 不会做额外限制，请注意控制推送频率。
 
-### 安全设置
+### 媒体上传机制
 
-如果在企业微信中配置了机器人的安全设置（IP 白名单、 secret 签名等），需要确保：
+对于图片、文件、语音类型的消息，MagicPush 的处理流程如下：
 
-1. MagicPush 服务器的 IP 在白名单中
-2. 如果启用了签名验证，当前渠道暂不支持签名（企业微信群机器人签名需在计算签名后拼接到 URL），可考虑使用「企业微信应用」渠道代替
+| 类型 | API 字段格式 | MagicPush 处理方式 |
+|------|-------------|-------------------|
+| **image** | `{ base64, md5 }` 内联到 JSON | `base64` 直接使用；`url` → 下载转 Base64 → 内联发送 |
+| **file** | `{ media_id }` | `media_id` 直接使用；`base64`/`url` → 上传至 `webhook/upload_media` 获取 `media_id` 后发送 |
+| **voice** | `{ media_id }` | 同上 |
+
+> 💡 **说明**：群机器人的 `webhook/upload_media` 接口采用 `Content-Type: application/octet-stream` 方式上传原始文件内容。使用 `url` 方式时，后端通过 HTTP GET 下载远程资源（超时 30 秒），转为 Buffer 后上传。
+
+### 安全注意事项
+
+> ⚠️ **重要**：企业微信群机器人 **不提供** IP 白名单、签名验证等安全机制。
+>
+> 其安全性完全依赖于 **Webhook URL 的保密性**：
+> - 任何人获取到 Webhook 地址即可向该群发送消息
+> - 请勿将 URL 分享到 GitHub、博客等公开场所
+> - 如果怀疑 URL 已泄露，建议在群中删除旧机器人并重新创建
+>
+> 如需更高级的安全控制（鉴权、审计日志等），可考虑使用「企业微信应用」渠道代替。
 
 ---
 
@@ -213,14 +580,14 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 
 **解决**：每个群需要单独创建一个群机器人，每个机器人对应一个 MagicPush 渠道。无法通过一个 Webhook 同时推送到多个群。
 
-### Q: 与「企业微信应用」渠道有什么区别？我该选哪个？
+### Q: 什么时候应该选择本渠道？
 
-| 场景 | 推荐渠道 |
-|------|---------|
-| 需要推送到**群聊**，配置简单 | **企业微信群机器人**（本渠道） |
-| 需要推送到**个人**，每个人独立接收 | 企业微信应用 |
-| 需要通知企业**全员** | 企业微信应用 |
-| 需要较高的消息频率 | 企业微信群机器人（可多机器人分散） |
+| 场景 | 说明 |
+|------|------|
+| 需要推送到**群聊** | ✅ 本渠道支持 |
+| 配置简单，仅需一个 Webhook Key | ✅ 本渠道支持 |
+| 需要较高的消息频率（可多机器人分散） | ✅ 本渠道支持 |
+| 群内通知、团队协作场景 | ✅ 本渠道适合 |
 
 ---
 

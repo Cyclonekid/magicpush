@@ -11,19 +11,6 @@
       </el-button>
     </div>
 
-    <!-- 渠道类型说明 -->
-    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-      <div class="flex items-start gap-3">
-        <Info class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-        <div class="text-sm text-blue-700 dark:text-blue-300">
-          <p class="font-medium mb-1">支持的渠道类型</p>
-          <p class="opacity-80">
-            微信龙虾机器人 · 企业微信群机器人 · 钉钉 · 飞书 · Telegram · 微信公众号 · WxPusher · PushPlus · Server酱 · Webhook · SMTP邮件 · Gotify · Bark · Meow · PushMe · 息知 · 企业微信应用 · 元宝 Bot · ntfy · PushDeer · iGot · 群晖 Chat · ShowDoc · 小爱音箱
-          </p>
-        </div>
-      </div>
-    </div>
-
     <!-- 渠道列表 -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <div
@@ -66,6 +53,14 @@
                   <RefreshCw class="w-4 h-4 mr-2" />
                   重新绑定
                 </el-dropdown-item>
+                <el-dropdown-item v-if="channel.channel_type === 'misound'" command="rebind_misound">
+                  <RefreshCw class="w-4 h-4 mr-2" />
+                  重新绑定
+                </el-dropdown-item>
+                <el-dropdown-item v-if="channel.channel_type === 'qqbot'" command="rebind_qqbot">
+                  <RefreshCw class="w-4 h-4 mr-2" />
+                  重新绑定
+                </el-dropdown-item>
                 <el-dropdown-item command="test">
                   <TestTube class="w-4 h-4 mr-2" />
                   测试
@@ -84,10 +79,10 @@
           <div
             v-for="(value, key) in getDisplayConfig(channel)"
             :key="key"
-            class="flex items-center text-sm"
+            class="flex items-center text-sm gap-2"
           >
-            <span class="text-gray-500 dark:text-gray-400 w-16">{{ key }}:</span>
-            <span class="text-gray-700 dark:text-gray-300 truncate">{{ value }}</span>
+            <span class="text-gray-500 dark:text-gray-400 whitespace-nowrap flex-shrink-0">{{ key }}:</span>
+            <span class="text-gray-700 dark:text-gray-300 break-all min-w-0">{{ value }}</span>
           </div>
         </div>
 
@@ -151,6 +146,7 @@
             v-model="form.channelType"
             placeholder="选择渠道类型"
             class="w-full"
+            popper-class="channel-type-dropdown"
             :disabled="!!editingChannel"
           >
             <el-option
@@ -158,10 +154,11 @@
               :key="type.type"
               :label="type.name"
               :value="type.type"
+              :title="`${type.name} - ${type.description}`"
             >
-              <div class="flex items-center gap-2">
-                <span>{{ type.name }}</span>
-                <span class="text-gray-400 text-xs">- {{ type.description }}</span>
+              <div class="channel-option-item">
+                <span class="channel-name">{{ type.name }}</span>
+                <span class="channel-desc" :title="type.description">- {{ type.description }}</span>
               </div>
             </el-option>
           </el-select>
@@ -193,12 +190,37 @@
           </p>
         </div>
 
-        <el-form-item v-if="form.channelType !== 'wechatclawbot'" label="渠道名称" prop="name">
+        <!-- 小爱音箱：扫码登录绑定引导 -->
+        <div v-if="form.channelType === 'misound' && !editingChannel" class="text-center py-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            小爱音箱需要通过小米账号扫码登录完成绑定，点击下方按钮开始
+          </p>
+          <el-button type="primary" class="mt-3" @click="openMisoundBind">
+            扫码登录绑定
+          </el-button>
+        </div>
+
+        <!-- QQ 机器人：握手绑定引导 -->
+        <div v-if="form.channelType === 'qqbot' && !editingChannel" class="text-center py-4">
+          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 text-left mb-4">
+            <p class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1.5">🔗 绑定方式说明</p>
+            <ul class="text-sm text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
+              <li>QQ机器人需要通过<strong>在QQ中@机器人或发消息</strong>的方式获取 OpenID 完成绑定</li>
+              <li>系统会自动从消息中提取 OpenID，无需手动查找</li>
+              <li>支持群聊@、私聊、频道子频道三种场景</li>
+            </ul>
+          </div>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            请先填写 AppID 和 AppSecret，然后点击下方按钮开始连接。
+          </p>
+        </div>
+
+        <el-form-item v-if="form.channelType !== 'wechatclawbot' && form.channelType !== 'misound'" label="渠道名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入渠道名称" />
         </el-form-item>
 
         <!-- 动态配置字段 -->
-        <template v-if="currentChannelType && form.channelType !== 'wechatclawbot'">
+        <template v-if="currentChannelType && form.channelType !== 'wechatclawbot' && form.channelType !== 'misound'">
           <el-form-item
             v-for="field in visibleConfigFields"
             :key="field.name"
@@ -300,7 +322,7 @@
         </template>
       </el-form>
 
-      <template v-if="form.channelType !== 'wechatclawbot'" #footer>
+      <template v-if="form.channelType !== 'wechatclawbot' && form.channelType !== 'misound'" #footer>
         <!-- 群晖 Chat 相关文档链接 -->
         <div v-if="form.channelType === 'synologychat'" class="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-xs">
           <a href="https://www.synology.com/en-global/dsm/feature/chat" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1">
@@ -348,7 +370,7 @@
         <div class="flex justify-end gap-2">
           <el-button @click="showCreateDialog = false">取消</el-button>
           <el-button type="primary" :loading="formLoading" @click="handleSubmit">
-            {{ editingChannel ? '保存' : (form.channelType === 'yuanbaobot' ? '绑定并连接' : '绑定') }}
+            {{ editingChannel ? '保存' : (form.channelType === 'yuanbaobot' || form.channelType === 'qqbot' ? '绑定并连接' : '绑定') }}
           </el-button>
         </div>
       </template>
@@ -369,6 +391,22 @@
       :channel-id="yuanbaobotBindChannelId"
       @success="handleYuanbaobotBindSuccess"
     />
+
+    <!-- 小爱音箱扫码绑定弹窗 -->
+    <MisoundBindDialog
+      v-model:visible="showMisoundDialog"
+      :mode="misoundBindMode"
+      :channel-id="misoundBindChannelId"
+      @success="handleMisoundBindSuccess"
+    />
+
+    <!-- QQ 机器人握手绑定弹窗 -->
+    <QqbotBindDialog
+      v-model:visible="showQqbotDialog"
+      :mode="qqbotBindMode"
+      :channel-id="qqbotBindChannelId"
+      @success="handleQqbotBindSuccess"
+    />
   </div>
 </template>
 
@@ -383,7 +421,6 @@ import {
   Edit,
   TestTube,
   Trash2,
-  Info,
   MessageCircle,
   Send,
   Bell,
@@ -402,6 +439,8 @@ import {
 } from 'lucide-vue-next'
 import ClawbotBindDialog from '@/components/ClawbotBindDialog.vue'
 import YuanbaobotBindDialog from '@/components/YuanbaobotBindDialog.vue'
+import MisoundBindDialog from '@/components/MisoundBindDialog.vue'
+import QqbotBindDialog from '@/components/QqbotBindDialog.vue'
 
 const channels = ref([])
 const channelTypes = ref([])
@@ -414,6 +453,12 @@ const clawbotBindChannelId = ref(null)
 const showYuanbaobotDialog = ref(false)
 const yuanbaobotBindMode = ref('create')
 const yuanbaobotBindChannelId = ref(null)
+const showMisoundDialog = ref(false)
+const misoundBindMode = ref('create')
+const misoundBindChannelId = ref(null)
+const showQqbotDialog = ref(false)
+const qqbotBindMode = ref('create')
+const qqbotBindChannelId = ref(null)
 
 const formRef = ref(null)
 const form = reactive({
@@ -597,6 +642,14 @@ const handleCommand = (command, channel) => {
     yuanbaobotBindMode.value = 'rebind'
     yuanbaobotBindChannelId.value = channel.id
     showYuanbaobotDialog.value = true
+  } else if (command === 'rebind_misound') {
+    misoundBindMode.value = 'rebind'
+    misoundBindChannelId.value = channel.id
+    showMisoundDialog.value = true
+  } else if (command === 'rebind_qqbot') {
+    qqbotBindMode.value = 'rebind'
+    qqbotBindChannelId.value = channel.id
+    showQqbotDialog.value = true
   } else if (command === 'test') {
     handleTest(channel)
   } else if (command === 'delete') {
@@ -692,6 +745,16 @@ const handleSubmit = async () => {
           showYuanbaobotDialog.value = true
           return
         }
+        // QQ Bot：创建成功后自动打开握手绑定弹窗
+        if (form.channelType === 'qqbot' && res.data?.id) {
+          showCreateDialog.value = false
+          resetForm()
+          loadData()
+          qqbotBindMode.value = 'create'
+          qqbotBindChannelId.value = res.data.id
+          showQqbotDialog.value = true
+          return
+        }
       }
     }
     showCreateDialog.value = false
@@ -728,7 +791,68 @@ const handleYuanbaobotBindSuccess = () => {
   loadData()
 }
 
+const openMisoundBind = () => {
+  misoundBindMode.value = 'create'
+  misoundBindChannelId.value = null
+  showMisoundDialog.value = true
+}
+
+const handleMisoundBindSuccess = () => {
+  showMisoundDialog.value = false
+  showCreateDialog.value = false
+  resetForm()
+  loadData()
+}
+
+const handleQqbotBindSuccess = () => {
+  showQqbotDialog.value = false
+  loadData()
+}
+
 onMounted(() => {
   loadData()
 })
 </script>
+
+<style>
+/* 渠道类型下拉框弹窗样式 - 与输入框等宽并截断长文本 */
+.channel-type-dropdown.el-select__popper {
+  /* 关键：使用 min-content 防止被长内容撑开，同时不设最大值保持与输入框等宽 */
+  width: fit-content !important;
+  max-width: var(--el-dropdown-menu-max-width, 480px) !important;
+}
+
+.channel-type-dropdown .el-select-dropdown__wrap {
+  max-height: 274px; /* 保持与默认高度一致 */
+}
+
+.channel-type-dropdown .el-select-dropdown__item {
+  padding-right: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 自定义选项内容布局 */
+.channel-option-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  overflow: hidden;
+  min-width: 0; /* 允许子元素收缩 */
+}
+
+.channel-name {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.channel-desc {
+  font-size: 12px;
+  color: #909399;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0; /* 关键：允许文字截断 */
+}
+</style>

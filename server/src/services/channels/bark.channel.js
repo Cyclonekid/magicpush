@@ -43,7 +43,7 @@ class BarkChannel extends BaseChannel {
     }
 
     if (type === 'html') {
-      body = this._stripHtml(body);
+      body = BaseChannel.stripHtmlTags(body);
     }
 
     const payload = {
@@ -93,20 +93,7 @@ class BarkChannel extends BaseChannel {
       .trim();
   }
 
-  _stripHtml(html) {
-    return html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<p>/gi, '\n')
-      .replace(/<\/p>/gi, '')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
+
 
   validate(config) {
     if (!config.serverUrl || config.serverUrl.trim() === '') {

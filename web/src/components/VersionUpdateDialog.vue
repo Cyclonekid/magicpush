@@ -109,11 +109,6 @@ const displayName = computed(() => {
   return `魔法推送 v${props.latestChangelog.version}`
 })
 
-const handleViewFullLog = () => {
-  emit('update:visible', false)
-  router.push('/changelog')
-}
-
 const handleGoToRelease = () => {
   window.open('https://github.com/magiccode1412/magicpush/releases', '_blank')
 }

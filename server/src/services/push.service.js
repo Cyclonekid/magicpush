@@ -94,11 +94,11 @@ class PushService {
    * 推送到多个渠道
    */
   static async pushToChannels(userId, endpointId, channels, message, clientIp) {
-    const { title, content, type = 'text', url } = message;
+    const { title, content, type = 'text', url, extraData } = message;
     const results = [];
 
     for (const channel of channels) {
-      const result = await this.pushToChannel(userId, endpointId, channel, { title, content, type, url }, clientIp);
+      const result = await this.pushToChannel(userId, endpointId, channel, { title, content, type, url, extraData }, clientIp);
       results.push(result);
     }
 
@@ -118,7 +118,18 @@ class PushService {
    * 推送到单个渠道
    */
   static async pushToChannel(userId, endpointId, channel, message, clientIp) {
-    const { title, content, type, url } = message;
+    let { title, content, type, url, extraData } = message;
+
+    // 从 extraData 的渠道命名空间动态获取 channelType（类型与数据自包含设计）
+    const nsKey = channel.channel_type;
+    let resolvedChannelType = null;
+    let resolvedExtraData = null;
+
+    if (extraData && nsKey && extraData[nsKey]) {
+      const namespaceData = extraData[nsKey];
+      resolvedChannelType = namespaceData.channelType || null;
+      resolvedExtraData = namespaceData;
+    }
 
     // 消息免打扰检查：如果当前在免打扰时段内，记录日志但不实际推送
     if (endpointId) {
@@ -177,9 +188,9 @@ class PushService {
     });
 
     try {
-      // 获取适配器并发送
+      // 获取适配器并发送（传递完整消息对象以支持渠道特有类型）
       const adapter = getChannelAdapter(channel.channel_type, channel.config, channel.id);
-      const result = await adapter.send({ title, content, type, url });
+      const result = await adapter.send({ title, content, type, url, channelType: resolvedChannelType, extraData: resolvedExtraData });
 
       // 更新记录为成功
       await PushLogModel.updateStatus(log.id, 'success', result, null);

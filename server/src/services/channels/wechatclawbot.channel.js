@@ -92,7 +92,7 @@ class WechatclawbotChannel extends BaseChannel {
     // }
     
     if (type === 'html') {
-      text = this._stripHtml(text);
+      text = BaseChannel.stripHtmlTags(text);
     }
 
     // 检查是否需要追加额度提醒
@@ -163,22 +163,7 @@ class WechatclawbotChannel extends BaseChannel {
       .trim();
   }
 
-  _stripHtml(text) {
-    return text
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n')
-      .replace(/<\/h[1-6]>/gi, '\n')
-      .replace(/<\/li>/gi, '\n')
-      .replace(/<\/tr>/gi, '\n')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/gi, ' ')
-      .replace(/&lt;/gi, '<')
-      .replace(/&gt;/gi, '>')
-      .replace(/&amp;/gi, '&')
-      .replace(/&quot;/gi, '"')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
+
 }
 
 module.exports = WechatclawbotChannel;

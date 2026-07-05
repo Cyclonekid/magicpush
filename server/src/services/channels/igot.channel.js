@@ -39,7 +39,7 @@ class IGotChannel extends BaseChannel {
         content: content,
       };
     } else if (type === 'html') {
-      const text = this._stripHtml(content);
+      const text = BaseChannel.stripHtmlTags(content);
       body = {
         title: title ? title.slice(0, 20) : '',
         content: title ? `${title}\n${text}` : text,
@@ -73,20 +73,7 @@ class IGotChannel extends BaseChannel {
     return data;
   }
 
-  _stripHtml(html) {
-    return html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<p>/gi, '\n')
-      .replace(/<\/p>/gi, '')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
+
 
   validate(config) {
     if (config.serverUrl && config.serverUrl.trim() !== '') {

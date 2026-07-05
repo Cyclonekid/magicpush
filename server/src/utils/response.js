@@ -32,12 +32,12 @@ class ResponseUtil {
   /**
    * 错误响应
    */
-  static error(res, message = '操作失败', code = 500, statusCode = 500) {
+  static error(res, message = '操作失败', code = 500, statusCode = 500, data = null) {
     return res.status(statusCode).json({
       success: false,
       code,
       message,
-      data: null,
+      data,
       timestamp: new Date().toISOString(),
     });
   }

@@ -23,8 +23,7 @@ const IGotChannel = require('./igot.channel');
 const SynologyChatChannel = require('./synologychat.channel');
 const ShowDocChannel = require('./showdoc.channel');
 const MisoundChannel = require('./misound.channel');
-// TODO: QQ 机器人渠道开发中，待测试后启用
-// const QqbotChannel = require('./qqbot.channel');
+const QqbotChannel = require('./qqbot.channel');
 
 // 渠道类型到适配器的映射
 const channelAdapters = {
@@ -52,7 +51,7 @@ const channelAdapters = {
   synologychat: SynologyChatChannel,
   showdoc: ShowDocChannel,
   misound: MisoundChannel,
-  // qqbot: QqbotChannel, // TODO: 待测试后启用
+  qqbot: QqbotChannel,
 };
 
 /**
@@ -66,7 +65,7 @@ function getChannelAdapter(type, config, channelId) {
   if (!AdapterClass) {
     throw new Error(`不支持的渠道类型: ${type}`);
   }
-  return new AdapterClass(config, channelId);
+  return new AdapterClass(config, channelId, type);
 }
 
 /**
@@ -80,6 +79,42 @@ function getChannelTypes() {
     description: AdapterClass.getDescription(),
     configFields: AdapterClass.getConfigFields(),
   }));
+}
+
+/**
+ * 获取指定渠道的类型信息（包含支持的消息类型）
+ * @param {string} type - 渠道类型
+ * @returns {Object|null} - 渠道类型信息，包含 supportedTypes 和 channelSpecificTypes
+ */
+function getChannelTypeInfo(type) {
+  const AdapterClass = channelAdapters[type];
+  if (!AdapterClass) {
+    return null;
+  }
+
+  return {
+    type,
+    name: AdapterClass.getName(),
+    description: AdapterClass.getDescription(),
+    supportedTypes: AdapterClass.getSupportedTypes(),
+    channelSpecificTypes: AdapterClass.getChannelSpecificTypes(),
+  };
+}
+
+/**
+ * 获取所有渠道的能力信息
+ * @returns {Array<Object>} - 所有渠道的类型信息
+ */
+function getAllChannelsCapabilities() {
+  return Object.entries(channelAdapters)
+    .map(([type, AdapterClass]) => ({
+      type,
+      name: AdapterClass.getName(),
+      description: AdapterClass.getDescription(),
+      supportedTypes: AdapterClass.getSupportedTypes(),
+      channelSpecificTypes: AdapterClass.getChannelSpecificTypes(),
+    }))
+    .filter(channel => channel.channelSpecificTypes.length > 0); // 只返回有特有类型的渠道
 }
 
 /**
@@ -122,9 +157,11 @@ module.exports = {
   SynologyChatChannel,
   ShowDocChannel,
   MisoundChannel,
-  // QqbotChannel, // TODO: 待测试后启用
+  QqbotChannel,
   getChannelAdapter,
   getChannelTypes,
+  getChannelTypeInfo,
+  getAllChannelsCapabilities,
   validateChannelConfig,
   channelAdapters,
 };

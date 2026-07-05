@@ -20,7 +20,10 @@ outline: deep
 | 鉴权方式 | Webhook URL（可选签名校验） |
 | 配置复杂度 | 低，仅需粘贴 Webhook 地址 |
 | 消息格式 | text、interactive（卡片） |
-| 频率限制 | 50条/分钟/机器人 |
+| 频率限制 | **100 次/分钟**、**5 次/秒**（单租户单机器人） |
+| 请求体大小 | 不超过 **20 KB** |
+
+> ⚠️ **重要提醒**：建议发送消息尽量避开 10:00、17:30 等整点及半点时间，否则可能因系统压力导致 **11232 限流错误**，造成消息发送失败。
 
 ### 前置条件
 
@@ -43,6 +46,8 @@ outline: deep
    - **描述**：可选，如 `接收系统告警通知`
    - **安全设置**：可选择启用「签名校验」
 7. 点击 **「添加」**
+
+> 💡 **提示**：官方文档： [在群组中添加自定义机器人](https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot#399d949c)。
 
 ### 1.2 获取 Webhook 地址和 Secret
 
@@ -120,6 +125,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 |---------|------|
 | `text` | 纯文本消息（默认） |
 | `markdown` | 交互式卡片消息（飞书将 Markdown 渲染为卡片） |
+| `html` | HTML 格式消息（MagicPush 自动剥离标签转为纯文本发送） |
 
 ### 3.2 卡片消息示例
 
@@ -141,6 +147,201 @@ CPU 使用率超过 90%，请及时处理！
 - 换行（`\n`）
 - 文本颜色标注
 
+### 3.3 特有消息类型
+
+除了通用的 `text` 和 `markdown` 类型外，飞书群机器人还支持以下**特有消息类型**，通过 `extraData` 参数发送：
+
+::: tip 命名空间隔离
+extraData 采用**命名空间隔离 + 类型自包含**设计，`channelType` 必须放在对应渠道的命名空间对象内：
+
+```json
+{
+  "channelType": "interactive_card",
+  "extraData": {
+    "feishu": {
+      "channelType": "interactive_card",
+        "card": { ... }
+    }
+  }
+}
+```
+
+各渠道的命名空间 key：`wecom`（企业微信群机器人）、`wecomapp`（企业微信应用）、`telegram`、`feishu`、`qqbot`
+:::
+
+| 类型 | 说明 | 典型场景 |
+|-------------|------|----------|
+| `post` | 富文本消息（多段落、链接、@人） | 格式丰富的内容推送 |
+| `interactive_card` | 交互式卡片（完整卡片 JSON） | 自定义布局的复杂卡片交互 |
+| `image` | 图片消息（image_key 或 Base64） | 发送图片、截图 |
+| `share_chat` | 群名片分享 | 分享群聊邀请 |
+
+::: tip 使用方式
+特有消息类型需要在 API 请求中通过 `extraData[namespace].channelType` 指定类型，同时在同一命名空间内携带该类型的结构化数据。
+:::
+
+#### post 富文本消息
+
+支持多段落、超链接、@人等富文本元素：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "项目更新通知",
+    "content": "项目有新的更新，请查看详情",
+    "type": "text",
+    "extraData": {
+      "feishu": {
+        "channelType": "post",
+        "title": "项目更新通知",
+        "content": [
+          [
+            { "tag": "text", "text": "项目有新的更新：" }
+          ],
+          [
+            { "tag": "a", "text": "查看详情", "href": "https://example.com/update" }
+          ]
+        ]
+      }
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | String | 否 | 消息标题（最长 128 字符） |
+| content | Array | 是 | 内容段落数组，每段为一个元素数组 |
+
+**content 元素格式**：
+
+| tag 类型 | 必填字段 | 说明 |
+|----------|----------|------|
+| `text` | text | 纯文本 |
+| `a` | text, href | 超链接 |
+| `at` | user_id | @某人（user_id 为飞书用户 ID） |
+
+#### interactive_card 交互式卡片
+
+发送完整的飞书卡片 JSON 对象，支持自定义 header、elements、actions：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "系统通知",
+    "content": "服务器状态：正常运行，CPU使用率：45%",
+    "type": "text",
+    "extraData": {
+      "feishu": {
+        "channelType": "interactive_card",
+        "card": {
+          "header": {
+            "title": { "tag": "plain_text", "content": "系统通知" },
+            "template": "blue"
+          },
+          "elements": [
+            {
+              "tag": "div",
+              "text": { "tag": "lark_md", "content": "**服务器状态**: 正常运行\n**CPU使用率**: 45%" }
+            },
+            {
+              "tag": "action",
+              "actions": [
+                { "tag": "button", "text": { "tag": "plain_text", "content": "查看详情" }, "url": "https://example.com", "type": "primary" }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| card | Object | 是 | 完整的飞书卡片 JSON 对象（含 header 和 elements） |
+
+> 详细卡片结构请参考 [飞书官方卡片文档](https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot#%E5%8D%A1%E7%89%87%E6%B6%88%E6%81%AF)。
+
+#### image 图片消息
+
+支持两种方式：通过 `image_key`（已上传的图片）或 `base64`（Base64 编码）：
+
+```bash
+# 方式一：使用 image_key
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "截图分享",
+    "content": "请查看分享的图片",
+    "type": "text",
+    "extraData": {
+      "feishu": {
+        "channelType": "image",
+        "image_key": "img_v2_xxxx"
+      }
+    }
+  }'
+
+# 方式二：使用 Base64 编码
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "验证码图片",
+    "content": "您的验证码已发送，请查收图片",
+    "type": "text",
+    "extraData": {
+      "feishu": {
+        "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD..."
+      }
+    }
+  }'
+```
+
+**extraData 字段说明**（二选一）：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| image_key | String | 条件必填 | 通过飞书上传接口获取的图片 key（与 base64 二选一） |
+| base64 | String | 条件必填 | 图片 Base64 编码字符串（与 image_key 二选一） |
+
+#### share_chat 群名片分享
+
+分享群聊电子名片，方便成员快速加入群组：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "群聊邀请",
+    "content": "邀请您加入项目交流群",
+    "type": "text",
+    "extraData": {
+      "feishu": {
+        "channelType": "share_chat",
+        "share_chat_id": "oc_xxxxxxxx"
+      }
+    }
+  }'
+```
+
+**extraData 字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| share_chat_id | String | 是 | 目标群聊的 open_chat_id |
+
+
 ---
 
 ## 技术细节
@@ -150,9 +351,17 @@ CPU 使用率超过 90%，请及时处理！
 - 文本消息：最长不超过 **5000 字符**
 - 卡片消息：最长不超过 **5000 字符**
 
+### 请求体大小限制
+
+- 请求体数据大小不能超过 **20 KB**
+
 ### 频率限制
 
-飞书群机器人限制：**每个机器人最多 50 条消息/分钟**。
+飞书自定义机器人限制（单租户单机器人）：
+- **100 次/分钟**
+- **5 次/秒**
+
+> ⚠️ 建议避开整点及半点时间发送，避免触发系统限流。
 
 ### 签名机制
 
@@ -188,7 +397,7 @@ CPU 使用率超过 90%，请及时处理！
 
 ### Q: 发送消息返回频率限制错误？
 
-**原因**：触发了频率限制（50条/分钟）。
+**原因**：触发了频率限制（100 次/分钟 或 5 次/秒）。
 
 **解决**：
 1. 降低推送频率，合并消息
@@ -211,6 +420,5 @@ CPU 使用率超过 90%，请及时处理！
 
 ## 参考资源
 
-- [飞书自定义机器人文档](https://open.feishu.cn/document/client-docs/bot-v3/bot-overview)
-- [飞书机器人消息格式](https://open.feishu.cn/document/client-docs/bot-v3/message/create)
+- [飞书自定义机器人官方文档](https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot)
 - [MagicPush GitHub 仓库](https://github.com/magiccode1412/magicpush)

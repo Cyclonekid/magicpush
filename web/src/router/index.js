@@ -70,11 +70,6 @@ const routes = [
         name: 'About',
         component: () => import('@/views/About.vue'),
       },
-      {
-        path: 'changelog',
-        name: 'Changelog',
-        component: () => import('@/views/Changelog.vue'),
-      },
     ],
   },
 ]

@@ -22,7 +22,7 @@ iGot 是一个开放式通知推送服务平台，支持 iOS 和 Android，通�
 | 推送目标 | iOS / Android（需安装 iGot 客户端） |
 | 鉴权方式 | Key（在 iGot 控制台获取） |
 | 配置复杂度 | 低，仅需粘贴 Key |
-| 消息格式 | text、markdown |
+| 消息格式 | text、markdown（html 自动转为纯文本） |
 | 频率限制 | 取决于 iGot 套餐 |
 
 ### 前置条件
@@ -113,6 +113,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 |---------|------|
 | `text` | 纯文本消息（默认） |
 | `markdown` | Markdown 格式消息 |
+| `html` | HTML 格式消息（MagicPush 自动剥离标签转为纯文本） |
 
 ### 3.2 Markdown 消息示例#
 

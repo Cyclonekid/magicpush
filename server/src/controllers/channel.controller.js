@@ -1,4 +1,5 @@
 const ChannelService = require('../services/channel.service');
+const { getChannelTypeInfo, getAllChannelsCapabilities } = require('../services/channels');
 const ResponseUtil = require('../utils/response');
 const logger = require('../utils/logger');
 
@@ -109,7 +110,7 @@ class ChannelController {
         parseInt(req.params.id),
         req.user.userId
       );
-      
+
       if (result.success) {
         return ResponseUtil.success(res, result, '渠道测试成功');
       } else {
@@ -121,6 +122,40 @@ class ChannelController {
       }
       logger.error('测试渠道失败:', error);
       return ResponseUtil.badRequest(res, error.message);
+    }
+  }
+
+  /**
+   * 获取所有渠道的消息类型能力
+   * GET /api/channels/types/capabilities
+   */
+  static async getAllCapabilities(req, res) {
+    try {
+      const capabilities = getAllChannelsCapabilities();
+      return ResponseUtil.success(res, capabilities);
+    } catch (error) {
+      logger.error('获取渠道能力失败:', error);
+      return ResponseUtil.serverError(res, '获取渠道能力失败');
+    }
+  }
+
+  /**
+   * 获取指定渠道的消息类型能力详情
+   * GET /api/channels/types/:type/capabilities
+   */
+  static async getChannelCapabilities(req, res) {
+    try {
+      const { type } = req.params;
+      const capability = getChannelTypeInfo(type);
+
+      if (!capability) {
+        return ResponseUtil.notFound(res, `不支持的渠道类型: ${type}`);
+      }
+
+      return ResponseUtil.success(res, capability);
+    } catch (error) {
+      logger.error('获取渠道能力详情失败:', error);
+      return ResponseUtil.serverError(res, '获取渠道能力详情失败');
     }
   }
 }

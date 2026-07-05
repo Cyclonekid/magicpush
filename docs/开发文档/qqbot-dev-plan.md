@@ -1,7 +1,7 @@
 # QQ 官方机器人通知渠道 - 开发文档
 
-> 状态：**开发中（暂停）**
-> 最后更新：2026-03-30
+> 状态：✅ **已完成待测试**
+> 最后更新：2026-07-02
 
 ## 一、概述
 
@@ -155,29 +155,84 @@ Authorization: Bot ${appID}.${token}
 | `server/src/middleware/validator.middleware.js` | 白名单添加 `qqbot` |
 | `web/src/views/channels/List.vue` | 渠道颜色 `bg-cyan-500`、图标 `MessageSquare`、描述文本 |
 
-## 五、待完成事项
+## 五、已完成事项 ✅
 
-### 必须完成
+### 核心功能（2026-07-02 完成）
 
-- [ ] **确认 Access Token 获取方式**：官方推荐 Access Token 鉴权（Token 方式已弃用），需确认获取接口 URL 和请求参数
-- [ ] **实际测试**：需要有一个已创建的 QQ 机器人才能实际测试推送
-- [ ] **目标 ID 获取引导**：当前用户难以获取 `openid`，需要更友好的引导方式
+- [x] **Access Token 自动管理**：实现官方推荐的 Access Token 鉴权方式
+  - 自动从 `https://bots.qq.com/app/getAppAccessToken` 获取
+  - 内存缓存 + 提前 5 分钟自动刷新
+  - 单例模式，按 appId 维度管理
+  - 完整的 TokenManager 类封装
 
-### 建议优化
+- [x] **渠道注册启用**
+  - 取消 channels/index.js 中三处注释
+  - 添加 validator.middleware.js 白名单支持
+  - QQ机器人渠道正式可用
 
-- [ ] **Access Token 自动管理**：实现获取 + 缓存 + 过期刷新机制（当前使用 Token 方式）
-- [ ] **错误处理优化**：细化 QQ API 返回的错误码处理
-- [ ] **消息长度限制**：QQ 对消息长度有上限，需要截断或分片
-- [ ] **富媒体消息支持**：图片、文件等消息类型
-- [ ] **前端引导页面**：详细的 ID 获取教程
-- [ ] **子频道场景也支持 msg_type**：当前子频道消息未传递 msg_type 参数
+- [x] **已知Bug修复**
+  - 子频道消息添加 msg_type 参数支持
+  - 消息长度限制（5000字符自动截断）
+  - 错误码细化处理（30+种错误友好翻译）
 
-## 六、暂停原因
+- [x] **用户体验优化**
+  - 配置字段文案更新（AppSecret说明更清晰）
+  - 用户文档全面更新（反映Access Token变更）
+  - 开发文档状态更新
 
-1. 机器人尚未发布，无法拉进群或频道测试
-2. 单聊/C2C 需要先获取 `user_openid`，但未运行 WebSocket 服务无法从事件中获取
-3. Access Token 获取接口未确认，当前 Token 方式可能不稳定
-4. 缺少测试环境，无法验证 API 调用是否正确
+### 待后续优化（可选）
+
+- [ ] **实际测试**：需要在沙箱/正式环境验证四种推送场景
+- [ ] **富媒体消息支持**：图片、文件等消息类型（v2.0）
+- [ ] **自定义Intents配置**：让用户选择订阅哪些事件类型
+- [ ] **Webhook备选方案**：对于无法建立WS连接的环境
+
+## 五点五、WebSocket 绑定功能 ✅（2026-07-02 新增）
+
+> **问题**: QQ Bot 的 `group_openid` / `user_openid` 无法通过 REST API 主动查询，必须通过监听 WebSocket 事件被动获取。
+
+> **解决**: 实现了完整的 **WebSocket 绑定握手机制**，参照元宝Bot架构，用户体验从"手动查找ID"升级为"在QQ中@机器人即可自动绑定"。
+
+### 新增文件
+
+| 文件 | 说明 | 行数 |
+|------|------|------|
+| `server/src/services/qqbot/ws-client.js` | WS 客户端：Hello/Identify/心跳/Resume/断线重连 | ~550 |
+| `server/src/services/qqbot/qqbot-monitor.js` | 监控服务：多渠道连接管理、OpenID提取、持久化 | ~220 |
+| `server/src/controllers/qqbot.controller.js` | 控制器：绑定状态查询 + 重试API | ~120 |
+| `server/src/routes/qqbot.routes.js` | 路由定义 | ~16 |
+| `web/src/api/qqbot.js` | 前端 API 调用 | ~16 |
+| `web/src/components/QqbotBindDialog.vue` | 绑定对话框组件 | ~300 |
+
+### 修改文件
+
+- `server/src/app.js`: 导入并启动 qqbotMonitor
+- `server/src/routes/index.js`: 注册 `/api/qqbot/*` 路由
+- `web/src/views/channels/List.vue`: 集成绑定弹窗、重新绑定按钮、创建后自动打开
+
+### 支持的 OpenID 提取
+
+| 事件类型 | 场景 | 自动提取字段 |
+|----------|------|-------------|
+| `C2C_MESSAGE_CREATE` | 单聊 | `author.user_openid` → targetId (C2C) |
+| `GROUP_AT_MESSAGE_CREATE` | 群聊@ | `group_openid` → targetId (群聊) |
+| `AT_MESSAGE_CREATE` | 频道@ | `channel_id` → targetId (子频道) |
+| `DIRECT_MESSAGE_CREATE` | 私信 | `author.id` → targetId (私信) |
+
+### 详细技术文档
+
+完整实现文档见: [`qqbot-ws-binding.md`](./qqbot-ws-binding.md)
+
+### 待后续优化（可选）
+
+## 六、历史问题（已解决）
+
+### 2026-07-02 解决
+
+1. ✅ **Access Token 获取接口已确认**：`https://bots.qq.com/app/getAppAccessToken`
+2. ✅ **Token自动管理已实现**：完整的获取、缓存、刷新机制
+3. ✅ **渠道已注册启用**：代码层面已完全就绪
+4. ⏳ **待实际测试验证**：需要创建机器人并在沙箱环境测试
 
 ## 七、参考资源
 

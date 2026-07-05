@@ -60,7 +60,7 @@
       </div>
 
       <!-- 主题模式 -->
-      <div class="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 border-b border-gray-100 dark:border-gray-700" @click="showThemeDialog = true">
+      <div class="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 border-b border-gray-100 dark:border-gray-700 last:border-b-0" @click="showThemeDialog = true">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm">
             <Sun v-if="themeStore.themeMode === 'light'" class="w-5 h-5 text-white" />
@@ -75,6 +75,13 @@
           </div>
         </div>
         <ChevronRight class="w-5 h-5 text-gray-400" />
+      </div>
+    </div>
+
+    <!-- 接口设置分组 -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div class="px-5 py-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">接口设置</span>
       </div>
 
       <!-- IPv4-to-IPv6 代理转发 -->
@@ -131,10 +138,8 @@
           <el-switch v-model="settingsStore.checkUpdateDevEnabled" />
         </div>
         <!-- 提示文字 -->
-        <div v-if="settingsStore.checkUpdateEnabled" class="px-5 pb-3 pl-[52px]">
-          <p class="text-xs text-gray-400 dark:text-gray-500">
-            {{ settingsStore.checkUpdateDevEnabled ? 'dev 分支为开发中的预发布版本，可能不稳定' : '关闭后将不再自动检查远程版本更新，仍可通过底部版本号手动触发' }}
-          </p>
+        <div v-if="settingsStore.checkUpdateEnabled && settingsStore.checkUpdateDevEnabled" class="px-5 pb-3 pl-[52px]">
+          <p class="text-xs text-gray-400 dark:text-gray-500">dev 分支为开发中的预发布版本，可能不稳定</p>
         </div>
       </div>
 
@@ -331,6 +336,20 @@
         </div>
       </template>
       <div class="space-y-4">
+        <!-- 安全提醒 -->
+        <div class="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+          <div class="flex items-start gap-2">
+            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <p class="text-sm font-medium text-amber-800 dark:text-amber-200">迁移建议</p>
+              <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">JSON 导入导出可能存在兼容性风险（版本差异、字段遗漏等）。如需完整迁移数据，建议直接迁移数据库文件（<code class="px-1 rounded bg-amber-100 dark:bg-amber-800/50 text-xs">data/push.db</code>）。</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 导出和导入按钮 -->
         <button
           class="w-full flex items-center gap-4 p-5 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group"
           @click="handleExport"

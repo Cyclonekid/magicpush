@@ -86,7 +86,7 @@ class NtfyChannel extends BaseChannel {
 
     // HTML → 纯文本
     if (type === 'html') {
-      text = this._stripHtml(text);
+      text = BaseChannel.stripHtmlTags(text);
     }
 
     // 构建请求 Headers
@@ -157,20 +157,7 @@ class NtfyChannel extends BaseChannel {
     return response.data;
   }
 
-  _stripHtml(html) {
-    return html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<p>/gi, '\n')
-      .replace(/<\/p>/gi, '')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
+
 
   validate(config) {
     if (config.serverUrl && config.serverUrl.trim() !== '') {

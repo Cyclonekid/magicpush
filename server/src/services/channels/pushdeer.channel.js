@@ -38,7 +38,7 @@ class PushDeerChannel extends BaseChannel {
       params.append('text', title || '');
       params.append('desp', content);
     } else if (type === 'html') {
-      const text = this._stripHtml(content);
+      const text = BaseChannel.stripHtmlTags(content);
       params.append('type', 'text');
       params.append('text', title ? `${title}\n${text}` : text);
     } else {
@@ -67,20 +67,7 @@ class PushDeerChannel extends BaseChannel {
     return data;
   }
 
-  _stripHtml(html) {
-    return html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<p>/gi, '\n')
-      .replace(/<\/p>/gi, '')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
+
 
   validate(config) {
     if (config.serverUrl && config.serverUrl.trim() !== '') {

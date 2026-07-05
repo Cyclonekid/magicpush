@@ -78,9 +78,18 @@ adapter.send(message)            ← 统一调用 send 方法
 
 ### 2.2 不需要修改的文件
 
-- **前端 Vue 组件**：配置表单通过 API 动态渲染，无需手动添加 UI
+- **前端 Vue 组件**：配置表单通过 API 动态渲染，无需手动添加 UI（标准渠道）
 - **数据库模型/迁移**：`channels` 表结构通用，配置以 JSON 存储
-- **路由/控制器**：渠道 CRUD 接口已通用化，无需新增接口
+- **路由/控制器**：渠道 CRUD 接口已通用化，无需新增接口（标准渠道）
+
+> **⚠️ 例外情况：特殊绑定流程**
+>
+> 如果渠道需要特殊的用户认证/绑定流程（如**扫码登录、OAuth授权、设备配对**），则需要额外创建：
+> - **后端**：独立的 Controller + Service + Routes（参考 `misound.controller.js`, `xiaomi-auth.service.js`）
+> - **前端**：专属的 API 模块 + 绑定对话框组件（参考 `web/src/api/misound.js`, `MisoundBindDialog.vue`）
+> - **路由挂载**：在 `channel.routes.js` 中通过 `router.use('/子路径', subRoutes)` 注册
+>
+> 详细开发规范参见 [后端开发指南 - 子路由挂载](./backend-development.md#15-注册路由)
 
 ---
 
@@ -98,8 +107,8 @@ adapter.send(message)            ← 统一调用 send 方法
 const BaseChannel = require('./base.channel');
 
 class XxxChannel extends BaseChannel {
-  constructor(config) {
-    super(config);
+  constructor(config, channelId, channelKey) {
+    super(config, channelKey);   // ★ 如果渠道支持特有类型，必须传入 channelKey
     // 从 config 中提取所需配置项
   }
 
@@ -225,7 +234,7 @@ pnpm add <package-name>
 
 | 方法 | 参数 | 返回值 | 说明 |
 |------|------|--------|------|
-| `constructor(config)` | `config: Object` | - | 接收渠道配置，调用 `super(config)` |
+| `constructor(config)` | `config: Object` | - | 接收渠道配置，如支持特有类型需传 `channelKey` 给基类 `super(config, channelKey)` |
 | `send(message)` | `message: { title, content, type }` | `Promise<Object>` | 发送消息，成功返回 `{ success: true, messageId }`，失败抛 `Error` |
 | `validate(config)` | `config: Object` | `{ valid: boolean, message: string }` | 验证配置合法性 |
 | `test()` | - | `Promise<{ success, message }>` | 发送测试消息，验证渠道连通性 |

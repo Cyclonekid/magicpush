@@ -11,6 +11,7 @@ const inboundRoutes = require('./inbound.routes');
 const logRoutes = require('./log.routes');
 const adminRoutes = require('./admin.routes');
 const yuanbaobotRoutes = require('./yuanbaobot.routes');
+const qqbotRoutes = require('./qqbot.routes');
 const authenticate = require('../middleware/auth.middleware');
 const { healthLimiter } = require('../middleware/rateLimit.middleware');
 const logger = require('../utils/logger');
@@ -91,5 +92,8 @@ router.use('/admin', authenticate, adminRoutes);
 
 // 元宝 Bot 路由
 router.use('/yuanbaobot', yuanbaobotRoutes);
+
+// QQ Bot 路由
+router.use('/qqbot', qqbotRoutes);
 
 module.exports = router;
