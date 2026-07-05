@@ -8,8 +8,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - server-data:/app/data # 数据库文件
-      - server-logs:/app/logs # 日志文件
+      - server-data:/app/server/data # 数据库文件
+      - server-logs:/app/server/logs # 日志文件
     environment:
       - NODE_ENV=production # 可选项,默认production
       - JWT_ACCESS_EXPIRES_IN=15m # 可选项,默认15分钟

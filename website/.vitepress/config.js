@@ -61,6 +61,13 @@ export default defineConfig({
           ]
         },
         {
+          text: '部署',
+          items: [
+            { text: 'Docker 部署', link: '/guide/deploy/docker' },
+            { text: '飞牛NAS', link: '/guide/deploy/feiNiu' }
+          ]
+        },
+        {
           text: '应用场景',
           items: [
             { text: '典型应用案例', link: '/guide/use-cases' }
@@ -78,26 +85,36 @@ export default defineConfig({
           text: '推送渠道配置',
           items: [
             { text: '各渠道频率限制', link: '/guide/channels/rate-limits' },
-            { text: '企业微信应用', link: '/guide/channels/wecomapp' },
-            { text: '企业微信群机器人', link: '/guide/channels/wecom' },
-            { text: '钉钉', link: '/guide/channels/dingtalk' },
-            { text: '飞书', link: '/guide/channels/feishu' },
-            { text: 'Telegram', link: '/guide/channels/telegram' },
-            { text: 'SMTP 邮件', link: '/guide/channels/smtp' },
-            { text: 'Webhook', link: '/guide/channels/webhook' },
-            { text: 'PushPlus', link: '/guide/channels/pushplus' },
-            { text: 'Server酱', link: '/guide/channels/serverchan' },
-            { text: 'Bark', link: '/guide/channels/bark' },
-            { text: 'WxPusher', link: '/guide/channels/wxpusher' },
-            { text: 'PushDeer', link: '/guide/channels/pushdeer' },
-            { text: 'PushMe', link: '/guide/channels/pushme' },
-            { text: 'ntfy', link: '/guide/channels/ntfy' },
-            { text: '小爱音箱', link: '/guide/channels/misound' },
-            { text: 'iGot', link: '/guide/channels/igot' },
-            { text: 'Gotify', link: '/guide/channels/gotify' },
-            { text: '息知', link: '/guide/channels/xizhi' },
-            { text: 'Synology Chat', link: '/guide/channels/synologychat' },
-            { text: 'QQ机器人', link: '/guide/channels/qqbot' }
+            {
+              text: '详细渠道配置',
+              items: [
+                { text: '企业微信应用', link: '/guide/channels/wecomapp' },
+                { text: '企业微信群机器人', link: '/guide/channels/wecom' },
+                { text: '钉钉', link: '/guide/channels/dingtalk' },
+                { text: '飞书', link: '/guide/channels/feishu' },
+                { text: 'Telegram', link: '/guide/channels/telegram' },
+                { text: 'SMTP 邮件', link: '/guide/channels/smtp' },
+                { text: 'Webhook', link: '/guide/channels/webhook' },
+                { text: 'PushPlus', link: '/guide/channels/pushplus' },
+                { text: 'Server酱', link: '/guide/channels/serverchan' },
+                { text: 'Bark', link: '/guide/channels/bark' },
+                { text: 'WxPusher', link: '/guide/channels/wxpusher' },
+                { text: 'PushDeer', link: '/guide/channels/pushdeer' },
+                { text: 'PushMe', link: '/guide/channels/pushme' },
+                { text: 'ntfy', link: '/guide/channels/ntfy' },
+                { text: '小爱音箱', link: '/guide/channels/misound' },
+                { text: 'iGot', link: '/guide/channels/igot' },
+                { text: 'Gotify', link: '/guide/channels/gotify' },
+                { text: '息知', link: '/guide/channels/xizhi' },
+                { text: 'Synology Chat', link: '/guide/channels/synologychat' },
+                { text: 'QQ机器人', link: '/guide/channels/qqbot' },
+                { text: '微信群机器人', link: '/guide/channels/wechatclawbot' },
+                { text: '微信公众号', link: '/guide/channels/wechat-official' },
+                { text: '喵呜', link: '/guide/channels/meow' },
+                { text: '圆宝', link: '/guide/channels/yuanbaobot' },
+                { text: 'ShowDoc', link: '/guide/channels/showdoc' }
+              ]
+            }
           ]
         },
         {

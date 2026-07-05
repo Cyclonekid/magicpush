@@ -27,45 +27,9 @@ MagicPush 是一个支持 **20+ 消息渠道** 的统一推送服务管理平台
 - 🔒 **开源免费** - 基于 MIT 许可证开源
 - 📦 **轻量部署** - 支持 Docker 一键部署
 
-## 快速部署
+## 部署 MagicPush
 
-### 使用 Docker 部署
-
-```bash
-# 拉取镜像
-docker pull magiccode1412/magicpush:latest
-
-# 运行容器
-docker run -d \
-  --name magicpush \
-  -p 818:3000 \
-  magiccode1412/magicpush:latest
-```
-
-### 使用 docker-compose 部署
-
-创建 `docker-compose.yml` 文件：
-
-```yaml
-services:
-  magicpush:
-    image: magiccode1412/magicpush:latest
-    container_name: magicpush
-    network_mode: bridge
-    ports:
-      - "818:3000"
-    restart: unless-stopped
-```
-
-运行：
-
-```bash
-docker-compose up -d
-```
-
-## 访问管理后台
-
-部署成功后，访问 `http://<服务器IP>:3000` 即可进入 MagicPush 管理后台。
+请参考[部署文档](/guide/deploy/docker)了解如何快速部署 MagicPush 服务。
 
 ## 下一步
 
