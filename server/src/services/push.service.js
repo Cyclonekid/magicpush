@@ -120,22 +120,20 @@ class PushService {
   static async pushToChannel(userId, endpointId, channel, message, clientIp) {
     let { title, content, type, url, extraData } = message;
 
-    // 渠道级默认配置：优先使用渠道配置中的 defaultChannelType
+    // 渠道级默认配置：使用渠道配置中的 defaultChannelSpecificType（仅限特有消息类型）
     let channelType = null;
     if (channel.config) {
       const config = typeof channel.config === 'string' ? JSON.parse(channel.config) : channel.config;
-      if (config.defaultChannelType) {
-        channelType = config.defaultChannelType;
+
+      // 兼容旧字段名 defaultChannelType，优先读取新字段名 defaultChannelSpecificType
+      const configuredType = config.defaultChannelSpecificType || config.defaultChannelType;
+      if (configuredType) {
+        channelType = configuredType;
         // 如果有默认的额外数据且请求未指定，则使用默认值
         if (!extraData && config.defaultExtraData) {
           extraData = config.defaultExtraData;
         }
       }
-    }
-
-    // 未配置 defaultChannelType 时回退为 text 类型
-    if (!channelType) {
-      channelType = 'text';
     }
 
     // 消息免打扰检查：如果当前在免打扰时段内，记录日志但不实际推送

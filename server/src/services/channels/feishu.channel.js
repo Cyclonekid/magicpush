@@ -9,8 +9,8 @@ const BaseChannel = require('./base.channel');
  * - 特有类型: post(富文本), image(图片), interactive_card(交互卡片), share_chat(群名片)
  */
 class FeishuChannel extends BaseChannel {
-  constructor(config) {
-    super(config);
+  constructor(config, channelKey) {
+    super(config, channelKey);
     this.webhookUrl = config.webhookUrl;
     this.secret = config.secret || '';
   }
@@ -46,8 +46,8 @@ class FeishuChannel extends BaseChannel {
   async send(message) {
     let { title, content, type = 'text', channelType, extraData } = message;
 
-    // 如果是渠道特有类型，委托给专门的处理方法
-    if (channelType && channelType !== 'text' && channelType !== 'markdown') {
+    // 有 channelType → 走特有消息分支
+    if (channelType) {
       const myExtraData = extraData ? extraData[this.channelKey] : null;
       return await this.sendChannelSpecific(channelType, myExtraData);
     }
@@ -436,19 +436,18 @@ class FeishuChannel extends BaseChannel {
         description: '启用签名校验时的密钥',
       },
       {
-        name: 'defaultChannelType',
-        label: '默认消息类型',
+        name: 'defaultChannelSpecificType',
+        label: '默认特有消息类型',
         type: 'select',
         required: false,
         options: [
-          { value: 'text', label: '文本消息 (text)' },
-          { value: 'markdown', label: 'Markdown (markdown)' },
+          { value: '', label: '不设置（走通用消息类型）' },
           { value: 'post', label: '富文本消息 (post)' },
           { value: 'interactive_card', label: '交互卡片 (interactive_card)' },
           { value: 'image', label: '图片消息 (image)' },
           { value: 'share_chat', label: '群名片分享 (share_chat)' },
         ],
-        description: '选择后，推送时将始终使用此消息类型。不选则根据请求内容自动判断（默认text）',
+        description: '选择后，推送时将始终使用此特有消息类型，需配合 extraData 使用。不选则根据请求的 type 字段判断（text/markdown/html）',
       },
       {
         name: '_docLinks',

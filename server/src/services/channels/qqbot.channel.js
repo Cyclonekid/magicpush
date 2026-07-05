@@ -27,8 +27,8 @@ class QqbotChannel extends BaseChannel {
    * @param {string} [config.proxyUrl] - 代理地址
    * @param {number} channelId - 渠道记录 ID
    */
-  constructor(config, channelId) {
-    super(config);
+  constructor(config, channelId, channelKey) {
+    super(config, channelKey);
     this.appId = config.appId;
     this.clientSecret = config.token; // 字段名保持为 token 以兼容已有数据，但语义是 clientSecret
     this.msgType = config.msgType || 'group';
@@ -43,10 +43,10 @@ class QqbotChannel extends BaseChannel {
   async send(message) {
     const { title, content, type = 'text', channelType, extraData } = message;
 
-    // ★ 新增：特有消息类型分支
-    if (channelType || (extraData && Object.keys(extraData).length > 0)) {
+    // 有 channelType → 走特有消息分支
+    if (channelType) {
       const myExtraData = extraData ? extraData[this.channelKey] : null;
-      return await this.sendChannelSpecific(channelType || 'media', myExtraData);
+      return await this.sendChannelSpecific(channelType, myExtraData);
     }
 
     // 以下保持原有的 text/markdown 处理逻辑不变
@@ -413,7 +413,7 @@ class QqbotChannel extends BaseChannel {
    * QQ Bot 支持：纯文本 和 Markdown
    */
   static getSupportedTypes() {
-    return ['text', 'markdown'];
+    return ['text', 'markdown', 'html'];
   }
 
   /**
@@ -510,18 +510,15 @@ class QqbotChannel extends BaseChannel {
         description: '可选，用于访问 QQ API 的代理地址（国内服务器通常不需要）',
       },
       {
-        name: 'defaultChannelType',
-        label: '默认消息类型',
+        name: 'defaultChannelSpecificType',
+        label: '默认特有消息类型',
         type: 'select',
         required: false,
         options: [
-          // 通用类型
-          { value: 'text', label: '文本消息 (text)' },
-          { value: 'markdown', label: 'Markdown (markdown)' },
-          // --- 特有类型 ---
+          { value: '', label: '不设置（走通用消息类型）' },
           { value: 'media', label: '富媒体消息 (media) - 图片/视频/语音/文件' },
         ],
-        description: '选择后，推送时将始终使用此消息类型。不选则根据请求自动判断（默认text）',
+        description: '选择后，推送时将始终使用此特有消息类型，需配合 extraData 使用。不选则根据请求的 type 字段判断（text/markdown）',
       },
     ];
   }

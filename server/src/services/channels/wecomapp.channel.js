@@ -25,8 +25,8 @@ class WecomappChannel extends BaseChannel {
    * @param {string} config.touser - 接收成员 ID（多个用 | 分隔）或 @all
    * @param {number} channelId - 渠道记录 ID
    */
-  constructor(config, channelId) {
-    super(config);
+  constructor(config, channelId, channelKey) {
+    super(config, channelKey);
     this.corpid = config.corpid;
     this.corpsecret = config.corpsecret;
     this.agentid = parseInt(config.agentid);
@@ -94,8 +94,8 @@ class WecomappChannel extends BaseChannel {
   async send(message) {
     const { title, content, type = 'text', channelType, extraData } = message;
 
-    // 如果是渠道特有类型，委托给专门的处理方法
-    if (channelType && channelType !== 'text' && channelType !== 'markdown') {
+    // 有 channelType → 走特有消息分支
+    if (channelType) {
       const myExtraData = extraData ? extraData[this.channelKey] : null;
       return await this.sendChannelSpecific(channelType, myExtraData);
     }
@@ -647,7 +647,7 @@ class WecomappChannel extends BaseChannel {
   }
 
   static getSupportedTypes() {
-    return ['text', 'markdown'];
+    return ['text', 'markdown', 'html'];
   }
 
   static getChannelSpecificTypes() {
@@ -968,13 +968,12 @@ class WecomappChannel extends BaseChannel {
         description: '消息接收者成员 ID，多个用 | 分隔；填 @all 推送应用可见范围内的全部成员',
       },
       {
-        name: 'defaultChannelType',
-        label: '默认消息类型',
+        name: 'defaultChannelSpecificType',
+        label: '默认特有消息类型',
         type: 'select',
         required: false,
         options: [
-          { value: 'text', label: '文本消息 (text)' },
-          { value: 'markdown', label: 'Markdown (markdown)' },
+          { value: '', label: '不设置（走通用消息类型）' },
           { value: 'news', label: '图文消息 (news)' },
           { value: 'text_card', label: '文本卡片 (text_card)' },
           { value: 'template_card', label: '模板卡片 (template_card)' },
@@ -985,7 +984,7 @@ class WecomappChannel extends BaseChannel {
           { value: 'mpnews', label: 'mpnews 图文 (mpnews)' },
           { value: 'miniprogram_notice', label: '小程序通知 (miniprogram_notice)' },
         ],
-        description: '选择后，推送时将始终使用此消息类型。不选则根据请求内容自动判断（默认text）',
+        description: '选择后，推送时将始终使用此特有消息类型，需配合 extraData 使用。不选则根据请求的 type 字段判断（text/markdown）',
       },
       {
         name: 'proxyUrl',

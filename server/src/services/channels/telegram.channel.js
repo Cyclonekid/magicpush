@@ -12,8 +12,8 @@ const BaseChannel = require('./base.channel');
  * API 文档: https://core.telegram.org/bots/api
  */
 class TelegramChannel extends BaseChannel {
-  constructor(config) {
-    super(config);
+  constructor(config, channelKey) {
+    super(config, channelKey);
     this.apiUrl = `https://api.telegram.org/bot${config.botToken}`;
     this.chatId = config.chatId;
     this.proxyUrl = config.proxyUrl;
@@ -38,8 +38,8 @@ class TelegramChannel extends BaseChannel {
   async send(message) {
     const { title, content, type = 'text', channelType, extraData } = message;
 
-    // 如果是渠道特有类型，委托给专门的处理方法
-    if (channelType && channelType !== 'text' && channelType !== 'markdown' && channelType !== 'html') {
+    // 有 channelType → 走特有消息分支
+    if (channelType) {
       const myExtraData = extraData ? extraData[this.channelKey] : null;
       return await this.sendChannelSpecific(channelType, myExtraData);
     }
@@ -379,19 +379,17 @@ class TelegramChannel extends BaseChannel {
         description: '目标聊天ID（用户ID或群组ID）',
       },
       {
-        name: 'defaultChannelType',
-        label: '默认消息类型',
+        name: 'defaultChannelSpecificType',
+        label: '默认特有消息类型',
         type: 'select',
         required: false,
         options: [
-          { value: 'text', label: '文本消息 (text)' },
-          { value: 'markdown', label: 'Markdown (markdown)' },
-          { value: 'html', label: 'HTML (html)' },
+          { value: '', label: '不设置（走通用消息类型）' },
           { value: 'photo', label: '图片消息 (photo)' },
           { value: 'document', label: '文件消息 (document)' },
           { value: 'location', label: '位置消息 (location)' },
         ],
-        description: '选择后，推送时将始终使用此消息类型。不选则根据请求内容自动判断（默认text）',
+        description: '选择后，推送时将始终使用此特有消息类型，需配合 extraData 使用。不选则根据请求的 type 字段判断（text/markdown/html）',
       },
       {
         name: 'proxyUrl',

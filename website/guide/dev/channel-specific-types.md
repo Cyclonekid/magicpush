@@ -77,15 +77,16 @@
     ▼
 push.service.js (推送调度引擎)
     │
-    ├── 从渠道配置读取 defaultChannelType（如已配置）
+    ├── 从渠道配置读取 defaultChannelSpecificType（如已配置）
+    │   兼容旧字段名 defaultChannelType
     ├── 提取 extraData
     └── adapter.send({ title, content, type, channelType, extraData })
             │
             ▼
         适配器 send(message) 内部:
             │
-            ├── 有 channelType（来自配置） 或 能从 extraData 推断类型?
-            │   └── YES → this.sendChannelSpecific(channelType, extraData)
+            ├── 有 channelType?           ★ 仅当渠道配置了特有类型时才进入
+            │   └── YES → this.sendChannelSpecific(channelType, myExtraData)
             │               │
             │               ├── case 'news':      → sendNews(extraData)
             │               ├── case 'image':     → sendImage(extraData)
@@ -259,9 +260,10 @@ async send(message) {
 async send(message) {
   const { title, content, type = 'text', channelType, extraData } = message;
 
-  // ★ 新增：如果有 channelType（来自渠道配置）或 extraData，走特有类型处理
-  if (channelType || (extraData && Object.keys(extraData).length > 0)) {
-    return await this.sendChannelSpecific(channelType, extraData);
+  // ★ 新增：如果有 channelType（来自渠道配置的 defaultChannelSpecificType），走特有类型处理
+  if (channelType) {
+    const myExtraData = extraData ? extraData[this.channelKey] : null;
+    return await this.sendChannelSpecific(channelType, myExtraData);
   }
 
   // 以下保持原有的通用类型处理逻辑不变
@@ -274,9 +276,10 @@ async send(message) {
 ```
 
 **关键要点**：
-- 从 message 中**解构出 `channelType`（来自渠道配置）和 `extraData`**
-- 判断条件：当存在 `channelType` 或 `extraData` 时进入特有分支
-- `channelType` 由系统根据渠道配置中的 `defaultChannelType` 自动设置，无需 API 调用时传入
+- 从 message 中**解构出 `channelType`（来自渠道配置的 `defaultChannelSpecificType`）和 `extraData`**
+- 判断条件简化为：当存在 `channelType` 时进入特有分支（不再通过 extraData 推断）
+- `channelType` 仅表示**特有消息类型**，通用类型（text/markdown/html）由 `type` 字段控制，两者职责清晰分离
+- `extraData` 中各渠道的数据通过 **命名空间隔离**（如 `extraData.qqbot`、`extraData.telegram`），由构造函数传入的 `channelKey` 决定取哪个命名空间
 - 通用类型分支的逻辑**不做任何修改**，保证向后兼容
 
 ### 3.2 实现 sendChannelSpecific() 路由
@@ -359,36 +362,36 @@ async sendNews(data) {
 
 ### 3.4 覆写配置字段
 
-在 `getConfigFields()` 返回的数组末尾追加一个 `defaultChannelType` 选择器，允许用户在渠道配置层面设定默认使用的消息类型：
+在 `getConfigFields()` 返回的数组末尾追加一个 `defaultChannelSpecificType` 选择器，允许用户在渠道配置层面设定默认使用的**特有消息类型**：
 
 ```javascript
 static getConfigFields() {
   return [
     // ... 原有的配置字段 ...
 
-    // ★ 新增：默认消息类型选择器
+    // ★ 新增：默认特有消息类型选择器（仅包含特有类型，不混入通用类型）
     {
-      name: 'defaultChannelType',
-      label: '默认消息类型',
+      name: 'defaultChannelSpecificType',
+      label: '默认特有消息类型',
       type: 'select',
       required: false,
       options: [
-        // 通用类型
-        { value: 'text', label: '文本消息 (text)' },
-        { value: 'markdown', label: 'Markdown (markdown)' },
-        // --- 分割线 ---
-        // 特有类型（从 getChannelSpecificTypes 动态获取）
+        { value: '', label: '不设置（走通用消息类型）' },
+        // --- 特有类型（从 getChannelSpecificTypes 动态获取）---
         { value: 'news', label: '图文消息 (news)' },
         { value: 'template_card', label: '模板卡片 (template_card)' },
         { value: 'image', label: '图片消息 (image)' },
       ],
-      description: '选择后，推送时将始终使用此消息类型。不选则根据请求自动判断（默认text）',
+      description: '选择后，推送时将始终使用此特有消息类型，需配合 extraData 使用。不选则根据请求的 type 字段判断（text/markdown/html）',
     },
   ];
 }
 ```
 
-> **注意**：`options` 中的 value 必须与 `getSupportedTypes()` 和 `getChannelSpecificTypes()` 中的 value 保持一致。
+> **注意**：
+> - `options` 中**不再包含通用类型**（`text`、`markdown`、`html`），这些由 `type` 字段控制
+> - `options` 的 value 必须与 `getChannelSpecificTypes()` 中的 value 保持一致
+> - 第一个选项为空字符串 `''`，表示"不设置"，此时走通用分支
 
 ---
 
@@ -536,7 +539,7 @@ async sendTemplateCard(data) {
 
 ### 4.5 更新 getConfigFields()
 
-在配置字段数组中追加 `defaultChannelType` 选项：
+在配置字段数组中追加 `defaultChannelSpecificType` 选项：
 
 ```javascript
 static getConfigFields() {
@@ -544,20 +547,19 @@ static getConfigFields() {
     // ... 原有字段 (corpid, corpsecret, agentid, touser, proxyUrl) ...
 
     {
-      name: 'defaultChannelType',
-      label: '默认消息类型',
+      name: 'defaultChannelSpecificType',
+      label: '默认特有消息类型',
       type: 'select',
       required: false,
       options: [
-        { value: 'text', label: '文本消息 (text)' },
-        { value: 'markdown', label: 'Markdown (markdown)' },
+        { value: '', label: '不设置（走通用消息类型）' },
         { value: 'news', label: '图文消息 (news)' },
         { value: 'text_card', label: '文本卡片 (text_card)' },
         { value: 'template_card', label: '模板卡片 (template_card)' },  // ★ 新增
         { value: 'image', label: '图片消息 (image)' },
         { value: 'file', label: '文件消息 (file)' },
       ],
-      description: '选择后，推送时将始终使用此消息类型',
+      description: '选择后，推送时将始终使用此特有消息类型，需配合 extraData 使用。不选则根据请求的 type 字段判断（text/markdown/html）',
     },
   ];
 }
@@ -578,7 +580,7 @@ static getConfigFields() {
 | `file` | 文件 | `base64`, `md5` | 同上 |
 | `template_card` | 模板卡片 | `card_type`, `source`, `main_title`, ... | 三种卡片样式 |
 
-通用类型：`text` / `markdown`
+通用类型：`text` / `markdown` / `html`
 
 ### 5.2 企业微信应用 (`wecomapp.channel.js`)
 
@@ -590,7 +592,7 @@ static getConfigFields() {
 | `image` | 图片 | `base64`, `filename` | 需先上传获取 media_id |
 | `file` | 文件 | `base64`, `filename` | 同上 |
 
-通用类型：`text` / `markdown`
+通用类型：`text` / `markdown` / `html`
 
 > **与群机器人的区别**：企业微信应用的 image/file 需要先调用临时素材上传 API（`_uploadMedia()`）获取 `media_id` 再发送；群机器人可以直接将 base64 写入请求体。
 
@@ -603,7 +605,7 @@ static getConfigFields() {
 | `image` | 图片 | `image_key` 或 `base64` | 支持 image_key 或 base64 |
 | `share_chat` | 群名片 | `share_chat_id` | 分享群聊名片 |
 
-通用类型：`text` / `markdown`
+通用类型：`text` / `markdown` / `html`
 
 > 飞书所有请求需要携带 `timestamp` + `sign` 签名。
 
@@ -736,9 +738,18 @@ describe('WecomappChannel 特有消息类型', () => {
 
 不会。两者的职责清晰分离：
 - `type`（text/markdown/html）仅控制**通用消息格式**的渲染方式
+- `channelType`（由渠道配置的 `defaultChannelSpecificType` 设定）控制是否走**特有类型**分支
 - `extraData` 用于携带**特有消息类型**的结构化数据
 
-当请求中包含 `extraData` 时，系统会根据渠道配置的 `channelType` 自动识别并路由到对应的处理方法，与 `type` 字段互不干扰。
+当请求中包含 `channelType` 时，系统会路由到对应的 `sendChannelSpecific()` 处理方法，与 `type` 字段互不干扰。
+
+### Q: channelType 是从哪里来的？
+
+`channelType` 不是 API 调用者传入的，而是 **`push.service.js` 根据渠道配置自动读取并注入** 的：
+
+1. 优先读取渠道配置中的新字段名 `defaultChannelSpecificType`
+2. 兼容读取旧字段名 `defaultChannelType`（向后兼容）
+3. 如果两者都没有，`channelType` 保持为 `null`，走通用分支
 
 ### Q: extraData 的大小有限制吗？
 
@@ -754,9 +765,27 @@ describe('WecomappChannel 特有消息类型', () => {
 1. **在 `getChannelSpecificTypes()` 的返回数组中追加新的类型定义**
 2. **在 `sendChannelSpecific()` 的 switch 中添加新 case**
 3. **实现对应的 `sendXxx(data)` 方法**
-4. **（可选）在 `getConfigFields()` 的默认消息类型选项中追加新选项**
+4. **（可选）在 `getConfigFields()` 的 `defaultChannelSpecificType` 选项中追加新选项**
 
 无需修改基类、无需修改 push.service.js、无需修改数据库结构。
+
+### Q: 构造函数需要传 channelKey 吗？
+
+**必须传递**。如果渠道支持特有类型，构造函数需要将 `channelKey` 传给基类：
+
+```javascript
+// 正确写法
+constructor(config, channelId, channelKey) {
+  super(config, channelKey);   // ★ 传入 channelKey
+}
+
+// 错误写法（会导致 extraData 命名空间隔离失效）
+constructor(config, channelId) {
+  super(config);               // ❌ 丢失了 channelKey
+}
+```
+
+基类通过 `this.channelKey` 存储此值，在 `send()` 中用于提取正确的命名空间数据（如 `extraData.qqbot`、`extraData.telegram`）。
 
 ### Q: 前端如何获取特有类型定义供用户选择？
 

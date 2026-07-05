@@ -107,8 +107,8 @@ adapter.send(message)            ← 统一调用 send 方法
 const BaseChannel = require('./base.channel');
 
 class XxxChannel extends BaseChannel {
-  constructor(config) {
-    super(config);
+  constructor(config, channelId, channelKey) {
+    super(config, channelKey);   // ★ 如果渠道支持特有类型，必须传入 channelKey
     // 从 config 中提取所需配置项
   }
 
@@ -234,7 +234,7 @@ pnpm add <package-name>
 
 | 方法 | 参数 | 返回值 | 说明 |
 |------|------|--------|------|
-| `constructor(config)` | `config: Object` | - | 接收渠道配置，调用 `super(config)` |
+| `constructor(config)` | `config: Object` | - | 接收渠道配置，如支持特有类型需传 `channelKey` 给基类 `super(config, channelKey)` |
 | `send(message)` | `message: { title, content, type }` | `Promise<Object>` | 发送消息，成功返回 `{ success: true, messageId }`，失败抛 `Error` |
 | `validate(config)` | `config: Object` | `{ valid: boolean, message: string }` | 验证配置合法性 |
 | `test()` | - | `Promise<{ success, message }>` | 发送测试消息，验证渠道连通性 |
