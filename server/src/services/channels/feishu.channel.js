@@ -48,8 +48,8 @@ class FeishuChannel extends BaseChannel {
 
     // 有 channelType → 走特有消息分支
     if (channelType) {
-      const myExtraData = extraData ? extraData[this.channelKey] : null;
-      return await this.sendChannelSpecific(channelType, myExtraData);
+      // extraData 已经在 push.service 中通过命名空间提取，直接使用
+      return await this.sendChannelSpecific(channelType, extraData);
     }
 
     // HTML类型：剥离HTML标签，转为纯文本发送

@@ -40,8 +40,8 @@ class TelegramChannel extends BaseChannel {
 
     // 有 channelType → 走特有消息分支
     if (channelType) {
-      const myExtraData = extraData ? extraData[this.channelKey] : null;
-      return await this.sendChannelSpecific(channelType, myExtraData);
+      // extraData 已经在 push.service 中通过命名空间提取，直接使用
+      return await this.sendChannelSpecific(channelType, extraData);
     }
 
     // 通用类型处理（保持原有逻辑不变）
