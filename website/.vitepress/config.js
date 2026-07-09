@@ -117,6 +117,7 @@ export default defineConfig({
             { text: '命名规范', link: '/guide/dev/naming-conventions' },
             { text: '代码风格规范', link: '/guide/dev/coding-standards' },
             { text: '后端开发指南', link: '/guide/dev/backend-development' },
+            { text: '测试指南', link: '/guide/dev/testing' },
             { text: '前端开发指南', link: '/guide/dev/frontend-guide' }
           ]
         },

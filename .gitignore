@@ -7,6 +7,11 @@ web/dist
 .codebuddy
 package-lock.json
 
+# 测试覆盖率产物
+coverage/
+.node-coverage/
+.nyc_output/
+
 # VitePress
 **/.vitepress/cache
 **/.vitepress/dist
