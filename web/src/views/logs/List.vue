@@ -271,7 +271,7 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { getLogs, getStats, clearLogs, getAutoCleanupSetting, updateAutoCleanupSetting } from '@/api/log'
-import { getChannelTypes } from '@/api/channel'
+import { getChannelTypes, getChannels } from '@/api/channel'
 import { getEndpoints } from '@/api/endpoint'
 import { Search, Trash2, Clock } from 'lucide-vue-next'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -346,10 +346,11 @@ const loadData = async () => {
       params.keywordScope = filter.keywordScope || 'all'
     }
 
-    const [logsRes, statsRes, typesRes, endpointsRes] = await Promise.all([
+    const [logsRes, statsRes, typesRes, channelsRes, endpointsRes] = await Promise.all([
       getLogs(params),
       getStats(),
       getChannelTypes(),
+      getChannels(),
       getEndpoints({ pageSize: 100 }),
     ])
 
@@ -363,7 +364,9 @@ const loadData = async () => {
     }
 
     if (typesRes.success) {
-      channelTypes.value = typesRes.data || []
+      // 仅保留当前用户已添加的渠道类型
+      const addedTypes = new Set((channelsRes.data || []).map((c) => c.channel_type))
+      channelTypes.value = (typesRes.data || []).filter((t) => addedTypes.has(t.type))
     }
 
     if (endpointsRes.success) {
