@@ -12,7 +12,7 @@ outline: deep
 
 ### 什么是 Meow？
 
-Meow 是一款专为**鸿蒙系统（HarmonyOS）**开发的推送通知应用，可以将消息推送到鸿蒙设备。
+Meow 是一款专为**鸿蒙系统-HarmonyOS**开发的推送通知应用，可以将消息推送到鸿蒙设备。
 
 - **官网**：[api.chuckfang.com](https://api.chuckfang.com/)
 - **App 获取**：在鸿蒙应用市场搜索「Meow」
@@ -22,7 +22,7 @@ Meow 是一款专为**鸿蒙系统（HarmonyOS）**开发的推送通知应用�
 | 推送目标 | 鸿蒙设备（需安装 Meow App） |
 | 鉴权方式 | 用户昵称（无需 Token） |
 | 配置复杂度 | 低，仅需用户昵称 |
-| 消息格式 | text（纯文本）、html（HTML 渲染） |
+| 消息格式 | text（纯文本）、markdown（原生渲染）、html（HTML 渲染） |
 | 系统要求 | HarmonyOS 2.0+ |
 
 ### 前置条件
@@ -77,10 +77,12 @@ Meow 是一款专为**鸿蒙系统（HarmonyOS）**开发的推送通知应用�
 | 字段 | 说明 | 示例 |
 |------|------|------|
 | **用户昵称** | 在 Meow App 中设置的昵称 | `my_alert_bot` |
-| **消息类型** | text=纯文本（默认），html=渲染 HTML | `text` 或 `html` |
+| **默认消息类型** | text=纯文本（默认），markdown=渲染 Markdown，html=渲染 HTML | `text` |
+| **HTML 显示高度** | 仅消息为 HTML 时生效，单位像素 | `200` |
 
 > 💡 **消息类型说明**：
 > - `text`：纯文本显示，所有格式标记以文本形式展示
+> - `markdown`：原生 Markdown 渲染，由 Meow App 直接渲染（**不再手动转为纯文本**）
 > - `html`：在 App 中渲染 HTML 格式（支持更多样式）
 
 填写完成后，给渠道起一个易于辨识的**名称**（如「Meow 鸿蒙推送」），点击 **「保存」**。
@@ -116,44 +118,50 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 | type 值 | 说明 |
 |---------|------|
 | `text` | 纯文本消息（默认） |
-| `markdown` | Markdown 格式（会自动转为纯文本） |
-| `html` | HTML 格式（需在配置中选择 html 消息类型） |
+| `markdown` | Markdown 格式，由 Meow App 原生渲染 |
+| `html` | HTML 格式，由 Meow App 渲染 |
 
-### 3.2 HTML 消息示例#
+---
 
-当配置中选择 `html` 消息类型时，可以在 `content` 中使用 HTML 标签：
+### 3.2 附加参数（extraData.meow）
 
-```html
-<h2>🚨 服务器告警通知</h2>
-<p><strong>告警级别：</strong><span style="color:red;">高</span></p>
-<p><strong>服务器：</strong>192.168.1.100</p>
-<p><strong>时间：</strong>2024-06-01 14:00:00</p>
-<hr>
-<p><a href="https://monitor.example.com/alert/12345">查看详情</a></p>
+除顶层 `title`/`content` 外，Meow 还支持通过 `extraData.meow` 命名空间传入以下参数。其中 `title`/`content` 用于为 Meow 单独指定内容（缺省时回退顶层），`url`/`imgUrl`/`htmlHeight`/`channelType` 用于设置跳转链接、通知图标、HTML 高度及渲染类型。
+
+::: tip 为 Meow 指定独立内容
+`extraData.meow` 是一个「自包含」命名空间。**典型场景**：多渠道推送时全局 `type=text`（纯文本），但希望 Meow 渲染独立的 markdown/html。此时只需在 `extraData.meow` 中同时写入 `channelType` 与 `title`/`content`，Meow 就会发送属于它自己的富文本，而不影响其他渠道。
+:::
+
+::: tip 命名空间隔离
+附加参数采用**命名空间隔离**设计，Meow 的参数必须放在 `extraData.meow` 对象内：
+
+```json
+{
+  "extraData": {
+    "meow": {
+      "title": "系统告警",
+      "content": "服务器 CPU 使用率超过 90%",
+      "url": "https://monitor.example.com/alert/12345",
+      "imgUrl": "https://example.com/icon.png",
+      "channelType": "markdown",
+      "htmlHeight": "400"
+    }
+  }
+}
 ```
+:::
 
-> 💡 **提示**：HTML 消息在 Meow App 中会进行渲染，支持更多样式。
+| 参数 | 说明 | 典型场景 |
+|------|------|----------|
+| `title` | Meow 单独标题（可选，缺省回退顶层 `title`） | 多渠道推送时为 Meow 设置不同标题 |
+| `content` | Meow 单独内容（可选，缺省回退顶层 `content`） | 多渠道推送时为 Meow 设置独立正文本/markdown/html |
+| `url` | 点击通知后的跳转链接 | 跳转监控详情页、工单系统 |
+| `imgUrl` | 通知图标 URL（建议 216×216 PNG） | 自定义通知图标、品牌化展示 |
+| `htmlHeight` | HTML 消息的显示高度（像素，默认 200），仅 `html` 类型生效 | 控制富文本消息的展示区域高度 |
+| `channelType` | 单独为 Meow 指定渲染类型：`text` / `markdown` / `html` | 多渠道推送时单独指定 Meow 渲染方式，不影响其他渠道 |
 
----
-
-## 技术细节#
-
-### 消息长度限制#
-
-- 消息内容：建议不超过 **1000 字符**
-
-### HTML 渲染#
-
-- 当选择 `html` 消息类型时，Meow App 会渲染 HTML 内容
-- 支持常见 HTML 标签：`<h1>`~`<h6>`、`<p>`、`<strong>`、`<em>`、`<a>`、`<span>` 等
-- 不支持 JavaScript 和 CSS 外部引用
-
-### Markdown 自动转换#
-
-- 如果发送 `markdown` 类型消息，MagicPush 会自动将 Markdown 转换为纯文本
-- 转换规则：去除 Markdown 标记，保留纯文本内容
-
----
+::: tip 使用方式
+附加参数直接放在 `extraData.meow` 对象中，与全局 `type` 互不干扰。其中 `channelType` 用于多渠道推送场景下单独指定 Meow 的渲染类型，其他渠道仍按各自方式发送。
+:::
 
 ## 常见问题#
 
@@ -201,6 +209,7 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 | 场景 | 推荐类型 |
 |------|----------
 | 简单文本通知 | `text` |
+| 结构化文档（标题、列表、加粗等） | `markdown` |
 | 需要丰富样式（颜色、链接等） | `html` |
 
 ---
