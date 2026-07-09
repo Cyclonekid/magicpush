@@ -90,16 +90,19 @@ class MeowChannel extends BaseChannel {
     // htmlHeight 优先使用本次推送 extraData 覆盖，否则回退渠道配置默认，最后回退规范默认 200。
     const htmlHeight = ns.htmlHeight != null ? Number(ns.htmlHeight) : this.htmlHeight;
 
+    // msgType 与 htmlHeight 为请求参数（query），符合官方规范。
     const params = { msgType };
-    if (url) params.url = url;
-    if (imgUrl) params.imgUrl = imgUrl;
     // htmlHeight 仅在 msgType=html 时生效（符合官方规范）。
     if (msgType === 'html') params.htmlHeight = htmlHeight;
 
+    // url/imgUrl 放入 JSON body：官方 application/json 示例中 url/imgUrl 位于 body，
+    // 且文档明确「Body 优先」；放入 query 在 JSON 模式下不会被 App 读取。
     const body = {
       title: meowTitle || undefined,
       msg: meowContent,
     };
+    if (url) body.url = url;
+    if (imgUrl) body.imgUrl = imgUrl;
 
     logger.info(`Meow 发送消息: nickname=${this.nickname}, msgType=${msgType}, htmlHeight=${htmlHeight}`);
     const response = await axios.post(

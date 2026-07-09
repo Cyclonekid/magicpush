@@ -78,8 +78,11 @@ test('渠道特有参数来自 extraData 命名空间：url/imgUrl/htmlHeight', 
       htmlHeight: 360,
     },
   });
-  assert.strictEqual(lastPost.config.params.url, 'https://example.com');
-  assert.strictEqual(lastPost.config.params.imgUrl, 'https://x.com/i.png');
+  // url/imgUrl 在 JSON body 中（官方：application/json 模式 Body 优先）
+  assert.strictEqual(lastPost.body.url, 'https://example.com');
+  assert.strictEqual(lastPost.body.imgUrl, 'https://x.com/i.png');
+  assert.strictEqual(lastPost.config.params.url, undefined);
+  assert.strictEqual(lastPost.config.params.imgUrl, undefined);
   // htmlHeight 仅在 html 时生效，text 不发送
   assert.strictEqual(lastPost.config.params.htmlHeight, undefined);
 });
@@ -146,8 +149,34 @@ test('未传入 ns.title/content 时回退顶层（向后兼容）', async () =>
 test('不传 extraData 时回退默认 htmlHeight，且不发送 url/imgUrl', async () => {
   const channel = new MeowChannel({ nickname: 'bot' }, 1);
   await channel.send({ title: 'T', content: 'x', type: 'text' });
+  assert.strictEqual(lastPost.body.url, undefined);
+  assert.strictEqual(lastPost.body.imgUrl, undefined);
+});
+
+test('channelType=markdown 时 url/imgUrl 放入 body 而非 query（修复用户反馈 url 不生效）', async () => {
+  const channel = new MeowChannel({ nickname: 'bot' }, 1);
+  await channel.send({
+    title: '',
+    content: '111',
+    type: 'text',
+    channelType: 'markdown',
+    extraData: {
+      title: '系统告警',
+      content: '服务器 CPU 使用率超过 90%',
+      url: 'https://github.com/magiccode1412/magicpush/issues/27',
+      imgUrl: 'https://avatars.githubusercontent.com/u/208285284?v=4&s=216',
+      htmlHeight: '400',
+    },
+  });
+  assert.strictEqual(lastPost.config.params.msgType, 'markdown');
+  // 关键修复：url/imgUrl 在 JSON body 中，App 才能读取
+  assert.strictEqual(lastPost.body.url, 'https://github.com/magiccode1412/magicpush/issues/27');
+  assert.strictEqual(lastPost.body.imgUrl, 'https://avatars.githubusercontent.com/u/208285284?v=4&s=216');
+  // url/imgUrl 不应在 query 中（JSON 模式下 App 不读 query 的 url/imgUrl）
   assert.strictEqual(lastPost.config.params.url, undefined);
   assert.strictEqual(lastPost.config.params.imgUrl, undefined);
+  // htmlHeight 仅在 html 时发送，markdown 下不发送
+  assert.strictEqual(lastPost.config.params.htmlHeight, undefined);
 });
 
 test('业务状态码非 200 时抛出错误（修复误报成功）', async () => {
