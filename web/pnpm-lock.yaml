@@ -6,6 +6,7 @@ settings:
 
 overrides:
   form-data: 4.0.6
+  lodash: 4.18.1
 
 importers:
 
@@ -730,11 +731,11 @@ packages:
     resolution: {integrity: sha512-WK9qSozxXOD7ZJQlpSqOT+om2ZfcT4yO+03FuzAHD0wF6S0l0090LRPDx3vhTTLZ8cFKpBn+IOcVXK6qOcIlfQ==}
     peerDependencies:
       '@types/lodash-es': '*'
-      lodash: '*'
+      lodash: 4.18.1
       lodash-es: '*'
 
-  lodash@4.17.23:
-    resolution: {integrity: sha512-LgVTMpQtIopCi79SJeDiP0TfWi5CNEc/L/aRdTh3yIvmZXTnheWpKjSZhnvMl8iXbC1tFg9gdHHDMLoV7CnG+w==}
+  lodash@4.18.1:
+    resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
 
   lucide-vue-next@0.363.0:
     resolution: {integrity: sha512-dc5KgrXhCPMEzKz6voDVvxXkwEr7n+Q4b7qLyS2e3DTlH9GMFydS4fHoSvpZR/a5M7i1EOpFI8/BA8SPjAOwEQ==}
@@ -1430,9 +1431,9 @@ snapshots:
       '@vueuse/core': 10.11.1(vue@3.5.29)
       async-validator: 4.2.5
       dayjs: 1.11.19
-      lodash: 4.17.23
+      lodash: 4.18.1
       lodash-es: 4.17.23
-      lodash-unified: 1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.17.23)(lodash@4.17.23)
+      lodash-unified: 1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.17.23)(lodash@4.18.1)
       memoize-one: 6.0.0
       normalize-wheel-es: 1.2.0
       vue: 3.5.29
@@ -1596,13 +1597,13 @@ snapshots:
 
   lodash-es@4.17.23: {}
 
-  lodash-unified@1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.17.23)(lodash@4.17.23):
+  lodash-unified@1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.17.23)(lodash@4.18.1):
     dependencies:
       '@types/lodash-es': 4.17.12
-      lodash: 4.17.23
+      lodash: 4.18.1
       lodash-es: 4.17.23
 
-  lodash@4.17.23: {}
+  lodash@4.18.1: {}
 
   lucide-vue-next@0.363.0(vue@3.5.29):
     dependencies:
