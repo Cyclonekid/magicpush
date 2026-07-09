@@ -43,7 +43,8 @@
       "better-sqlite3"
     ],
     "overrides": {
-      "qs": "^6.15.2"
+      "qs": "^6.15.2",
+      "ip-address": "^10.1.1"
     }
   }
 }
