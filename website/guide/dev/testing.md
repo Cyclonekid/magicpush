@@ -14,6 +14,7 @@
 - [6. 编写新渠道测试（参照 Meow 范式）](#6-编写新渠道测试参照-meow-范式)
 - [7. 覆盖率](#7-覆盖率)
 - [8. 路线图（P1/P2）](#8-路线图p1p2)
+- [9. 前端测试（Vitest）](#9-前端测试vitest)
 
 ---
 
@@ -209,4 +210,55 @@ function createMockRes() {
 ## 8. 路线图（P1/P2）
 
 - **P1（业务 service / 更多渠道）**：`jsonpath.js`、`doNotDisturb.service.js`、`rateLimitConfig.service.js`、`xiaomi-auth.service.js` 及 `bark` / `serverchan` / `webhook` / `smtp` / `dingtalk` / `wecom` / `feishu` 渠道测试**已完成**；剩余 `channel.service.js`、`push.service.js`，以及 telegram / gotify / ntfy 等渠道可继续按 Meow 范式补齐。
-- **P2（集成测试）**：`controllers` / `routes` 集成测试（启动 `app` 或 mock `req/res`，验证端到端行为）；可选接入 GitHub Actions，在 CI 中自动跑 `pnpm test` 作为合入门禁。
+- **P2（集成测试）**：`controllers` / `routes` 集成测试（启动 `app` 或 mock `req/res`，验证端到端行为）可继续补齐；**GitHub Actions CI 已完成**——`.github/workflows/ci.yml` 在 PR / push 到 `main`、`dev` 时，分别运行 `server` 的 `node --test` 与 `web` 的 `vitest`，作为合入门禁（详见 [第 9 节](#9-前端测试vitest)）。
+
+---
+
+## 9. 前端测试（Vitest）
+
+前端 `web/` 已引入 [Vitest](https://vitest.dev/) 作为单元测试框架，运行于 `jsdom` 环境（store 依赖 `localStorage`）。
+
+### 9.1 运行命令
+
+在 `web/` 目录下执行：
+
+```bash
+pnpm test          # 运行全部测试（等价于 vitest run）
+pnpm test:watch    # 监听模式，文件变更自动重跑（开发时）
+```
+
+### 9.2 目录与命名约定
+
+```text
+web/src/stores/
+├── auth.js
+├── settings.js
+├── auth.spec.js        # auth store 单测
+└── settings.spec.js    # settings store 单测
+```
+
+- 测试文件以 `*.spec.js` 结尾，`vitest.config.js` 的 `include` 默认扫描 `src/**/*.spec.js`。
+- store 测试通过 `setActivePinia(createPinia())` 创建独立 Pinia 实例，并在 `beforeEach` 中 `localStorage.clear()` 隔离状态。
+- 对 `@/api/auth`、`@/utils/request` 等外部依赖使用 `vi.mock(...)` 注入假实现，避免触达真实网络与 UI 依赖。
+
+### 9.3 配置
+
+`web/vitest.config.js` 复用 `vite.config.js` 的 `@` 别名，并启用 `environment: 'jsdom'`：
+
+```js
+import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path'
+
+export default defineConfig({
+  plugins: [vue()],
+  resolve: { alias: { '@': resolve(__dirname, 'src') } },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    include: ['src/**/*.spec.js'],
+  },
+})
+```
+
+> 新增 store / 工具函数时，建议在同目录新增对应的 `*.spec.js`，覆盖核心分支（成功 / 失败 / 边界），与后端测试一样遵循"绝不连接真实外部服务"的红线（统一用 Mock）。
