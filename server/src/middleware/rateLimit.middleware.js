@@ -8,9 +8,11 @@ const logger = require('../utils/logger');
 const rateLimitLogCache = new Map();
 const RATE_LOG_TTL = 60 * 1000; // 60 秒内同一 IP 不重复记录
 
+// unref：仅作日志降噪的后台清理，不应独自维持事件循环存活
+// （生产由 app.listen 维持进程；测试中加载本模块时可让进程正常退出）
 setInterval(() => {
   rateLimitLogCache.clear();
-}, RATE_LOG_TTL);
+}, RATE_LOG_TTL).unref();
 
 /**
  * 创建动态限流器工厂函数
