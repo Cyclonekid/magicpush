@@ -3,6 +3,10 @@ const { getChannelAdapter } = require('./channels');
 const KeywordFilterService = require('./keywordFilter.service');
 const DoNotDisturbService = require('./doNotDisturb.service');
 const logger = require('../utils/logger');
+const { mapWithConcurrency } = require('../utils/concurrency');
+
+// 多渠道推送的最大并发度：并发提速的同时限制瞬时外部连接数
+const PUSH_CONCURRENCY = 5;
 
 /**
  * 推送服务
@@ -91,12 +95,21 @@ class PushService {
    */
   static async pushToChannels(userId, endpointId, channels, message, clientIp) {
     const { title, content, type = 'text', url, extraData } = message;
-    const results = [];
 
-    for (const channel of channels) {
-      const result = await this.pushToChannel(userId, endpointId, channel, { title, content, type, url, extraData }, clientIp);
-      results.push(result);
+    // 预取接口信息一次，供各渠道的免打扰判断与日志名称复用，避免逐渠道重复查询
+    let endpoint;
+    if (endpointId) {
+      try {
+        endpoint = await EndpointModel.findById(endpointId);
+      } catch (_) {
+        endpoint = null;
+      }
     }
+
+    // 并发推送（受限并发度），结果顺序与 channels 一致
+    const results = await mapWithConcurrency(channels, PUSH_CONCURRENCY, (channel) =>
+      this.pushToChannel(userId, endpointId, channel, { title, content, type, url, extraData }, clientIp, endpoint)
+    );
 
     const successCount = results.filter(r => r.success).length;
     const failedCount = results.length - successCount;
@@ -113,7 +126,7 @@ class PushService {
   /**
    * 推送到单个渠道
    */
-  static async pushToChannel(userId, endpointId, channel, message, clientIp) {
+  static async pushToChannel(userId, endpointId, channel, message, clientIp, endpoint) {
     let { title, content, type, url, extraData } = message;
 
     // 从 extraData 的渠道命名空间动态获取 channelType（类型与数据自包含设计）
@@ -127,49 +140,50 @@ class PushService {
       resolvedExtraData = namespaceData;
     }
 
+    // 接口信息（免打扰判断 + 日志名称共用一次查询）
+    // 调用方（pushToChannels）通常已预取并传入；未传入时按需查询一次，保持独立可调用
+    let ep = endpoint;
+    if (endpointId && ep === undefined) {
+      try {
+        ep = await EndpointModel.findById(endpointId);
+      } catch (_) {
+        ep = null;
+      }
+    }
+
     // 消息免打扰检查：如果当前在免打扰时段内，记录日志但不实际推送
     if (endpointId) {
       // 全局开关：关闭时所有免打扰配置不生效
       const globalDndEnabled = SettingsModel.getBoolean('dnd_global_enabled', false);
-      if (globalDndEnabled) {
-        const endpoint = await EndpointModel.findById(endpointId);
-        if (endpoint && DoNotDisturbService.shouldMute(endpoint.do_not_disturb)) {
-          const log = await PushLogModel.create({
-            user_id: userId,
-            endpoint_id: endpointId,
-            endpoint_name: endpoint.name,
-            channel_id: channel.id,
-            channel_type: channel.channel_type,
-            title,
-            content,
-            message_type: type,
-            status: 'skipped_dnd',
-            ip: clientIp,
-          });
+      if (globalDndEnabled && ep && DoNotDisturbService.shouldMute(ep.do_not_disturb)) {
+        const log = await PushLogModel.create({
+          user_id: userId,
+          endpoint_id: endpointId,
+          endpoint_name: ep.name,
+          channel_id: channel.id,
+          channel_type: channel.channel_type,
+          title,
+          content,
+          message_type: type,
+          status: 'skipped_dnd',
+          ip: clientIp,
+        });
 
-          logger.info(`推送被免打扰拦截 - 用户:${userId} 接口:${endpointId} 渠道:${channel.channel_type}`);
+        logger.info(`推送被免打扰拦截 - 用户:${userId} 接口:${endpointId} 渠道:${channel.channel_type}`);
 
-          return {
-            success: false,
-            skippedDnd: true,
-            channelId: channel.id,
-            channelType: channel.channel_type,
-            channelName: channel.name,
-            logId: log.id,
-          };
-        }
+        return {
+          success: false,
+          skippedDnd: true,
+          channelId: channel.id,
+          channelType: channel.channel_type,
+          channelName: channel.name,
+          logId: log.id,
+        };
       }
     }
 
-    // 创建推送记录
-    // 获取接口名称（用于日志展示）
-    let endpointName = null;
-    if (endpointId) {
-      try {
-        const ep = await EndpointModel.findById(endpointId);
-        if (ep) endpointName = ep.name;
-      } catch (_) {}
-    }
+    // 创建推送记录（接口名称用于日志展示，复用上面已查询的 ep）
+    const endpointName = ep ? ep.name : null;
     const log = await PushLogModel.create({
       user_id: userId,
       endpoint_id: endpointId,
