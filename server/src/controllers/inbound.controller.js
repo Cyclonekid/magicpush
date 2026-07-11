@@ -2,6 +2,7 @@ const InboundService = require('../services/inbound.service');
 const PushService = require('../services/push.service');
 const ResponseUtil = require('../utils/response');
 const logger = require('../utils/logger');
+const getRealIP = require('../utils/ip');
 
 /**
  * 入站控制器
@@ -61,15 +62,6 @@ class InboundController {
 
       // 处理入站数据，转换为标准消息格式
       const message = InboundService.processInbound(endpoint, payload);
-
-      // 获取真实 IP
-      const getRealIP = (req) => {
-        const xRealIP = req.get('X-Real-IP');
-        if (xRealIP) return xRealIP;
-        const xForwardedFor = req.get('X-Forwarded-For');
-        if (xForwardedFor) return xForwardedFor.split(',')[0].trim();
-        return req.ip;
-      };
 
       // 执行推送
       const result = await PushService.pushByToken(token, message, getRealIP(req));

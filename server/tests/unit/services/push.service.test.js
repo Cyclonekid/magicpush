@@ -166,7 +166,6 @@ test('pushToChannel：免打扰时段内跳过推送', async () => {
   fakeStore.endpoints.set('ep1', { id: 10, name: 'EP', do_not_disturb: {} });
   const ch = makeWebhookChannel(4);
   const res = await PushService.pushToChannel(1, 10, ch, { content: 'C' }, '1.2.3.4');
-  console.log('DBG_DND', JSON.stringify(res), 'logCalls', logUpdateCalls.length, 'global', fakeStore.settings.get('dnd_global_enabled'), 'mute', require.cache[dndPath].exports.shouldMute({}));
   assert.strictEqual(res.success, false);
   assert.strictEqual(res.skippedDnd, true);
   assert.strictEqual(res.logId, 1);

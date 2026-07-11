@@ -1,6 +1,7 @@
 const PushService = require('../services/push.service');
 const ResponseUtil = require('../utils/response');
 const logger = require('../utils/logger');
+const getRealIP = require('../utils/ip');
 
 /**
  * 推送控制器
@@ -29,15 +30,6 @@ class PushController {
       const { title, content, type = 'text', extraData } = source;
       const url = source.url || '';
 
-      // 获取真实IP
-      const getRealIP = (req) => {
-        const xRealIP = req.get('X-Real-IP');
-        if (xRealIP) return xRealIP;
-        const xForwardedFor = req.get('X-Forwarded-For');
-        if (xForwardedFor) return xForwardedFor.split(',')[0].trim();
-        return req.ip;
-      };
-
       const result = await PushService.pushByToken(token, { title, content, type, url, extraData }, getRealIP(req));
 
       if (result.success) {
@@ -59,15 +51,6 @@ class PushController {
       const endpointId = parseInt(req.params.endpointId);
       const { title, content, type = 'text', extraData } = req.body;
       const url = req.body.url || '';
-
-      // 获取真实IP
-      const getRealIP = (req) => {
-        const xRealIP = req.get('X-Real-IP');
-        if (xRealIP) return xRealIP;
-        const xForwardedFor = req.get('X-Forwarded-For');
-        if (xForwardedFor) return xForwardedFor.split(',')[0].trim();
-        return req.ip;
-      };
 
       const result = await PushService.pushByEndpoint(
         endpointId,
@@ -98,15 +81,6 @@ class PushController {
       const channelId = parseInt(req.params.channelId);
       const { title, content, type = 'text', extraData } = req.body;
       const url = req.body.url || '';
-
-      // 获取真实IP
-      const getRealIP = (req) => {
-        const xRealIP = req.get('X-Real-IP');
-        if (xRealIP) return xRealIP;
-        const xForwardedFor = req.get('X-Forwarded-For');
-        if (xForwardedFor) return xForwardedFor.split(',')[0].trim();
-        return req.ip;
-      };
 
       const result = await PushService.pushByChannel(
         channelId,

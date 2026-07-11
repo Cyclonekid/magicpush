@@ -11,7 +11,7 @@ require('./config/version');
 const routes = require('./routes');
 const { errorMiddleware, notFoundMiddleware } = require('./middleware/error.middleware');
 const logger = require('./utils/logger');
-require('console');
+const getRealIP = require('./utils/ip');
 require('./models');
 const clawbotMonitor = require('./services/clawbot/clawbot-monitor');
 const yuanbaobotMonitor = require('./services/yuanbaobot/yuanbaobot-monitor');
@@ -45,27 +45,6 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// 获取真实IP的辅助函数
-const getRealIP = (req) => {
-  const xRealIP = req.get('X-Real-IP');
-  const xForwardedFor = req.get('X-Forwarded-For');
-
-  // 调试日志：获取用户IP
-  // logger.info(`xForwardedFor: ${xForwardedFor}`);
-  // logger.info(`xRealIP: ${xRealIP}`);
-  // logger.info(`req.ip: ${req.ip}`);
-  
-  if (xForwardedFor) {
-    // X-Forwarded-For可能包含多个IP，取第一个
-    return xForwardedFor.split(',')[0].trim();
-  }
-  // 从代理头中获取真实IP
-  if (xRealIP) {
-    return xRealIP;
-  }
-  return req.ip;
-};
 
 // 请求日志中间件
 app.use((req, res, next) => {

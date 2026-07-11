@@ -17,27 +17,7 @@ class PushService {
       throw new Error('无效的接口令牌');
     }
 
-    if (!endpoint.is_active) {
-      throw new Error('接口已禁用');
-    }
-
-    // 关键词过滤检查
-    const filterResult = KeywordFilterService.check(endpoint.keyword_filter, message);
-    if (filterResult.blocked) {
-      logger.warn(`关键词过滤拦截 - 接口:${endpoint.id} IP:${clientIp} 模式:${filterResult.mode} 命中词:${filterResult.matchedKeyword || '(无)'}`);
-      const errorMsg = filterResult.mode === 'whitelist'
-        ? '未包含合法内容'
-        : '包含不合法内容';
-      throw new Error(errorMsg);
-    }
-    await EndpointModel.updateLastUsed(endpoint.id);
-
-    // 获取接口关联的渠道
-    const channels = await EndpointModel.getChannels(endpoint.id);
-    if (!channels || channels.length === 0) {
-      throw new Error('该接口未绑定任何渠道');
-    }
-
+    const channels = await this._prepareEndpointPush(endpoint, null, message, clientIp);
     return await this.pushToChannels(endpoint.user_id, endpoint.id, channels, message, clientIp);
   }
 
@@ -46,7 +26,23 @@ class PushService {
    */
   static async pushByEndpoint(endpointId, userId, message, clientIp) {
     const endpoint = await EndpointModel.findById(endpointId);
-    if (!endpoint || endpoint.user_id !== userId) {
+    if (!endpoint) {
+      throw new Error('接口不存在');
+    }
+
+    const channels = await this._prepareEndpointPush(endpoint, userId, message, clientIp);
+    return await this.pushToChannels(userId, endpoint.id, channels, message, clientIp);
+  }
+
+  /**
+   * 校验接口归属/启用状态、关键词过滤，并取绑定渠道。
+   * token 推送时 userId 为 null（无需校验归属）；endpoint 推送需 userId 一致。
+   * 统一 pushByToken / pushByEndpoint 的公共前置逻辑，避免重复。
+   * @returns {Promise<Array>} 接口绑定的渠道列表
+   * @private
+   */
+  static async _prepareEndpointPush(endpoint, userId, message, clientIp) {
+    if (userId != null && endpoint.user_id !== userId) {
       throw new Error('接口不存在');
     }
 
@@ -71,7 +67,7 @@ class PushService {
       throw new Error('该接口未绑定任何渠道');
     }
 
-    return await this.pushToChannels(userId, endpoint.id, channels, message, clientIp);
+    return channels;
   }
 
   /**
