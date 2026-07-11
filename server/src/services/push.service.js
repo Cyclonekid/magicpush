@@ -15,27 +15,27 @@ class PushService {
   /**
    * 通过接口令牌推送
    */
-  static async pushByToken(token, message, clientIp) {
+  static async pushByToken(token, message, clientIp, requestId) {
     const endpoint = await EndpointModel.findByToken(token);
     if (!endpoint) {
       throw new Error('无效的接口令牌');
     }
 
     const channels = await this._prepareEndpointPush(endpoint, null, message, clientIp);
-    return await this.pushToChannels(endpoint.user_id, endpoint.id, channels, message, clientIp);
+    return await this.pushToChannels(endpoint.user_id, endpoint.id, channels, message, clientIp, requestId);
   }
 
   /**
    * 通过接口ID推送
    */
-  static async pushByEndpoint(endpointId, userId, message, clientIp) {
+  static async pushByEndpoint(endpointId, userId, message, clientIp, requestId) {
     const endpoint = await EndpointModel.findById(endpointId);
     if (!endpoint) {
       throw new Error('接口不存在');
     }
 
     const channels = await this._prepareEndpointPush(endpoint, userId, message, clientIp);
-    return await this.pushToChannels(userId, endpoint.id, channels, message, clientIp);
+    return await this.pushToChannels(userId, endpoint.id, channels, message, clientIp, requestId);
   }
 
   /**
@@ -77,7 +77,7 @@ class PushService {
   /**
    * 通过渠道ID推送
    */
-  static async pushByChannel(channelId, userId, message, clientIp) {
+  static async pushByChannel(channelId, userId, message, clientIp, requestId) {
     const channel = await ChannelModel.findById(channelId);
     if (!channel || channel.user_id !== userId) {
       throw new Error('渠道不存在');
@@ -87,13 +87,13 @@ class PushService {
       throw new Error('渠道已禁用');
     }
 
-    return await this.pushToChannels(userId, null, [channel], message, clientIp);
+    return await this.pushToChannels(userId, null, [channel], message, clientIp, requestId);
   }
 
   /**
    * 推送到多个渠道
    */
-  static async pushToChannels(userId, endpointId, channels, message, clientIp) {
+  static async pushToChannels(userId, endpointId, channels, message, clientIp, requestId) {
     const { title, content, type = 'text', url, extraData } = message;
 
     // 预取接口信息一次，供各渠道的免打扰判断与日志名称复用，避免逐渠道重复查询
@@ -108,7 +108,7 @@ class PushService {
 
     // 并发推送（受限并发度），结果顺序与 channels 一致
     const results = await mapWithConcurrency(channels, PUSH_CONCURRENCY, (channel) =>
-      this.pushToChannel(userId, endpointId, channel, { title, content, type, url, extraData }, clientIp, endpoint)
+      this.pushToChannel(userId, endpointId, channel, { title, content, type, url, extraData }, clientIp, endpoint, requestId)
     );
 
     const successCount = results.filter(r => r.success).length;
@@ -126,7 +126,7 @@ class PushService {
   /**
    * 推送到单个渠道
    */
-  static async pushToChannel(userId, endpointId, channel, message, clientIp, endpoint) {
+  static async pushToChannel(userId, endpointId, channel, message, clientIp, endpoint, requestId) {
     let { title, content, type, url, extraData } = message;
 
     // 从 extraData 的渠道命名空间动态获取 channelType（类型与数据自包含设计）
@@ -167,6 +167,7 @@ class PushService {
           message_type: type,
           status: 'skipped_dnd',
           ip: clientIp,
+          request_id: requestId,
         });
 
         logger.info(`推送被免打扰拦截 - 用户:${userId} 接口:${endpointId} 渠道:${channel.channel_type}`);
@@ -195,6 +196,7 @@ class PushService {
       message_type: type,
       status: 'pending',
       ip: clientIp,
+      request_id: requestId,
     });
 
     try {

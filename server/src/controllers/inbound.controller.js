@@ -64,7 +64,7 @@ class InboundController {
       const message = InboundService.processInbound(endpoint, payload);
 
       // 执行推送
-      const result = await PushService.pushByToken(token, message, getRealIP(req));
+      const result = await PushService.pushByToken(token, message, getRealIP(req), req.requestId);
 
       if (result.success) {
         logger.info(`[Inbound] 推送成功: endpoint=${endpoint.name}`);

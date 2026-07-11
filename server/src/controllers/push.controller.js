@@ -30,7 +30,7 @@ class PushController {
       const { title, content, type = 'text', extraData } = source;
       const url = source.url || '';
 
-      const result = await PushService.pushByToken(token, { title, content, type, url, extraData }, getRealIP(req));
+      const result = await PushService.pushByToken(token, { title, content, type, url, extraData }, getRealIP(req), req.requestId);
 
       if (result.success) {
         return ResponseUtil.success(res, result, '推送成功');
@@ -56,7 +56,8 @@ class PushController {
         endpointId,
         req.user.userId,
         { title, content, type, url, extraData },
-        getRealIP(req)
+        getRealIP(req),
+        req.requestId
       );
 
       if (result.success) {
@@ -86,7 +87,8 @@ class PushController {
         channelId,
         req.user.userId,
         { title, content, type, url, extraData },
-        getRealIP(req)
+        getRealIP(req),
+        req.requestId
       );
 
       if (result.success) {

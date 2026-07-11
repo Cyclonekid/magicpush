@@ -10,6 +10,7 @@ const errorMiddleware = (err, req, res, _next) => {
   logger.error('服务器错误:', {
     message: err.message,
     stack: err.stack,
+    requestId: req.requestId,
     url: req.originalUrl,
     method: req.method,
     ip: getRealIP(req),

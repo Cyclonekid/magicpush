@@ -151,6 +151,22 @@ const initDatabase = async () => {
       // 字段已存在，忽略错误
     }
 
+    // 迁移：为已存在的推送记录表添加 request_id 字段（用于请求关联排查）
+    try {
+      db.exec(`ALTER TABLE push_logs ADD COLUMN request_id TEXT`);
+      logger.info('已为推送记录表添加 request_id 字段');
+    } catch {
+      // 字段已存在，忽略错误
+    }
+
+    // 为已存在的推送记录表创建 request_id 索引
+    try {
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_push_logs_request_id ON push_logs(request_id)`);
+      logger.info('已为推送记录表创建 request_id 索引');
+    } catch {
+      // 索引已存在，忽略错误
+    }
+
     // 迁移：为已存在的推送记录表添加 endpoint_name 字段
     try {
       db.exec(`ALTER TABLE push_logs ADD COLUMN endpoint_name TEXT`);
