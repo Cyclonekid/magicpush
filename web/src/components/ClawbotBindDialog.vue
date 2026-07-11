@@ -209,7 +209,7 @@ async function doPoll() {
         pollTimer = setTimeout(doPoll, 2000)
         break
     }
-  } catch (error) {
+  } catch {
     pollTimer = setTimeout(doPoll, 2000)
   }
 }
@@ -267,7 +267,7 @@ async function handleReminderConfirm() {
         contextStatus.value = 'ready'
         return
       }
-    } catch (e) {
+    } catch {
       // 忽略单次请求失败
     }
     await new Promise(r => setTimeout(r, 1000))

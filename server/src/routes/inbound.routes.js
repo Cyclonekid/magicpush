@@ -49,7 +49,7 @@ async function loadEndpoint(req, res, next) {
     if (endpoint.inbound_config && typeof endpoint.inbound_config === 'string') {
       try {
         endpoint.inbound_config = JSON.parse(endpoint.inbound_config);
-      } catch (e) {
+      } catch {
         endpoint.inbound_config = null;
       }
     }
@@ -57,7 +57,7 @@ async function loadEndpoint(req, res, next) {
     // 注入到 req
     req.endpoint = endpoint;
     next();
-  } catch (error) {
+  } catch {
     return res.status(500).json({
       success: false,
       code: 500,

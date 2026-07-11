@@ -113,9 +113,8 @@ class QqbotWsClient {
     this._setState('connecting');
 
     // 1. 先获取 Access Token
-    let accessToken;
     try {
-      accessToken = await QqbotClient.tokenManager.getAccessToken(this.appId, this.clientSecret);
+      await QqbotClient.tokenManager.getAccessToken(this.appId, this.clientSecret);
     } catch (err) {
       logger.error(`[qqbot-ws] 获取 Access Token 失败: ${err.message}`);
       this.onError?.(err);
@@ -655,7 +654,7 @@ class QqbotWsClient {
   _invalidateTokenAndReconnect() {
     try {
       QqbotClient.tokenManager.invalidate(this.appId);
-    } catch (e) {
+    } catch {
       // ignore
     }
     this._closeCurrentWs();

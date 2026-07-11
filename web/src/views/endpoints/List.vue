@@ -798,7 +798,7 @@ const validateTokenInput = async () => {
         tokenValidation.message = '该令牌已被使用'
       }
     }
-  } catch (error) {
+  } catch {
     tokenValidation.status = false
   }
 }
@@ -1061,7 +1061,7 @@ const testInbound = async () => {
   let testData
   try {
     testData = JSON.parse(inboundTestData.value)
-  } catch (e) {
+  } catch {
     ElMessage.error('JSON 格式错误')
     return
   }

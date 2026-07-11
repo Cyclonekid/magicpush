@@ -101,7 +101,7 @@ class PushService {
     if (endpointId) {
       try {
         endpoint = await EndpointModel.findById(endpointId);
-      } catch (_) {
+      } catch {
         endpoint = null;
       }
     }
@@ -146,7 +146,7 @@ class PushService {
     if (endpointId && ep === undefined) {
       try {
         ep = await EndpointModel.findById(endpointId);
-      } catch (_) {
+      } catch {
         ep = null;
       }
     }

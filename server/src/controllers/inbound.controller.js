@@ -43,7 +43,7 @@ class InboundController {
           try {
             // 支持传递 JSON 字符串
             payload = JSON.parse(payload.data);
-          } catch (e) {
+          } catch {
             // 如果不是 JSON，保持原样
           }
         }

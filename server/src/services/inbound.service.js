@@ -113,7 +113,7 @@ class InboundService {
    */
   static enrichMessage(message, sourceType, payload) {
     switch (sourceType) {
-      case 'emby':
+      case 'emby': {
         // 丰富 Emby 消息内容
         const parts = [];
         if (message.content) parts.push(message.content);
@@ -125,6 +125,7 @@ class InboundService {
           message.content = parts.join('\n');
         }
         break;
+      }
 
       case 'grafana':
       case 'prometheus':
@@ -148,7 +149,7 @@ class InboundService {
         }
         break;
 
-      case 'github':
+      case 'github': {
         // 丰富 GitHub 消息
         const ghParts = [message.content];
         if (payload.sender?.login) ghParts.push(`触发者: ${payload.sender.login}`);
@@ -157,6 +158,7 @@ class InboundService {
           message.content = ghParts.join('\n');
         }
         break;
+      }
     }
   }
 

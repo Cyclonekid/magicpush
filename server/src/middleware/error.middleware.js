@@ -5,7 +5,7 @@ const getRealIP = require('../utils/ip');
 /**
  * 全局错误处理中间件
  */
-const errorMiddleware = (err, req, res, next) => {
+const errorMiddleware = (err, req, res, _next) => {
   // 记录错误日志
   logger.error('服务器错误:', {
     message: err.message,

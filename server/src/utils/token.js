@@ -46,7 +46,7 @@ function getJwtSecret() {
     insertStmt.run('jwt_secret', _jwtSecret);
 
     return _jwtSecret;
-  } catch (error) {
+  } catch {
     // 数据库未初始化时，生成临时密钥（仅用于初始化阶段）
     if (!_jwtSecret) {
       _jwtSecret = crypto.randomBytes(64).toString('hex');
@@ -96,7 +96,7 @@ class TokenUtil {
   static verifyToken(token) {
     try {
       return jwt.verify(token, getJwtSecret());
-    } catch (error) {
+    } catch {
       return null;
     }
   }

@@ -268,7 +268,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getLogs, getStats, clearLogs, getAutoCleanupSetting, updateAutoCleanupSetting } from '@/api/log'
 import { getChannelTypes, getChannels } from '@/api/channel'

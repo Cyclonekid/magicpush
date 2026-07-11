@@ -13,17 +13,17 @@ class EndpointModel {
     if (endpoint) {
       try {
         endpoint.inbound_config = JSON.parse(endpoint.inbound_config);
-      } catch (e) {
+      } catch {
         endpoint.inbound_config = null;
       }
       try {
         endpoint.keyword_filter = JSON.parse(endpoint.keyword_filter);
-      } catch (e) {
+      } catch {
         endpoint.keyword_filter = null;
       }
       try {
         endpoint.do_not_disturb = JSON.parse(endpoint.do_not_disturb);
-      } catch (e) {
+      } catch {
         endpoint.do_not_disturb = null;
       }
     }
@@ -39,17 +39,17 @@ class EndpointModel {
     if (endpoint) {
       try {
         endpoint.inbound_config = JSON.parse(endpoint.inbound_config);
-      } catch (e) {
+      } catch {
         endpoint.inbound_config = null;
       }
       try {
         endpoint.keyword_filter = JSON.parse(endpoint.keyword_filter);
-      } catch (e) {
+      } catch {
         endpoint.keyword_filter = null;
       }
       try {
         endpoint.do_not_disturb = JSON.parse(endpoint.do_not_disturb);
-      } catch (e) {
+      } catch {
         endpoint.do_not_disturb = null;
       }
     }
@@ -83,21 +83,21 @@ class EndpointModel {
       if (endpoint.inbound_config) {
         try {
           endpoint.inbound_config = JSON.parse(endpoint.inbound_config);
-        } catch (e) {
+        } catch {
           endpoint.inbound_config = null;
         }
       }
       if (endpoint.keyword_filter) {
         try {
           endpoint.keyword_filter = JSON.parse(endpoint.keyword_filter);
-        } catch (e) {
+        } catch {
           endpoint.keyword_filter = null;
         }
       }
       if (endpoint.do_not_disturb) {
         try {
           endpoint.do_not_disturb = JSON.parse(endpoint.do_not_disturb);
-        } catch (e) {
+        } catch {
           endpoint.do_not_disturb = null;
         }
       }

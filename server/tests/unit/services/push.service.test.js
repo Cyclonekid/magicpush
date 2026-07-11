@@ -7,7 +7,7 @@
  * 说明：渠道适配器的发送细节由各渠道单测覆盖（如 webhook/bark/feishu 等），
  * 这里用可控的假 adapter 替代真实 axios 网络调用，专注测试 push.service 的编排逻辑。
  */
-const { test, beforeEach, mock } = require('node:test');
+const { test, beforeEach } = require('node:test');
 const assert = require('node:assert');
 
 // 在加载 models 之前注入依赖服务 Mock，避免被 models 加载链先行缓存为真实模块
@@ -17,7 +17,7 @@ require.cache[kfPath] = {
   filename: kfPath,
   loaded: true,
   exports: {
-    check: (filter, message) => ({ blocked: false, mode: null, matchedKeyword: null }),
+    check: (_filter, _message) => ({ blocked: false, mode: null, matchedKeyword: null }),
   },
 };
 
@@ -67,7 +67,7 @@ require.cache[channelsPath] = {
   loaded: true,
   exports: {
     // 优先使用 config._adapter（测试可注入可控 adapter），否则返回默认成功 adapter
-    getChannelAdapter: (type, config, id) => (config && config._adapter) || makeAdapter(),
+    getChannelAdapter: (type, config, _id) => (config && config._adapter) || makeAdapter(),
   },
 };
 

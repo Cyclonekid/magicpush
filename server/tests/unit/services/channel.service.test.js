@@ -4,12 +4,12 @@
  * 通过替换 require.cache 中的 models 模块注入内存 Mock，隔离数据库依赖，
  * 验证渠道 CRUD 的鉴权、配置校验、yuanbaobot 重连触发与异常处理。
  */
-const { test, beforeEach, mock } = require('node:test');
+const { test, beforeEach } = require('node:test');
 const assert = require('node:assert');
 
 const modelsPath = require.resolve('../../../src/models');
 const fakeChannels = new Map();
-let channelModel;
+let _channelModel;
 let yuanMonitorMock;
 
 require.cache[modelsPath] = {
@@ -24,7 +24,7 @@ require.cache[modelsPath] = {
     SettingsModel: {
       getBoolean: () => false,
     },
-    ChannelModel: (channelModel = {
+    ChannelModel: (_channelModel = {
       findByUserId: async (userId) => [...fakeChannels.values()].filter((c) => c.user_id === userId),
       findById: async (id) => fakeChannels.get(Number(id)) || null,
       create: async (data) => {

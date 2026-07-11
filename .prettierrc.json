@@ -1,0 +1,16 @@
+{
+  "semi": false,
+  "singleQuote": true,
+  "printWidth": 100,
+  "trailingComma": "none",
+  "arrowParens": "always",
+  "vueIndentScriptAndStyle": false,
+  "overrides": [
+    {
+      "files": "server/**/*.{js,json}",
+      "options": {
+        "semi": true
+      }
+    }
+  ]
+}

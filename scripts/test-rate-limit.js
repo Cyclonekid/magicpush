@@ -114,7 +114,7 @@ async function testConnectivity() {
     if (body && body.success) {
       console.log(`  ${info(`版本: ${body.data?.version || 'N/A'}`)}`);
     }
-  } catch (e) {
+  } catch {
     assert(false, `无法连接 ${BASE_URL}，请确认服务已启动`);
     process.exit(1);
   }

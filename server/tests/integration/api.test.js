@@ -51,7 +51,7 @@ require.cache[channelsPath] = {
 const express = require('express');
 const initDatabase = require('../../src/database/init');
 const db = require('../../src/config/database');
-const { UserModel, ChannelModel, EndpointModel } = require('../../src/models');
+const { ChannelModel, EndpointModel } = require('../../src/models');
 const AuthService = require('../../src/services/auth.service');
 const RateLimitConfigService = require('../../src/services/rateLimitConfig.service');
 
@@ -106,7 +106,7 @@ function api(method, pathname, { token, body, headers = {} } = {}) {
           let json = null;
           try {
             json = raw ? JSON.parse(raw) : null;
-          } catch (_) {
+          } catch {
             json = raw;
           }
           resolve({ status: res.statusCode, body: json });
@@ -180,11 +180,11 @@ after(async () => {
   if (server) await new Promise((r) => server.close(r));
   try {
     db.close();
-  } catch (_) {}
+  } catch { /* ignore */ }
   for (const f of [tmpDb, `${tmpDb}-wal`, `${tmpDb}-shm`]) {
     try {
       fs.unlinkSync(f);
-    } catch (_) {}
+    } catch { /* ignore */ }
   }
 });
 

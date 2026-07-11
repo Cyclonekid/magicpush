@@ -287,7 +287,7 @@ function buildPingMsg(msgId) {
 /**
  * 构建 Push ACK 二进制
  */
-function buildPushAck(headMsg) {
+function buildPushAck(_headMsg) {
   // ACK 的 head 中 cmdType=3, 复制原 head 的 cmd/msgId
   return null; // MVP 暂不实现 ACK（服务端非强求）
 }

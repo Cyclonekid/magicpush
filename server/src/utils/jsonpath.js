@@ -25,7 +25,7 @@ function getValue(obj, path) {
   // 解析路径
   while (current && value !== null && value !== undefined) {
     // 匹配属性名或数组索引
-    const match = current.match(/^\.?([^\.\[\]]+)|^\[(\d+)\]/);
+    const match = current.match(/^\.?([^.[\]]+)|^\[(\d+)\]/);
     
     if (!match) {
       break;

@@ -270,20 +270,6 @@
               v-else-if="field.type === 'switch'"
               v-model="form.config[field.name]"
             />
-            <!-- 下拉选择 -->
-            <el-select
-              v-else-if="field.type === 'select'"
-              v-model="form.config[field.name]"
-              :placeholder="'请选择' + (field.label || '')"
-              class="w-full"
-            >
-              <el-option
-                v-for="opt in (field.options || [])"
-                :key="opt.value"
-                :label="opt.label"
-                :value="opt.value"
-              />
-            </el-select>
             <!-- 数字输入 -->
             <el-input
               v-else-if="field.type === 'number'"

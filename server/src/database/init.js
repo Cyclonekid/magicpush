@@ -39,7 +39,7 @@ const initDatabase = async () => {
     try {
       db.exec(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user' CHECK(role IN ('admin', 'user'))`);
       logger.info('已为用户表添加 role 字段');
-    } catch (e) {
+    } catch {
       // 字段已存在，忽略错误
     }
 
@@ -147,7 +147,7 @@ const initDatabase = async () => {
     try {
       db.exec(`ALTER TABLE push_logs ADD COLUMN ip TEXT`);
       logger.info('已为推送记录表添加 ip 字段');
-    } catch (e) {
+    } catch {
       // 字段已存在，忽略错误
     }
 
@@ -155,7 +155,7 @@ const initDatabase = async () => {
     try {
       db.exec(`ALTER TABLE push_logs ADD COLUMN endpoint_name TEXT`);
       logger.info('已为推送记录表添加 endpoint_name 字段');
-    } catch (e) {
+    } catch {
       // 字段已存在，忽略错误
     }
 
@@ -163,7 +163,7 @@ const initDatabase = async () => {
     try {
       db.exec(`ALTER TABLE endpoints ADD COLUMN inbound_config TEXT`);
       logger.info('已为接口表添加 inbound_config 字段');
-    } catch (e) {
+    } catch {
       // 字段已存在，忽略错误
     }
 
@@ -171,7 +171,7 @@ const initDatabase = async () => {
     try {
       db.exec(`ALTER TABLE endpoints ADD COLUMN keyword_filter TEXT`);
       logger.info('已为接口表添加 keyword_filter 字段');
-    } catch (e) {
+    } catch {
       // 字段已存在，忽略错误
     }
 
@@ -179,7 +179,7 @@ const initDatabase = async () => {
     try {
       db.exec(`ALTER TABLE endpoints ADD COLUMN do_not_disturb TEXT`);
       logger.info('已为接口表添加 do_not_disturb 字段');
-    } catch (e) {
+    } catch {
       // 字段已存在，忽略错误
     }
 

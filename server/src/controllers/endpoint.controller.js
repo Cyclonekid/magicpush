@@ -256,7 +256,7 @@ class EndpointController {
         return ResponseUtil.notFound(res, '接口不存在');
       }
 
-      const endpoint = await EndpointModel.updateKeywordFilter(parseInt(id), config);
+      await EndpointModel.updateKeywordFilter(parseInt(id), config);
 
       logger.info(`用户 ${req.user.userId} 更新接口 ${id} 关键词过滤配置`);
       return ResponseUtil.success(res, { keyword_filter: config }, '关键词过滤配置已更新');
@@ -274,7 +274,6 @@ class EndpointController {
     try {
       const { id } = req.params;
       const { enabled, timeRanges } = req.body;
-      const DoNotDisturbService = require('../services/doNotDisturb.service');
 
       let config = null;
 
@@ -317,7 +316,7 @@ class EndpointController {
         return ResponseUtil.notFound(res, '接口不存在');
       }
 
-      const endpoint = await EndpointModel.updateDoNotDisturb(parseInt(id), config);
+      await EndpointModel.updateDoNotDisturb(parseInt(id), config);
 
       logger.info(`用户 ${req.user.userId} 更新接口 ${id} 免打扰配置`);
       return ResponseUtil.success(res, { do_not_disturb: config }, '免打扰配置已更新');
