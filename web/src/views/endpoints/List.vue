@@ -5,10 +5,17 @@
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">接口管理</h2>
         <p class="text-gray-500 dark:text-gray-400 mt-1">管理您的推送接口和访问令牌</p>
       </div>
-      <el-button type="primary" @click="showCreateDialog = true">
-        <Plus class="w-4 h-4 mr-1" />
-        新建接口
-      </el-button>
+      <div class="flex items-center gap-2">
+        <el-button @click="toggleAllTokens">
+          <EyeOff v-if="showAllTokens" class="w-4 h-4 mr-1" />
+          <Eye v-else class="w-4 h-4 mr-1" />
+          {{ showAllTokens ? '隐藏全部令牌' : '显示全部令牌' }}
+        </el-button>
+        <el-button type="primary" @click="showCreateDialog = true">
+          <Plus class="w-4 h-4 mr-1" />
+          新建接口
+        </el-button>
+      </div>
     </div>
 
     <!-- 接口列表 -->
@@ -70,12 +77,19 @@
         <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs text-gray-500 dark:text-gray-400">访问令牌</span>
-            <el-button text size="small" @click="copyToken(endpoint.token)">
-              <Copy class="w-3 h-3 mr-1" />
-              复制
-            </el-button>
+            <div class="flex items-center gap-1">
+              <el-button text size="small" @click="toggleToken(endpoint)">
+                <EyeOff v-if="isTokenVisible(endpoint)" class="w-3 h-3 mr-1" />
+                <Eye v-else class="w-3 h-3 mr-1" />
+                {{ isTokenVisible(endpoint) ? '隐藏' : '显示' }}
+              </el-button>
+              <el-button text size="small" @click="copyToken(endpoint.token)">
+                <Copy class="w-3 h-3 mr-1" />
+                复制
+              </el-button>
+            </div>
           </div>
-          <code class="text-xs text-gray-700 dark:text-gray-300 break-all">{{ endpoint.token }}</code>
+          <code class="text-xs text-gray-700 dark:text-gray-300 break-all">{{ isTokenVisible(endpoint) ? endpoint.token : maskToken(endpoint.token) }}</code>
         </div>
 
         <!-- 绑定的渠道 / 占位 -->
@@ -165,11 +179,7 @@
         <Link class="w-10 h-10 text-gray-400" />
       </div>
       <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">暂无接口</h3>
-      <p class="text-gray-500 dark:text-gray-400 mb-4">创建您的第一个推送接口</p>
-      <el-button type="primary" @click="showCreateDialog = true">
-        <Plus class="w-4 h-4 mr-1" />
-        新建接口
-      </el-button>
+      <p class="text-gray-500 dark:text-gray-400">创建您的第一个推送接口</p>
     </div>
 
     <!-- 创建/编辑对话框 -->
@@ -641,6 +651,8 @@ import { getChannels } from '@/api/channel'
 import {
   Plus,
   Link,
+  Eye,
+  EyeOff,
   MoreVertical,
   Edit,
   Key,
@@ -658,6 +670,8 @@ import {
 
 const endpoints = ref([])
 const channels = ref([])
+const showAllTokens = ref(false)
+const tokenVisible = reactive({})
 const showCreateDialog = ref(false)
 const formLoading = ref(false)
 const editingEndpoint = ref(null)
@@ -827,6 +841,24 @@ const loadData = async () => {
 const copyToken = (token) => {
   navigator.clipboard.writeText(token)
   ElMessage.success('令牌已复制')
+}
+
+const isTokenVisible = (endpoint) => {
+  return showAllTokens.value || !!tokenVisible[endpoint.id]
+}
+
+const toggleToken = (endpoint) => {
+  tokenVisible[endpoint.id] = !tokenVisible[endpoint.id]
+}
+
+const toggleAllTokens = () => {
+  showAllTokens.value = !showAllTokens.value
+}
+
+const maskToken = (token) => {
+  if (!token) return ''
+  if (token.length <= 10) return '*'.repeat(token.length)
+  return token.slice(0, 6) + '*'.repeat(token.length - 10) + token.slice(-4)
 }
 
 const handleCommand = async (command, endpoint) => {
