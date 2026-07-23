@@ -51,6 +51,19 @@
     </div>
 
     <div v-else class="text-center">
+      <!-- 渠道名称 -->
+      <div class="text-left mb-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">渠道名称</label>
+        <el-input
+          v-model="channelName"
+          placeholder="微信龙虾机器人"
+          maxlength="50"
+        />
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          用于区分多个微信龙虾机器人
+        </p>
+      </div>
+
       <!-- 提示文字 -->
       <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
         请使用微信扫描下方二维码完成绑定
@@ -135,10 +148,12 @@ const botData = ref({})
 const showReminder = ref(false)
 const contextStatus = ref('checking') // checking | ready | notready
 const boundChannelId = ref(null)
+const channelName = ref('微信龙虾机器人')
 let pollTimer = null
 
 watch(() => props.visible, (val) => {
   if (val) {
+    channelName.value = '微信龙虾机器人'
     fetchQRCode()
   } else {
     cleanup()
@@ -230,6 +245,7 @@ async function confirmBind() {
         botId: botData.value.botId,
         userId: botData.value.userId,
         baseUrl: botData.value.baseUrl,
+        name: channelName.value || '微信龙虾机器人',
       })
     }
     if (res.success) {
