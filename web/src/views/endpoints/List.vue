@@ -18,10 +18,27 @@
       </div>
     </div>
 
+    <!-- 搜索框 -->
+    <div class="flex items-center gap-3">
+      <el-input
+        v-model="searchQuery"
+        placeholder="搜索接口名称、描述、令牌或渠道"
+        clearable
+        class="max-w-md"
+      >
+        <template #prefix>
+          <Search class="w-4 h-4 text-gray-400" />
+        </template>
+      </el-input>
+      <span v-if="searchQuery" class="text-sm text-gray-500 dark:text-gray-400">
+        共 {{ filteredEndpoints.length }} 个匹配结果
+      </span>
+    </div>
+
     <!-- 接口列表 -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <div
-        v-for="endpoint in endpoints"
+        v-for="endpoint in filteredEndpoints"
         :key="endpoint.id"
         class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow"
       >
@@ -194,12 +211,17 @@
     </div>
 
     <!-- 空状态 -->
-    <div v-if="endpoints.length === 0" class="text-center py-16">
+    <div v-if="filteredEndpoints.length === 0" class="text-center py-16">
       <div class="w-20 h-20 mx-auto rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
         <Link class="w-10 h-10 text-gray-400" />
       </div>
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">暂无接口</h3>
-      <p class="text-gray-500 dark:text-gray-400">创建您的第一个推送接口</p>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+        {{ searchQuery ? '未找到匹配的接口' : '暂无接口' }}
+      </h3>
+      <p class="text-gray-500 dark:text-gray-400">
+        {{ searchQuery ? '尝试更换搜索关键词' : '创建您的第一个推送接口' }}
+      </p>
+      <el-button v-if="searchQuery" class="mt-4" @click="searchQuery = ''">清除搜索</el-button>
     </div>
 
     <!-- 创建/编辑对话框 -->
@@ -768,10 +790,12 @@ import {
   BellOff,
   Clock,
   Replace,
+  Search,
 } from 'lucide-vue-next'
 
 const endpoints = ref([])
 const channels = ref([])
+const searchQuery = ref('')
 const showAllTokens = ref(false)
 const tokenVisible = reactive({})
 const showCreateDialog = ref(false)
@@ -888,6 +912,26 @@ const formRules = {
 const formatDate = (date) => {
   return new Date(date).toLocaleString('zh-CN')
 }
+
+// 根据搜索关键词过滤接口（匹配名称、描述、令牌、渠道名）
+const filteredEndpoints = computed(() => {
+  const keyword = searchQuery.value.trim().toLowerCase()
+  if (!keyword) return endpoints.value
+  return endpoints.value.filter((endpoint) => {
+    const name = (endpoint.name || '').toLowerCase()
+    const description = (endpoint.description || '').toLowerCase()
+    const token = (endpoint.token || '').toLowerCase()
+    const channelNames = (endpoint.channels || [])
+      .map((c) => (c.name || '').toLowerCase())
+      .join(' ')
+    return (
+      name.includes(keyword) ||
+      description.includes(keyword) ||
+      token.includes(keyword) ||
+      channelNames.includes(keyword)
+    )
+  })
+})
 
 const generateRandomToken = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
