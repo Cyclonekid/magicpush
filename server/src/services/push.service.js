@@ -1,6 +1,7 @@
 const { EndpointModel, ChannelModel, PushLogModel, SettingsModel } = require('../models');
 const { getChannelAdapter } = require('./channels');
 const KeywordFilterService = require('./keywordFilter.service');
+const ContentReplaceService = require('./contentReplace.service');
 const DoNotDisturbService = require('./doNotDisturb.service');
 const logger = require('../utils/logger');
 const { mapWithConcurrency } = require('../utils/concurrency');
@@ -63,6 +64,13 @@ class PushService {
         : '包含不合法内容';
       throw new Error(errorMsg);
     }
+
+    // 内容字符替换：过滤通过后才改，日志与渠道发送均使用替换后内容
+    if (endpoint.content_replace?.enabled) {
+      const replaced = ContentReplaceService.replace(endpoint.content_replace, message);
+      Object.assign(message, replaced);
+    }
+
     await EndpointModel.updateLastUsed(endpoint.id);
 
     // 获取接口关联的渠道

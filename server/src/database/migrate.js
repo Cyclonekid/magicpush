@@ -228,6 +228,12 @@ const MIGRATIONS = [
     },
   },
   {
+    name: '014_endpoints_add_content_replace',
+    up: () => {
+      addColumn('endpoints', 'content_replace', 'TEXT');
+    },
+  },
+  {
     name: '014_endpoints_add_do_not_disturb',
     up: () => {
       addColumn('endpoints', 'do_not_disturb', 'TEXT');

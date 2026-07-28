@@ -55,6 +55,10 @@
                   <Shield class="w-4 h-4 mr-2" />
                   关键词过滤
                 </el-dropdown-item>
+                <el-dropdown-item command="contentReplace">
+                  <Replace class="w-4 h-4 mr-2" />
+                  内容替换
+                </el-dropdown-item>
                 <el-dropdown-item command="doNotDisturb">
                   <BellOff class="w-4 h-4 mr-2" />
                   消息免打扰
@@ -136,6 +140,22 @@
               <span v-if="endpoint.keyword_filter?.enabled"
                     :class="endpoint.keyword_filter.mode === 'blacklist' ? 'text-orange-500' : 'text-blue-500'">
                 {{ endpoint.keyword_filter.mode === 'blacklist' ? '黑名单模式' : '白名单模式' }}
+              </span>
+              <span v-else class="text-gray-400">未配置</span>
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 内容替换状态 -->
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <Replace class="w-4 h-4 text-gray-400" />
+              <span class="text-xs text-gray-500 dark:text-gray-400">内容替换</span>
+            </div>
+            <el-button text size="small" @click="openContentReplace(endpoint)">
+              <span v-if="endpoint.content_replace?.enabled" class="text-green-500">
+                已启用 ({{ endpoint.content_replace.rules.length }} 条)
               </span>
               <span v-else class="text-gray-400">未配置</span>
             </el-button>
@@ -527,6 +547,86 @@
       </template>
     </el-drawer>
 
+    <!-- 内容替换抽屉 -->
+    <el-drawer
+      v-model="showContentReplaceDrawer"
+      title="内容替换"
+      direction="rtl"
+      size="450px"
+    >
+      <div class="p-4 space-y-6">
+        <!-- 启用开关 -->
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="font-medium text-gray-900 dark:text-white">启用内容替换</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">开启后将对推送内容进行字面量替换</div>
+          </div>
+          <el-switch v-model="replaceForm.enabled" />
+        </div>
+
+        <el-divider v-if="replaceForm.enabled" />
+
+        <!-- 规则列表 -->
+        <div v-if="replaceForm.enabled">
+          <div class="font-medium text-gray-900 dark:text-white mb-2">
+            替换规则
+            <span class="text-xs font-normal text-gray-400 ml-2">
+              ({{ replaceForm.rules.length }}/50)
+            </span>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            对推送的 title / content / url / extraData 中的指定字面量进行替换（区分大小写、按顺序级联）；to 留空表示删除该字面量
+          </p>
+          <div class="space-y-2">
+            <div
+              v-for="(rule, index) in replaceForm.rules"
+              :key="index"
+              class="flex items-center gap-2"
+            >
+              <el-input
+                v-model="replaceForm.rules[index].from"
+                placeholder="待替换内容"
+                maxlength="100"
+                size="default"
+              />
+              <span class="text-gray-400 flex-shrink-0">→</span>
+              <el-input
+                v-model="replaceForm.rules[index].to"
+                placeholder="替换为（可空）"
+                maxlength="200"
+                size="default"
+              />
+              <el-button
+                text
+                type="danger"
+                size="default"
+                @click="removeReplaceRule(index)"
+                :disabled="replaceForm.rules.length <= 1"
+              >
+                <X class="w-4 h-4" />
+              </el-button>
+            </div>
+            <el-button
+              v-if="replaceForm.rules.length < 50"
+              class="w-full"
+              plain
+              @click="addReplaceRule"
+            >
+              <Plus class="w-4 h-4 mr-1" />
+              添加规则
+            </el-button>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="showContentReplaceDrawer = false">取消</el-button>
+        <el-button type="primary" :loading="replaceSaving" @click="saveContentReplace">
+          保存配置
+        </el-button>
+      </template>
+    </el-drawer>
+
     <!-- 消息免打扰抽屉 -->
     <el-drawer
       v-model="showDndDrawer"
@@ -646,6 +746,7 @@ import {
   getInboundTemplates,
   updateKeywordFilter,
   updateDoNotDisturb,
+  updateContentReplace,
 } from '@/api/endpoint'
 import { getChannels } from '@/api/channel'
 import {
@@ -666,6 +767,7 @@ import {
   Info,
   BellOff,
   Clock,
+  Replace,
 } from 'lucide-vue-next'
 
 const endpoints = ref([])
@@ -693,6 +795,16 @@ const keywordForm = reactive({
   enabled: false,
   mode: 'blacklist',
   keywords: [''],
+})
+
+// 内容字符替换相关
+const showContentReplaceDrawer = ref(false)
+const replaceEditingEndpoint = ref(null)
+const replaceSaving = ref(false)
+
+const replaceForm = reactive({
+  enabled: false,
+  rules: [{ from: '', to: '' }],
 })
 
 // 消息免打扰相关
@@ -886,6 +998,8 @@ const handleCommand = async (command, endpoint) => {
     handleRegenerateToken(endpoint)
   } else if (command === 'keywordFilter') {
     openKeywordFilter(endpoint)
+  } else if (command === 'contentReplace') {
+    openContentReplace(endpoint)
   } else if (command === 'doNotDisturb') {
     openDoNotDisturb(endpoint)
   } else if (command === 'delete') {
@@ -1191,6 +1305,76 @@ const saveKeywordFilter = async () => {
     ElMessage.error(error.message || '保存失败')
   } finally {
     keywordSaving.value = false
+  }
+}
+
+// 内容字符替换相关方法
+const openContentReplace = (endpoint) => {
+  replaceEditingEndpoint.value = endpoint
+
+  // 重置表单并回填已有配置
+  if (endpoint.content_replace?.enabled && Array.isArray(endpoint.content_replace.rules) && endpoint.content_replace.rules.length > 0) {
+    replaceForm.enabled = true
+    replaceForm.rules = endpoint.content_replace.rules.map(r => ({ from: r.from, to: r.to || '' }))
+  } else {
+    replaceForm.enabled = false
+    replaceForm.rules = [{ from: '', to: '' }]
+  }
+
+  showContentReplaceDrawer.value = true
+}
+
+const addReplaceRule = () => {
+  if (replaceForm.rules.length < 50) {
+    replaceForm.rules.push({ from: '', to: '' })
+  }
+}
+
+const removeReplaceRule = (index) => {
+  if (replaceForm.rules.length > 1) {
+    replaceForm.rules.splice(index, 1)
+  }
+}
+
+const saveContentReplace = async () => {
+  if (!replaceEditingEndpoint.value) return
+
+  // 启用时校验规则
+  if (replaceForm.enabled) {
+    const validRules = replaceForm.rules.filter(r => r && r.from && r.from.trim())
+    if (validRules.length === 0) {
+      ElMessage.warning('请至少输入一条有效替换规则（待替换内容不能为空）')
+      return
+    }
+  }
+
+  replaceSaving.value = true
+  try {
+    let config = null
+    if (replaceForm.enabled) {
+      const validRules = replaceForm.rules
+        .map(r => ({ from: r.from.trim(), to: r.to != null ? r.to : '' }))
+        .filter(r => r.from)
+      config = {
+        enabled: true,
+        rules: validRules,
+      }
+    }
+
+    const res = await updateContentReplace(replaceEditingEndpoint.value.id, { ...config })
+    if (res.success) {
+      ElMessage.success(replaceForm.enabled ? '内容替换已启用' : '内容替换已关闭')
+      // 更新本地数据
+      const index = endpoints.value.findIndex(e => e.id === replaceEditingEndpoint.value.id)
+      if (index !== -1) {
+        endpoints.value[index].content_replace = config
+      }
+      showContentReplaceDrawer.value = false
+    }
+  } catch (error) {
+    ElMessage.error(error.message || '保存失败')
+  } finally {
+    replaceSaving.value = false
   }
 }
 

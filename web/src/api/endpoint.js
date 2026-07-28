@@ -54,6 +54,11 @@ export const updateKeywordFilter = (id, data) => {
   return request.put(`/endpoints/${id}/keyword-filter`, data)
 }
 
+// 内容字符替换相关 API
+export const updateContentReplace = (id, data) => {
+  return request.put(`/endpoints/${id}/content-replace`, data)
+}
+
 // 消息免打扰相关 API
 export const updateDoNotDisturb = (id, data) => {
   return request.put(`/endpoints/${id}/do-not-disturb`, data)
