@@ -381,6 +381,25 @@
 
         <el-divider v-if="inboundForm.enabled && inboundForm.sourceType === 'generic'" />
 
+        <!-- 附加数据 extraData 映射（对所有来源类型生效） -->
+        <div v-if="inboundForm.enabled">
+          <div class="font-medium text-gray-900 dark:text-white mb-3">附加数据 (extraData)</div>
+          <div>
+            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+              填写一份 JSON 模板（可选）。静态部分原样保留，需要取值处用 $.xxx.yyy 占位，运行时从 payload 解析替换，解析后整体透传给渠道（如图文/卡片等渠道特有参数）
+            </label>
+            <el-input
+              type="textarea"
+              :rows="6"
+              v-model="inboundForm.fieldMapping.extraData"
+              placeholder='如：&#10;{&#10;  "wecom": {&#10;    "channelType": "news",&#10;    "articles": [&#10;      {&#10;        "title": "$.msg.title",&#10;        "description": "$.msg.message",&#10;        "url": "$.msg.url",&#10;        "picurl": "$.msg.picurl"&#10;      }&#10;    ]&#10;  }&#10;}'
+            />
+            <p v-if="extraDataJsonError" class="text-xs text-red-500 mt-1">{{ extraDataJsonError }}</p>
+          </div>
+        </div>
+
+        <el-divider v-if="inboundForm.enabled" />
+
         <!-- 接收地址 -->
         <div v-if="inboundForm.enabled">
           <div class="font-medium text-gray-900 dark:text-white mb-3">接收地址</div>
@@ -880,6 +899,7 @@ const inboundForm = reactive({
   fieldMapping: {
     title: '',
     content: '',
+    extraData: '',
   },
   defaultValues: {
     type: 'text',
@@ -1173,6 +1193,18 @@ const inboundUrl = computed(() => {
   return `${window.location.origin}/api/inbound/${inboundEditingEndpoint.value.token}`
 })
 
+// extraData 实时 JSON 校验（空值视为合法，允许不填）
+const extraDataJsonError = computed(() => {
+  const raw = inboundForm.fieldMapping.extraData?.trim()
+  if (!raw) return ''
+  try {
+    JSON.parse(raw)
+    return ''
+  } catch (e) {
+    return 'extraData 不是合法 JSON：' + e.message
+  }
+})
+
 const openInboundConfig = (endpoint) => {
   inboundEditingEndpoint.value = endpoint
   
@@ -1184,6 +1216,7 @@ const openInboundConfig = (endpoint) => {
   inboundForm.fieldMapping = {
     title: Array.isArray(rawMapping.title) ? rawMapping.title.join('\n') : (rawMapping.title || ''),
     content: Array.isArray(rawMapping.content) ? rawMapping.content.join('\n') : (rawMapping.content || ''),
+    extraData: Array.isArray(rawMapping.extraData) ? rawMapping.extraData.join('\n') : (rawMapping.extraData || ''),
   }
   inboundForm.defaultValues = {
     type: endpoint.inbound_config?.defaultValues?.type || 'text',
@@ -1207,6 +1240,18 @@ const saveInboundConfig = async () => {
   
   inboundSaving.value = true
   try {
+    // 校验 extraData 为合法 JSON（空值允许不填）
+    const extraRaw = inboundForm.fieldMapping.extraData?.trim()
+    if (extraRaw) {
+      try {
+        JSON.parse(extraRaw)
+      } catch {
+        ElMessage.error('附加数据 (extraData) 不是合法的 JSON，请检查格式')
+        inboundSaving.value = false
+        return
+      }
+    }
+
     // 将多行字符串转为数组格式提交（向后兼容单值场景）
     const mappingToArray = (val) => {
       if (!val) return ''
@@ -1221,6 +1266,9 @@ const saveInboundConfig = async () => {
       fieldMapping: {
         title: mappingToArray(inboundForm.fieldMapping.title),
         content: mappingToArray(inboundForm.fieldMapping.content),
+        ...(inboundForm.fieldMapping.extraData && inboundForm.fieldMapping.extraData.trim()
+          ? { extraData: inboundForm.fieldMapping.extraData.trim() }
+          : {}),
       },
       defaultValues: inboundForm.defaultValues,
     } : { enabled: false }

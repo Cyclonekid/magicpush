@@ -81,3 +81,52 @@ test('getAllPresetTemplates：返回模板列表（含 id/name/description）', 
   assert.ok(all.length >= 5);
   assert.ok(all.every((t) => t.id && t.name && t.description));
 });
+
+test('extractFields：extraData JSON 模板中 $. 占位符被解析', () => {
+  const src = {
+    msg: { title: '截图A', message: '系统截图已生成' },
+    photo: { url: 'https://example.com/s.png' },
+  };
+  const r = extractFields(src, {
+    extraData: JSON.stringify({
+      telegram: {
+        title: '$.msg.title',
+        content: '$.msg.message',
+        channelType: 'photo',
+        photo: '$.photo.url',
+        caption: '系统自动截图',
+      },
+    }),
+  });
+  assert.deepStrictEqual(r.extraData, {
+    telegram: {
+      title: '截图A',
+      content: '系统截图已生成',
+      channelType: 'photo',
+      photo: 'https://example.com/s.png',
+      caption: '系统自动截图',
+    },
+  });
+});
+
+test('extractFields：extraData 字面量 JSON 无占位符原样保留', () => {
+  const r = extractFields({}, { extraData: '{"wecom":{"channelType":"news"}}' });
+  assert.deepStrictEqual(r.extraData, { wecom: { channelType: 'news' } });
+});
+
+test('extractFields：extraData 模板中 $. 占位符找不到时返回 null（保留键）', () => {
+  const r = extractFields({}, { extraData: '{"telegram":{"photo":"$.photo.url","caption":"x"}}' });
+  assert.deepStrictEqual(r.extraData, { telegram: { photo: null, caption: 'x' } });
+});
+
+test('extractFields：extraData 模板支持嵌套数组', () => {
+  const src = { items: [{ t: 'a' }, { t: 'b' }] };
+  const r = extractFields(src, { extraData: '{"list":"$.items"}' });
+  assert.deepStrictEqual(r.extraData, { list: [{ t: 'a' }, { t: 'b' }] });
+});
+
+test('extractFields：extraData 为空时不设置', () => {
+  const r = extractFields({}, { title: '$.x', extraData: '' });
+  assert.strictEqual(r.extraData, undefined);
+  assert.strictEqual(r.title, undefined);
+});

@@ -66,7 +66,7 @@ POST https://你的域名/api/inbound/你的令牌
 
 ### 字段映射规则（仅「通用」模式可见）
 
-选择「通用」模板后，会出现三个输入项：
+选择「通用」模板后，会出现四个输入项：
 
 #### 标题字段（多行文本框）
 
@@ -83,6 +83,26 @@ POST https://你的域名/api/inbound/你的令牌
 | 纯文本 (text) | 默认选项，适合大多数推送渠道 |
 | Markdown | 支持 Markdown 格式的渠道可使用此选项 |
 | HTML | 支持 HTML 格式的渠道可使用此选项 |
+
+#### 附加数据 (extraData)（单份 JSON 模板）
+
+用于承载各个渠道特有的、标准 `title` / `content` 之外的参数（如图文消息、卡片消息、图片消息等）。它**不是**一个 JSONPath，而是**一份 JSON 模板**：
+
+- 静态部分会原样保留；
+- 需要动态取值的地方用 `$.xxx.yyy` 占位，运行时从 Webhook 的 payload 中提取并替换；
+- 解析后的整份 JSON 会原样透传给渠道端（按渠道类型读取对应命名空间，如 `wecom`、`telegram`）；
+- 必须填写**合法 JSON**，否则无法保存（输入框下方会实时提示错误）；
+- 留空表示不使用附加数据。
+
+> 注意：与「标题字段 / 内容字段」不同，`extraData` 只能填写**一个** JSON 模板，不支持多行多路径。
+
+##### 占位符解析规则
+
+| 模板中的写法 | 系统如何处理 |
+|-------------|-------------|
+| `"$.msg.title"` | 从 payload 的该路径取值并替换；取不到时替换为 `null`（保留该键） |
+| `"系统自动截图"` | 不以 `$.` 开头，作为固定文字原样保留 |
+| `{"a": 1}` | 对象 / 数组会递归处理，对其中的字符串值同样应用上述规则 |
 
 ---
 
@@ -416,6 +436,65 @@ $.name
 
 ---
 
+### 示例七：extraData 企业微信图文消息
+
+假设第三方系统（你无法控制其结构）发来的 Webhook 数据如下：
+
+```json
+{
+  "msg": {
+    "title": "磁盘告警",
+    "message": "磁盘使用率已达 98%",
+    "url": "https://example.com/dashboard",
+    "picurl": "https://example.com/alert.png"
+  }
+}
+```
+
+**附加数据 (extraData)** 输入框填写一份 JSON 模板（用 `$.` 占位从 payload 取值）：
+
+```json
+{
+  "wecom": {
+    "channelType": "news",
+    "articles": [
+      {
+        "title": "$.msg.title",
+        "description": "$.msg.message",
+        "url": "$.msg.url",
+        "picurl": "$.msg.picurl"
+      }
+    ]
+  }
+}
+```
+
+**标题字段** / **内容字段** 仍正常填写（例如 `$.msg.title`、`$.msg.message`），也可留空由兜底机制处理。
+
+运行时系统解析 `extraData` 模板，把占位符替换为实际值，得到：
+
+```json
+{
+  "wecom": {
+    "channelType": "news",
+    "articles": [
+      {
+        "title": "磁盘告警",
+        "description": "磁盘使用率已达 98%",
+        "url": "https://example.com/dashboard",
+        "picurl": "https://example.com/alert.png"
+      }
+    ]
+  }
+}
+```
+
+这份 JSON 整体透传给企业微信渠道，渠道端读取 `wecom` 命名空间，按 `channelType: "news"` 以图文形式发送。
+
+> 要点：因为入站配置恰恰用在「无法控制请求体」的第三方 Webhook 上，传进来的数据通常没有 `title` / `content` / `extraData` 的概念。所以 `extraData` 不是在 payload 里读取一个现成的对象，而是在配置侧写好**模板**，用 `$.xxx.yyy` 把散落在 payload 各处的字段拼成渠道需要的格式。
+
+---
+
 ## 预设模板的行为说明
 
 选择预设模板（非「通用」）时，字段映射由系统自动完成，同时会对消息做额外的**内容丰富**：
@@ -523,3 +602,30 @@ $.alerts[0].annotations.message
    前缀文字:
    $.path.field
 ```
+
+### Q：附加数据 (extraData) 应该怎么填？
+
+`extraData` 只接受**一份合法 JSON 模板**，而不是 JSONPath，也不是多行路径。在模板里：
+
+- 固定不变的内容直接写原值（如 `"channelType": "news"`）；
+- 需要从 Webhook 数据里取的值写成 `$.xxx.yyy` 占位（如 `"title": "$.msg.title"`）；
+- 运行时系统会递归遍历整份 JSON，把所有 `$.` 开头的字符串替换为 payload 中对应的实际值。
+
+示例（企业微信图文）：
+
+```json
+{
+  "wecom": {
+    "channelType": "news",
+    "articles": [
+      { "title": "$.msg.title", "description": "$.msg.message", "url": "$.msg.url" }
+    ]
+  }
+}
+```
+
+如果填的不是合法 JSON，保存时会被拦截并提示，请检查格式（如是否漏了引号、逗号）。
+
+### Q：extraData 里的 `$.` 占位符取不到值会怎样？
+
+该键会被保留，值替换为 `null`。例如 payload 中没有 `msg.url` 时，`"url": "$.msg.url"` 会变成 `"url": null`。如果希望整个字段不参与发送，需要在数据源侧保证对应字段存在。

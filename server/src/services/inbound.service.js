@@ -90,8 +90,7 @@ class InboundService {
     let content = payload.content || payload.message || payload.body || payload.text;
     const type = payload.type || 'text';
 
-    // 提取渠道特有字段（向后兼容）
-    const channelType = payload.channelType || null;
+    // 提取渠道特有字段（向后兼容）：extraData 以命名空间方式承载 channelType 等渠道参数
     const extraData = payload.extraData || null;
 
     // 如果没有 content，将整个对象转为 JSON
@@ -103,7 +102,6 @@ class InboundService {
       title: String(title),
       content: String(content),
       type: ['text', 'markdown', 'html'].includes(type) ? type : 'text',
-      channelType,
       extraData,
     };
   }
