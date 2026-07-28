@@ -19,7 +19,7 @@
     </div>
 
     <!-- 搜索框 -->
-    <div class="flex items-center gap-3">
+    <div class="flex items-center justify-center gap-3">
       <el-input
         v-model="searchQuery"
         placeholder="搜索接口名称、描述、令牌或渠道"
