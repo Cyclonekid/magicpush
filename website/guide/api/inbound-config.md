@@ -36,11 +36,25 @@
 
 ### 第三步：配置外部系统
 
-将页面底部显示的**接收地址**填入第三方系统的 Webhook 配置中：
+将页面底部显示的**接收地址**填入第三方系统的 Webhook 配置中。令牌有两种传递方式：
+
+**方式一：令牌放在 URL 路径中（默认）**
 
 ```
 POST https://你的域名/api/inbound/你的令牌
 ```
+
+**方式二：令牌放在 `Authorization` 请求头中（更安全，推荐）**
+
+当第三方系统不方便把令牌暴露在 URL 中（URL 可能被日志记录、代理缓存）时，可以使用请求头传递令牌：
+
+```
+POST https://你的域名/api/inbound
+Authorization: Bearer 你的令牌
+```
+
+> 两种方式效果完全一致。使用方式二时，请求体（payload）的填写规则与方式一完全相同。
+> 如果令牌不以 `Bearer ` 前缀开头，也可以直接写成 `Authorization: 你的令牌`。
 
 完成！现在当第三方系统触发 Webhook 时，消息就会自动推送到你绑定的渠道了。
 
@@ -629,3 +643,14 @@ $.alerts[0].annotations.message
 ### Q：extraData 里的 `$.` 占位符取不到值会怎样？
 
 该键会被保留，值替换为 `null`。例如 payload 中没有 `msg.url` 时，`"url": "$.msg.url"` 会变成 `"url": null`。如果希望整个字段不参与发送，需要在数据源侧保证对应字段存在。
+
+### Q：令牌能不能不放在 URL 里？
+
+可以。除了默认的 `POST /api/inbound/你的令牌`，也支持把令牌放在 `Authorization` 请求头中：
+
+```
+POST /api/inbound
+Authorization: Bearer 你的令牌
+```
+
+这种方式避免了把令牌暴露在 URL（URL 可能被浏览器、代理、服务器日志记录），更安全。两种方式的入站解析、字段映射、推送行为完全一致。
