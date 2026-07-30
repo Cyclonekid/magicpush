@@ -25,6 +25,7 @@ const webVersionUtils = path.join(rootDir, 'web/src/utils/version.js');
 const changelogFile = path.join(rootDir, 'website/guide/changelog.md');
 const gitChangelogFile = path.join(rootDir, 'CHANGELOG.md');
 const fnappManifest = path.join(rootDir, 'fnapp/manifest');
+const dockerComposeFile = path.join(rootDir, 'fnapp/app/docker/docker-compose.yaml');
 
 /**
  * 读取 version.json
@@ -202,9 +203,17 @@ function syncVersion(newVersion, changes = []) {
   // 5. 更新 fnapp/manifest
   if (fs.existsSync(fnappManifest)) {
     let content = fs.readFileSync(fnappManifest, 'utf-8');
-    content = content.replace(/(^version\s*=\s*)[\d.]+/, `$1${newVersion}`);
+    content = content.replace(/(^version\s*=\s*)[\d.]+/m, `$1${newVersion}`);
     fs.writeFileSync(fnappManifest, content, 'utf-8');
     console.log(`✅ 更新 ${path.relative(rootDir, fnappManifest)}`);
+  }
+
+  // 6. 更新 fnapp docker-compose 镜像标签
+  if (fs.existsSync(dockerComposeFile)) {
+    let content = fs.readFileSync(dockerComposeFile, 'utf-8');
+    content = content.replace(/(image:\s*\S*magicpush:)[\d.]+/, `$1${newVersion}`);
+    fs.writeFileSync(dockerComposeFile, content, 'utf-8');
+    console.log(`✅ 更新 ${path.relative(rootDir, dockerComposeFile)}`);
   }
 
   // 6. 追加更新日志到文档站
