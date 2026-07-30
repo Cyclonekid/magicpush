@@ -124,6 +124,8 @@ curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
 | `markdown` | Markdown 格式消息 |
 | `html` | HTML 格式消息 |
 
+> 如需使用 PushPlus 的 `/send` 完整可选参数（指定发送渠道、回调等），请使用 `extraData.pushplus` 命名空间下的 `custom` 类型，详见[3.3 使用完整可选参数](#33-使用完整可选参数custom-类型)。
+
 ### 3.2 Markdown 消息示例
 
 PushPlus 支持以下 Markdown 语法：
@@ -145,6 +147,47 @@ PushPlus 支持以下 Markdown 语法：
 - 加粗（`**text**`）
 - 引用（`> text`）
 - 字体颜色：`<font color="info">绿色</font>`、`<font color="comment">灰色</font>`、`<font color="warning">橙红色</font>`
+
+### 3.3 使用完整可选参数（custom 类型）
+
+PushPlus 的 `/send` 接口没有独立的「消息类型」，但提供一组可选参数用于精细化控制推送（如指定发送渠道、异步回调、群推覆盖等）。MagicPush 通过**合成类型 `custom`** 暴露这些参数，使用 `extraData.pushplus` 命名空间透传，无需改动顶层字段。
+
+| 参数 | 说明 | 示例 |
+|------|------|------|
+| `channelType` | 固定为 `custom`，标识走完整可选参数分支 | `custom` |
+| `template` | 消息模板，不填则按 `type` 自动推导 | `markdown`、`json`、`cloudMonitor` |
+| `channel` | 发送渠道：微信、App、Webhook、邮件、短信、语音等 | `webhook`、`mail`、`sms` |
+| `option` | 渠道配置参数（JSON 对象，自动序列化为字符串） | `{"url":"...","key":"..."}` |
+| `callbackUrl` | 异步回调地址，接收发送结果 | `https://example.com/callback` |
+| `topic` | 群推编码，覆盖渠道配置中的 topic | `xxxxxx` |
+| `timestamp` | 毫秒时间戳，小于当前时间则消息不发送 | `1719600000000` |
+| `pre` | 预处理编码（仅会员可用） | `xxxxxx` |
+
+> 💡 `extraData.pushplus` 内的 `title` / `content` / `type` 可覆盖顶层字段，便于在多渠道独立推送时为 PushPlus 指定不同内容。
+
+**请求示例**：使用 `custom` 类型，以 `markdown` 模板推送到第三方 Webhook 并配置回调：
+
+```bash
+curl -X POST http://<服务器IP>:3000/api/push/<渠道ID> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <你的API Token>" \
+  -d '{
+    "title": "服务器告警",
+    "content": "磁盘使用率已达 98%",
+    "type": "text",
+    "extraData": {
+      "pushplus": {
+        "channelType": "custom",
+        "template": "markdown",
+        "channel": "webhook",
+        "option": { "url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx" },
+        "callbackUrl": "https://example.com/callback"
+      }
+    }
+  }'
+```
+
+`template` 的可选值详见下方[官方支持的消息类型](#官方支持的消息类型)；`channel` 支持 `wechat`、`app`、`extension`、`webhook`、`clawbot`、`cp`、`mail`、`sms`、`voice` 等。
 
 ---
 

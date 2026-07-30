@@ -44,7 +44,7 @@ class ShowDocChannel extends BaseChannel {
     }
     try {
       new URL(config.url);
-    } catch (e) {
+    } catch {
       return { valid: false, message: '推送URL格式不正确' };
     }
     return { valid: true, message: '' };

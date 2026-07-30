@@ -51,7 +51,7 @@ class ClawbotMonitor {
       this._checkTimer = null;
     }
     this.remindedSet.clear();
-    for (const [channelId, entry] of this.pollingMap) {
+    for (const [, entry] of this.pollingMap) {
       entry.abort = true;
     }
     this.pollingMap.clear();

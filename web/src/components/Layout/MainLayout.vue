@@ -132,10 +132,9 @@ import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { useSettingsStore } from '@/stores/settings'
 import { ElMessage } from 'element-plus'
-import { VERSION, fetchVersionFromServer, checkRemoteVersion, checkRemoteVersionDev, getCheckUpdateEnabled, getCheckUpdateDevEnabled } from '@/utils/version'
+import { VERSION, fetchVersionFromServer, checkRemoteVersion, checkRemoteVersionDev } from '@/utils/version'
 import VersionUpdateDialog from '@/components/VersionUpdateDialog.vue'
 import {
-  Bell,
   Menu,
   User,
   Users,

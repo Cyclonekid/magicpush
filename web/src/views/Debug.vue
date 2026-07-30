@@ -476,7 +476,7 @@ const requestBody = computed(() => {
   if (form.extraData) {
     try {
       body.extraData = JSON.parse(form.extraData)
-    } catch (e) {
+    } catch {
       body.extraData = form.extraData
     }
   }
@@ -595,7 +595,7 @@ const handleTest = async () => {
       if (form.extraData) {
         try {
           parsedExtraData = JSON.parse(form.extraData)
-        } catch (e) {
+        } catch {
           ElMessage.error('额外数据 (extraData) 格式错误，请输入合法的 JSON')
           return
         }
@@ -640,7 +640,7 @@ const handleInboundTest = async () => {
     let testData
     try {
       testData = JSON.parse(inboundBody.value)
-    } catch (e) {
+    } catch {
       ElMessage.error('JSON 格式错误')
       loading.value = false
       return

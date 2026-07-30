@@ -282,7 +282,7 @@ async function loadExistingAccounts() {
       // 没有已有账号，直接扫码
       startQRLogin()
     }
-  } catch (error) {
+  } catch {
     // 加载已有账号失败，直接进入扫码流程
     startQRLogin()
   }
@@ -398,7 +398,7 @@ async function doPoll() {
         setTimeout(doPoll, 2000)
         break
     }
-  } catch (error) {
+  } catch {
     setTimeout(doPoll, 5000)
   }
 }

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const FormData = require('form-data');
 const BaseChannel = require('./base.channel');
+const logger = require('../../utils/logger');
 
 /**
  * Telegram Bot适配器

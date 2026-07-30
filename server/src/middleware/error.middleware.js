@@ -1,27 +1,16 @@
 const ResponseUtil = require('../utils/response');
 const logger = require('../utils/logger');
-
-// 获取真实IP的辅助函数
-const getRealIP = (req) => {
-  const xRealIP = req.get('X-Real-IP');
-  if (xRealIP) {
-    return xRealIP;
-  }
-  const xForwardedFor = req.get('X-Forwarded-For');
-  if (xForwardedFor) {
-    return xForwardedFor.split(',')[0].trim();
-  }
-  return req.ip;
-};
+const getRealIP = require('../utils/ip');
 
 /**
  * 全局错误处理中间件
  */
-const errorMiddleware = (err, req, res, next) => {
+const errorMiddleware = (err, req, res, _next) => {
   // 记录错误日志
   logger.error('服务器错误:', {
     message: err.message,
     stack: err.stack,
+    requestId: req.requestId,
     url: req.originalUrl,
     method: req.method,
     ip: getRealIP(req),

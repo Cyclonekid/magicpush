@@ -14,6 +14,7 @@
 - [6. API 请求封装](#6-api-请求封装)
 - [7. 样式方案](#7-样式方案)
 - [8. 新增页面步骤](#8-新增页面步骤)
+- [9. 测试（Vitest）](#9-测试vitest)
 
 ---
 
@@ -29,6 +30,7 @@
 | **Vue Router** | ^4.3.x | 路由管理 |
 | **Axios** | ^1.15.x | HTTP 请求客户端 |
 | **lucide-vue-next** | ^0.363.x | 图标库 |
+| **Vitest** | ^1.6.x | 单元测试框架（store 单测） |
 
 ---
 
@@ -510,3 +512,27 @@ export function deleteTemplate(id) {
 ### 步骤 4：添加侧边栏导航入口
 
 在 `MainLayout.vue` 的侧边栏菜单中添加对应的导航项。
+
+---
+
+## 9. 测试（Vitest）
+
+前端已引入 [Vitest](https://vitest.dev/) 作为单元测试框架，用于覆盖核心 store 逻辑（如 `auth` / `settings`）。
+
+### 9.1 运行命令
+
+在 `web/` 目录下执行：
+
+```bash
+pnpm test          # 运行全部测试（vitest run）
+pnpm test:watch    # 监听模式，文件变更自动重跑
+```
+
+### 9.2 编写规范
+
+- 测试文件与被测模块同目录，以 `*.spec.js` 结尾，例如 `src/stores/auth.js` 对应 `src/stores/auth.spec.js`。
+- store 测试使用 `setActivePinia(createPinia())` 创建独立实例，并在 `beforeEach` 中 `localStorage.clear()` 隔离状态。
+- 通过 `vi.mock('@/api/auth')` 等方式注入假实现，避免触达真实网络 / UI 依赖。
+- 依赖外部服务（如真实接口）的用例一律使用 Mock，不发起真实请求。
+
+> CI 中已自动运行前端测试：`.github/workflows/ci.yml` 的 `web-test` 任务在 PR / push 时执行 `pnpm test`，作为合入门禁。

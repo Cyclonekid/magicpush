@@ -4,13 +4,17 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  qs: ^6.15.2
+  ip-address: ^10.1.1
+
 importers:
 
   .:
     dependencies:
       axios:
-        specifier: ^1.16.0
-        version: 1.17.0
+        specifier: ^1.18.1
+        version: 1.18.1
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -45,23 +49,23 @@ importers:
         specifier: ^8.0.5
         version: 8.0.5
       protobufjs:
-        specifier: ^8.4.2
-        version: 8.4.2
+        specifier: ^8.7.0
+        version: 8.7.0
       socks-proxy-agent:
         specifier: ^8.0.2
         version: 8.0.5
       uuid:
-        specifier: ^9.0.1
-        version: 9.0.1
+        specifier: ^14.0.1
+        version: 14.0.1
       winston:
         specifier: ^3.12.0
         version: 3.19.0
       ws:
-        specifier: ^8.20.0
-        version: 8.20.0
+        specifier: ^8.21.0
+        version: 8.21.0
       xiaoii:
         specifier: ^1.0.10
-        version: 1.0.10(ws@8.20.0)
+        version: 1.0.10(ws@8.21.0)
     devDependencies:
       nodemon:
         specifier: ^3.1.0
@@ -187,8 +191,8 @@ packages:
   asynckit@0.4.0:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
 
-  axios@1.17.0:
-    resolution: {integrity: sha512-J8SwNxprqqpbfenehxWYXE7CW+wM1BB4w3+N+g+/Wx40xM4rsLrfPmHHxSWIxJLYDgSY/HqlFPIYb2/S3rxafw==}
+  axios@1.18.1:
+    resolution: {integrity: sha512-3nTvFlvpn9Zu/RkHUqtc7/+al4UpRW5az71ap5zccp6e8RAYEzhMTecX8Dz1wWDYrPpUoB1HAQEGEAEvUr7S9g==}
 
   balanced-match@4.0.4:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
@@ -617,10 +621,6 @@ packages:
   ini@1.3.8:
     resolution: {integrity: sha512-JV/yugV2uzW5iMRSiZAyDtQd+nxtUnjeLt0acNdw98kKLrvuRVyB80tsREOE7yvGVgalhZ6RNXCmEHkUKBKxew==}
 
-  ip-address@10.1.0:
-    resolution: {integrity: sha512-XXADHxXmvT9+CRxhXg56LJovE+bmWnEWB78LB83VZTprKTmaC5QfruXocxzTZ2Kl0DNwKuBdlIhjL8LeY8Sf8Q==}
-    engines: {node: '>= 12'}
-
   ip-address@10.2.0:
     resolution: {integrity: sha512-/+S6j4E9AHvW9SWMSEY9Xfy66O5PWvVEJ08O0y5JGyEKQpojb0K0GKpz/v5HJ/G0vi3D2sjGK78119oXZeE0qA==}
     engines: {node: '>= 12'}
@@ -891,8 +891,8 @@ packages:
     deprecated: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
     hasBin: true
 
-  protobufjs@8.4.2:
-    resolution: {integrity: sha512-64rfNzkWOZAIazXzpBFPWq6F9up6gMvTzjE2oWIzApx2N/dqVUEE7+bCn2+40780dFVtKOUab8QfxJ6KJDWbqA==}
+  protobufjs@8.7.0:
+    resolution: {integrity: sha512-uu52JNxLh3vsL7tXU/h0gDaywufvuUCTbGSi0NKQKBZ2ZopkmrWQJSQO/EFqzu/5YhiwgVM8rq/a/iVpx4eZ0g==}
     engines: {node: '>=12.0.0'}
 
   proxy-addr@2.0.7:
@@ -916,8 +916,8 @@ packages:
   pump@3.0.4:
     resolution: {integrity: sha512-VS7sjc6KR7e1ukRFhQSY5LM2uBWAUPiOPa/A3mkKmiMwSmRFUITt0xuj+/lesgnCv+dPIEYlkzrcyXgquIHMcA==}
 
-  qs@6.14.2:
-    resolution: {integrity: sha512-V/yCWTTF7VJ9hIh18Ugr2zhJMP01MY7c5kh4J870L7imm6/DIzBsNLTXzMwUA3yZ5b/KBqLx8Kp3uRvd7xSe3Q==}
+  qs@6.15.3:
+    resolution: {integrity: sha512-O9gl3zCl5h5blw1KGUzQKhA5oUXSl8rwUIM5o0S3nCXMliSvy5Dzx7/DJcI+SwgICv+IneSZwhBh1oSyEHA71A==}
     engines: {node: '>=0.6'}
 
   range-parser@1.2.1:
@@ -994,8 +994,8 @@ packages:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
 
-  side-channel-list@1.0.0:
-    resolution: {integrity: sha512-FCLHtRD/gnpCiCHEiJLOwdmFP+wzCmDEkc9y7NsYxeF4u7Btsn1ZuwgwJGxImImHicJArLP4R0yX4c2KCrMrTA==}
+  side-channel-list@1.0.1:
+    resolution: {integrity: sha512-mjn/0bi/oUURjc5Xl7IaWi/OJJJumuoJFQJfDDyO46+hBWsfaVM65TBHq2eoZBhzl9EchxOijpkbRC8SVBQU0w==}
     engines: {node: '>= 0.4'}
 
   side-channel-map@1.0.1:
@@ -1006,8 +1006,8 @@ packages:
     resolution: {integrity: sha512-WPS/HvHQTYnHisLo9McqBHOJk2FkHO/tlpvldyrnem4aeQp4hai3gythswg6p01oSoTl58rcpiFAjF2br2Ak2A==}
     engines: {node: '>= 0.4'}
 
-  side-channel@1.1.0:
-    resolution: {integrity: sha512-ZX99e6tRweoUXqR+VBrslhda51Nh5MTQwou5tnUDgbtyM0dBgmhEDtWGP/xbKn6hqfPRHujUNwz5fy/wbbhnpw==}
+  side-channel@1.1.1:
+    resolution: {integrity: sha512-6x6dK6zJdpTzF4sQeNYxwtvBzf6Eg4GtlesS94HOvTudUeyK2WXAaIfmDgsyslYrRBeFIlsi54AYsFGUuhmvrQ==}
     engines: {node: '>= 0.4'}
 
   simple-concat@1.0.1:
@@ -1114,8 +1114,8 @@ packages:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
 
-  uuid@9.0.1:
-    resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
+  uuid@14.0.1:
+    resolution: {integrity: sha512-6ZxzVpzDXDa3bJWaHilVayA+BH/1zmxCJoVgvmqJnid/gPoKHxUrS/aC/T6LGQtNHT+XHG9fXPJB4d+IrU30Ew==}
     hasBin: true
 
   validator@13.15.26:
@@ -1152,8 +1152,8 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  ws@8.20.0:
-    resolution: {integrity: sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==}
+  ws@8.21.0:
+    resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -1191,9 +1191,9 @@ snapshots:
     dependencies:
       hono: 4.12.25
 
-  '@mi-gpt/chat@1.1.1(ws@8.20.0)(zod@4.4.3)':
+  '@mi-gpt/chat@1.1.1(ws@8.21.0)(zod@4.4.3)':
     dependencies:
-      '@mi-gpt/openai': 1.1.1(ws@8.20.0)(zod@4.4.3)
+      '@mi-gpt/openai': 1.1.1(ws@8.21.0)(zod@4.4.3)
       '@mi-gpt/stream': 1.1.1
       '@mi-gpt/utils': 1.1.1
     transitivePeerDependencies:
@@ -1202,10 +1202,10 @@ snapshots:
       - ws
       - zod
 
-  '@mi-gpt/engine@1.2.1(ws@8.20.0)(zod@4.4.3)':
+  '@mi-gpt/engine@1.2.1(ws@8.21.0)(zod@4.4.3)':
     dependencies:
-      '@mi-gpt/chat': 1.1.1(ws@8.20.0)(zod@4.4.3)
-      '@mi-gpt/openai': 1.1.1(ws@8.20.0)(zod@4.4.3)
+      '@mi-gpt/chat': 1.1.1(ws@8.21.0)(zod@4.4.3)
+      '@mi-gpt/openai': 1.1.1(ws@8.21.0)(zod@4.4.3)
       '@mi-gpt/stream': 1.1.1
       '@mi-gpt/utils': 1.1.1
     transitivePeerDependencies:
@@ -1217,16 +1217,16 @@ snapshots:
   '@mi-gpt/miot@1.2.2':
     dependencies:
       '@mi-gpt/utils': 1.1.1
-      axios: 1.17.0
+      axios: 1.18.1
       pako: 2.1.0
     transitivePeerDependencies:
       - debug
       - supports-color
 
-  '@mi-gpt/next@1.3.2(ws@8.20.0)(zod@4.4.3)':
+  '@mi-gpt/next@1.3.2(ws@8.21.0)(zod@4.4.3)':
     dependencies:
-      '@mi-gpt/chat': 1.1.1(ws@8.20.0)(zod@4.4.3)
-      '@mi-gpt/engine': 1.2.1(ws@8.20.0)(zod@4.4.3)
+      '@mi-gpt/chat': 1.1.1(ws@8.21.0)(zod@4.4.3)
+      '@mi-gpt/engine': 1.2.1(ws@8.21.0)(zod@4.4.3)
       '@mi-gpt/miot': 1.2.2
       '@mi-gpt/utils': 1.1.1
     transitivePeerDependencies:
@@ -1236,10 +1236,10 @@ snapshots:
       - ws
       - zod
 
-  '@mi-gpt/openai@1.1.1(ws@8.20.0)(zod@4.4.3)':
+  '@mi-gpt/openai@1.1.1(ws@8.21.0)(zod@4.4.3)':
     dependencies:
       '@mi-gpt/utils': 1.1.1
-      openai: 4.104.0(ws@8.20.0)(zod@4.4.3)
+      openai: 4.104.0(ws@8.21.0)(zod@4.4.3)
       proxy-agent: 6.5.0
     transitivePeerDependencies:
       - encoding
@@ -1345,7 +1345,7 @@ snapshots:
 
   asynckit@0.4.0: {}
 
-  axios@1.17.0:
+  axios@1.18.1:
     dependencies:
       follow-redirects: 1.16.0
       form-data: 4.0.6
@@ -1390,7 +1390,7 @@ snapshots:
       http-errors: 2.0.1
       iconv-lite: 0.4.24
       on-finished: 2.4.1
-      qs: 6.14.2
+      qs: 6.15.3
       raw-body: 2.5.3
       type-is: 1.6.18
       unpipe: 1.0.0
@@ -1405,7 +1405,7 @@ snapshots:
       http-errors: 2.0.1
       iconv-lite: 0.7.2
       on-finished: 2.4.1
-      qs: 6.14.2
+      qs: 6.15.3
       raw-body: 3.0.2
       type-is: 2.1.0
     transitivePeerDependencies:
@@ -1598,12 +1598,12 @@ snapshots:
   express-rate-limit@8.3.2(express@4.22.1):
     dependencies:
       express: 4.22.1
-      ip-address: 10.1.0
+      ip-address: 10.2.0
 
   express-rate-limit@8.3.2(express@5.2.1):
     dependencies:
       express: 5.2.1
-      ip-address: 10.1.0
+      ip-address: 10.2.0
 
   express-validator@7.3.1:
     dependencies:
@@ -1633,7 +1633,7 @@ snapshots:
       parseurl: 1.3.3
       path-to-regexp: 0.1.13
       proxy-addr: 2.0.7
-      qs: 6.14.2
+      qs: 6.15.3
       range-parser: 1.2.1
       safe-buffer: 5.2.1
       send: 0.19.2
@@ -1668,7 +1668,7 @@ snapshots:
       once: 1.4.0
       parseurl: 1.3.3
       proxy-addr: 2.0.7
-      qs: 6.14.2
+      qs: 6.15.3
       range-parser: 1.2.1
       router: 2.2.0
       send: 1.2.1
@@ -1847,8 +1847,6 @@ snapshots:
 
   ini@1.3.8: {}
 
-  ip-address@10.1.0: {}
-
   ip-address@10.2.0: {}
 
   ipaddr.js@1.9.1: {}
@@ -2023,7 +2021,7 @@ snapshots:
     dependencies:
       fn.name: 1.1.0
 
-  openai@4.104.0(ws@8.20.0)(zod@4.4.3):
+  openai@4.104.0(ws@8.21.0)(zod@4.4.3):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -2033,7 +2031,7 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      ws: 8.20.0
+      ws: 8.21.0
       zod: 4.4.3
     transitivePeerDependencies:
       - encoding
@@ -2085,7 +2083,7 @@ snapshots:
       tar-fs: 2.1.4
       tunnel-agent: 0.6.0
 
-  protobufjs@8.4.2:
+  protobufjs@8.7.0:
     dependencies:
       long: 5.3.2
 
@@ -2118,9 +2116,10 @@ snapshots:
       end-of-stream: 1.4.5
       once: 1.4.0
 
-  qs@6.14.2:
+  qs@6.15.3:
     dependencies:
-      side-channel: 1.1.0
+      es-define-property: 1.0.1
+      side-channel: 1.1.1
 
   range-parser@1.2.1: {}
 
@@ -2235,7 +2234,7 @@ snapshots:
 
   shebang-regex@3.0.0: {}
 
-  side-channel-list@1.0.0:
+  side-channel-list@1.0.1:
     dependencies:
       es-errors: 1.3.0
       object-inspect: 1.13.4
@@ -2255,11 +2254,11 @@ snapshots:
       object-inspect: 1.13.4
       side-channel-map: 1.0.1
 
-  side-channel@1.1.0:
+  side-channel@1.1.1:
     dependencies:
       es-errors: 1.3.0
       object-inspect: 1.13.4
-      side-channel-list: 1.0.0
+      side-channel-list: 1.0.1
       side-channel-map: 1.0.1
       side-channel-weakmap: 1.0.2
 
@@ -2363,7 +2362,7 @@ snapshots:
 
   utils-merge@1.0.1: {}
 
-  uuid@9.0.1: {}
+  uuid@14.0.1: {}
 
   validator@13.15.26: {}
 
@@ -2404,11 +2403,11 @@ snapshots:
 
   wrappy@1.0.2: {}
 
-  ws@8.20.0: {}
+  ws@8.21.0: {}
 
-  xiaoii@1.0.10(ws@8.20.0):
+  xiaoii@1.0.10(ws@8.21.0):
     dependencies:
-      '@mi-gpt/next': 1.3.2(ws@8.20.0)(zod@4.4.3)
+      '@mi-gpt/next': 1.3.2(ws@8.21.0)(zod@4.4.3)
       '@modelcontextprotocol/sdk': 1.29.0(zod@4.4.3)
       zod: 4.4.3
     transitivePeerDependencies:

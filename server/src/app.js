@@ -11,7 +11,10 @@ require('./config/version');
 const routes = require('./routes');
 const { errorMiddleware, notFoundMiddleware } = require('./middleware/error.middleware');
 const logger = require('./utils/logger');
-require('console');
+const getRealIP = require('./utils/ip');
+const requestIdMiddleware = require('./middleware/requestId.middleware');
+const retentionService = require('./services/retention.service');
+const { registerShutdown } = require('./utils/shutdown');
 require('./models');
 const clawbotMonitor = require('./services/clawbot/clawbot-monitor');
 const yuanbaobotMonitor = require('./services/yuanbaobot/yuanbaobot-monitor');
@@ -46,30 +49,13 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 获取真实IP的辅助函数
-const getRealIP = (req) => {
-  const xRealIP = req.get('X-Real-IP');
-  const xForwardedFor = req.get('X-Forwarded-For');
-
-  // 调试日志：获取用户IP
-  // logger.info(`xForwardedFor: ${xForwardedFor}`);
-  // logger.info(`xRealIP: ${xRealIP}`);
-  // logger.info(`req.ip: ${req.ip}`);
-  
-  if (xForwardedFor) {
-    // X-Forwarded-For可能包含多个IP，取第一个
-    return xForwardedFor.split(',')[0].trim();
-  }
-  // 从代理头中获取真实IP
-  if (xRealIP) {
-    return xRealIP;
-  }
-  return req.ip;
-};
+// 请求关联 ID 中间件（需在请求日志中间件之前，使日志可携带 requestId）
+app.use(requestIdMiddleware);
 
 // 请求日志中间件
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.originalUrl}`, {
+    requestId: req.requestId,
     ip: getRealIP(req),
     userAgent: req.get('User-Agent'),
   });
@@ -104,7 +90,7 @@ app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 
 // 启动服务器
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info(`服务器启动成功，监听端口: ${PORT}`);
   logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
 
@@ -116,6 +102,12 @@ app.listen(PORT, () => {
 
   // 启动 QQ Bot WS 连接监控（用于获取 OpenID 完成绑定）
   qqbotMonitor.start();
+
+  // 启动推送记录保留（retention）定时清理任务
+  retentionService.start();
+
+  // 注册 SIGTERM / SIGINT 优雅关闭钩子
+  registerShutdown(server);
 });
 
 // ── 内存监控 ──────────────────────────────────────────────────

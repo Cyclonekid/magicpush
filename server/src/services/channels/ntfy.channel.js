@@ -171,7 +171,7 @@ class NtfyChannel extends BaseChannel {
       return { valid: false, message: 'Topic 不能为空' };
     }
     // Topic 名称合法性检查：只允许字母、数字、下划线、连字符
-    if (!/^[a-zA-Z0-9_\-]+$/.test(config.topic.trim())) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(config.topic.trim())) {
       return { valid: false, message: 'Topic 只能包含字母、数字、下划线和连字符' };
     }
     return { valid: true, message: '' };

@@ -1,5 +1,30 @@
 # 更新日志 (Changelog):
 
+## [1.14.0] - 2026-07-30
+
+### 更新 (Changes)
+- 支持 PushPlus 完整可选参数推送
+- 支持通过 Authorization 头传递入站令牌
+- 支持 inbound extraData JSON 模板透传渠道参数
+- 新增接口列表搜索过滤功能
+- 新增接口内容替换功能
+- 接口令牌支持显示与隐藏
+- 支持自定义龙虾机器人渠道名称
+- 服务端增加优雅关闭、push_logs 保留清理与请求关联 ID
+- 支持 Meow 原生 Markdown 渲染及渠道特有参数
+- 并发推送渠道并合并重复 endpoint 查询，提升推送性能
+- 引入轻量迁移表集中管理数据库迁移
+- 抽取共享 getRealIP 并去重 push.service 入口
+- 修复飞书消息体构建问题
+- 仅显示已添加的渠道类型日志
+- 允许自定义错误响应的 data 字段
+- 移除多余的 extraData 命名空间提取
+- 将 url/imgUrl 从 query 移至 JSON body
+- 修复 form-data CRLF 注入漏洞
+- 修复多个依赖安全漏洞（esbuild/ip-address/qs/uuid/protobufjs/lodash/ws）
+
+---
+
 ## [1.13.0] - 2026-07-05
 
 ### 新增 (Features)

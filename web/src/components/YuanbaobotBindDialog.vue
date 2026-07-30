@@ -141,7 +141,7 @@ async function startFlow() {
   if (props.mode === 'rebind' && props.channelId) {
     try {
       await retryYuanbaobotBind(props.channelId)
-    } catch (e) {
+    } catch {
       // ignore, proceed to poll
     }
   }
@@ -235,7 +235,7 @@ async function checkBindStatus() {
           emit('success')
           return
         }
-      } catch (e) {
+      } catch {
         // 忽略单次失败
       }
     }

@@ -612,6 +612,23 @@ async sendTemplateCard(data) {
 
 > Telegram 的 photo/document 支持两种传入方式：直接传 URL（Telegram 服务器下载）或传 base64（multipart 表单上传）。
 
+### 5.6 PushPlus (`pushplus.channel.js`)
+
+PushPlus 的 `/send` 接口没有独立的消息类型，但提供一组可选参数用于精细化控制推送。这里使用**合成类型 `custom`**（自包含于 `extraData.pushplus` 命名空间）承载全部可选字段。
+
+| 类型标识 (channelType) | 名称 | extraData 关键字段 | 说明 |
+|---------|------|-------------------|------|
+| `custom` | 完整参数推送 | `template`, `channel`, `option`, `callbackUrl`, `timestamp`, `pre`, `topic` | 暴露 PushPlus /send 的全部可选参数 |
+
+通用类型：`text` / `markdown` / `html`
+
+> 可选字段说明：
+> - `template`：消息模板（html/txt/json/markdown/cloudMonitor/jenkins/route/pay），未指定时按通用 `type` 推导
+> - `channel`：发送渠道（wechat/app/extension/webhook/clawbot/cp/mail/sms/voice）
+> - `option`：渠道配置参数，object 自动 `JSON.stringify`，如 webhook 的 `{"url":"...","key":"..."}`
+> - `callbackUrl`：异步回调地址；`timestamp`：毫秒时间戳（小于当前时间则不发送）；`pre`：会员预处理编码；`topic`：覆盖渠道配置群推
+> - 命名空间内的 `title`/`content` 可覆盖顶层，实现该渠道独立内容
+
 ---
 
 ## 6. 测试与验证
@@ -703,6 +720,25 @@ curl -X POST http://localhost:3000/api/push \
     }
   }'
 
+# 发送 PushPlus（完整可选参数：markdown 模板 + webhook 渠道 + 回调）
+curl -X POST http://localhost:3000/api/push \
+  -H "Content-Type: application/json" \
+  -d '{
+    "channelId": <channel-id>,
+    "title": "服务器告警",
+    "content": "磁盘使用率已达 98%",
+    "type": "text",
+    "extraData": {
+      "pushplus": {
+        "channelType": "custom",
+        "template": "markdown",
+        "channel": "webhook",
+        "option": { "url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx" },
+        "callbackUrl": "https://example.com/callback"
+      }
+    }
+  }'
+
 # 同时向多个渠道发送不同类型（多渠独立类型）
 curl -X POST http://localhost:3000/api/push \
   -H "Content-Type: application/json" \
@@ -773,7 +809,9 @@ describe('WecomappChannel 特有消息类型', () => {
 
 ### Q: 是否所有渠道都需要实现特有类型？
 
-不需要。特有类型是**可选增强功能**。对于只支持纯文本的渠道（如 Server酱、PushPlus），只需实现基础的 `send(message)` 即可，`getChannelSpecificTypes()` 返回空数组即可。
+不需要。特有类型是**可选增强功能**。对于只支持纯文本、且无原生扩展能力的渠道（如 Server酱），只需实现基础的 `send(message)` 即可，`getChannelSpecificTypes()` 返回空数组即可。
+
+> 注意：PushPlus 虽无独立消息类型，但拥有丰富的 `/send` 可选参数，已通过合成类型 `custom`（命名空间 `pushplus`）支持，见 [5.6 节](#56-pushplus-pushpluschanneljs)。
 
 ### Q: extraData 和通用 type 字段会冲突吗？
 

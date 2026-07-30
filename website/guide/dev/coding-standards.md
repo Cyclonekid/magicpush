@@ -12,6 +12,7 @@
 - [4. 模块导入导出](#4-模块导入导出)
 - [5. 日志规范](#5-日志规范)
 - [6. 响应格式](#6-响应格式)
+- [7. 静态检查（ESLint / Prettier）](#7-静态检查eslint--prettier)
 
 ---
 
@@ -439,3 +440,34 @@ console.log('debug');         // 生产代码禁止使用 console.log/console.er
 | `ResponseUtil.conflict(res, message)` | 409 | 资源冲突 |
 | `ResponseUtil.validationError(res, message)` | 422 | 验证错误 |
 | `ResponseUtil.serverError(res, message)` | 500 | 服务器内部错误 |
+
+---
+
+## 7. 静态检查（ESLint / Prettier）
+
+项目通过 [ESLint](https://eslint.org/) + [Prettier](https://prettier.io/) 在合入前统一风格、捕获低级错误（未定义变量、重复声明、无效转义、不可达分支等）。相关配置位于仓库根目录：
+
+| 文件 | 作用 |
+|------|------|
+| `package.json`（根） | 提供 `lint` / `lint:fix` / `format` / `format:check` 脚本与共享 devDependencies |
+| `eslint.config.js` | ESLint 扁平配置：JS 用 `eslint:recommended`，Vue 用 `vue/essential`（仅捕获错误，不强制模板风格）；`server/` 按 CommonJS，其余按 ESM |
+| `.prettierrc.json` | Prettier 配置（前端默认无分号，`server/` 覆盖为带分号） |
+| `.prettierignore` | 忽略构建产物与锁文件 |
+
+### 7.1 常用命令
+
+在仓库根目录执行：
+
+```bash
+pnpm lint          # 运行 ESLint，检查全部源码
+pnpm lint:fix      # 自动修复可修复的问题（如无效转义、case 块作用域）
+pnpm format        # 用 Prettier 格式化全部文件
+pnpm format:check  # 仅检查格式，不修改
+```
+
+### 7.2 约定
+
+- ESLint 以**错误（error）级别**捕获真实问题，CI 中 `lint` 任务失败会阻断合入；未使用变量等以**警告（warning）**呈现，不阻断。
+- 风格统一交由 Prettier 负责，提交前建议运行 `pnpm format`；不要在 ESLint 中重复配置风格规则。
+- CI（`.github/workflows/ci.yml`）的 `lint` 任务会在 PR / push 到 `main`、`dev` 时自动运行 `pnpm lint`，作为合入门禁。
+

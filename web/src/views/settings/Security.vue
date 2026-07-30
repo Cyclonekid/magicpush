@@ -140,7 +140,7 @@ const loadConfig = async () => {
     if (statusRes.success) {
       rateLimitEnabled.value = statusRes.data.enabled
     }
-  } catch (error) {
+  } catch {
     ElMessage.error('加载配置失败')
   }
 }
@@ -157,7 +157,7 @@ const handleToggleRateLimit = async (value) => {
       } else {
         ElMessage.error(res.message || '操作失败')
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('操作失败')
     } finally {
       toggleLoading.value = false
@@ -202,12 +202,12 @@ const handleToggleRateLimit = async (value) => {
       } else {
         ElMessage.error(res.message || '操作失败')
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('操作失败')
     } finally {
       toggleLoading.value = false
     }
-  } catch (error) {
+  } catch {
     // 用户取消 → 不做任何操作，rateLimitEnabled 保持不变
   }
 }
@@ -219,7 +219,7 @@ const handleSave = async () => {
     if (res.success) {
       ElMessage.success('配置保存成功，已立即生效')
     }
-  } catch (error) {
+  } catch {
     ElMessage.error('保存配置失败')
   } finally {
     saving.value = false
