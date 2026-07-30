@@ -266,7 +266,7 @@ async function checkBindStatus() {
           emit('success')
           return
         }
-      } catch (e) {
+      } catch {
         // 忽略单次失败
       }
     }

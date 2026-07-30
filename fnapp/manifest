@@ -1,5 +1,5 @@
 appname               = magicpush
-version               = 1.13.0
+version               = 1.14.0
 display_name          = 魔法推送
 desc                  = """一个支持多种消息渠道的统一推送服务管理平台，通过标准化的REST API接口实现消息推送
 目前支持21个渠道：

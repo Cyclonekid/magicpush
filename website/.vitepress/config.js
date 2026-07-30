@@ -23,7 +23,8 @@ export default defineConfig({
         text: '接口管理', items: [
           { text: '消息免打扰', link: '/guide/api/do-not-disturb' },
           { text: '入站配置', link: '/guide/api/inbound-config' },
-          { text: '关键词过滤', link: '/guide/api/keyword-filter' }
+          { text: '关键词过滤', link: '/guide/api/keyword-filter' },
+          { text: '内容替换', link: '/guide/api/content-replace' }
         ]
       },
       {
@@ -63,7 +64,8 @@ export default defineConfig({
           items: [
             { text: '消息免打扰', link: '/guide/api/do-not-disturb' },
             { text: '入站配置', link: '/guide/api/inbound-config' },
-            { text: '关键词过滤', link: '/guide/api/keyword-filter' }
+            { text: '关键词过滤', link: '/guide/api/keyword-filter' },
+            { text: '内容替换', link: '/guide/api/content-replace' }
           ]
         },
         {
@@ -117,6 +119,7 @@ export default defineConfig({
             { text: '命名规范', link: '/guide/dev/naming-conventions' },
             { text: '代码风格规范', link: '/guide/dev/coding-standards' },
             { text: '后端开发指南', link: '/guide/dev/backend-development' },
+            { text: '测试指南', link: '/guide/dev/testing' },
             { text: '前端开发指南', link: '/guide/dev/frontend-guide' }
           ]
         },

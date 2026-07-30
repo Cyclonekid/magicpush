@@ -537,7 +537,7 @@ const handleRegistrationToggle = async (value) => {
       registrationEnabled.value = !value
       ElMessage.error(res.message || '设置失败')
     }
-  } catch (error) {
+  } catch {
     registrationEnabled.value = !value
     ElMessage.error('设置失败')
   } finally {
@@ -674,7 +674,7 @@ const handleDndGlobalToggle = async (value) => {
       dndGlobalEnabled.value = !value
       ElMessage.error(res.message || '设置失败')
     }
-  } catch (error) {
+  } catch {
     dndGlobalEnabled.value = !value
     ElMessage.error('设置失败')
   } finally {

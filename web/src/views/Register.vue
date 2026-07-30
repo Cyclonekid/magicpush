@@ -123,7 +123,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { checkRegistrationStatus } from '@/api/auth'
-import { Bell, User, MessageCircle, Lock } from 'lucide-vue-next'
+import { User, MessageCircle, Lock } from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()

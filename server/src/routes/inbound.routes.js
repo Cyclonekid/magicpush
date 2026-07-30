@@ -10,7 +10,19 @@ const { inboundLimiter } = require('../middleware/rateLimit.middleware');
  */
 async function loadEndpoint(req, res, next) {
   try {
-    const { token } = req.params;
+    let { token } = req.params;
+
+    // 支持从 URL 路径或 Authorization 头获取 token
+    if (!token && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      } else {
+        token = authHeader;
+      }
+    }
+    // 回写，便于控制器后续逻辑（日志、推送）复用
+    req.params.token = token;
 
     // 调试日志
     logger.info(`[Inbound] 收到请求: method=${req.method}, token=${token}`);
@@ -49,7 +61,7 @@ async function loadEndpoint(req, res, next) {
     if (endpoint.inbound_config && typeof endpoint.inbound_config === 'string') {
       try {
         endpoint.inbound_config = JSON.parse(endpoint.inbound_config);
-      } catch (e) {
+      } catch {
         endpoint.inbound_config = null;
       }
     }
@@ -57,7 +69,7 @@ async function loadEndpoint(req, res, next) {
     // 注入到 req
     req.endpoint = endpoint;
     next();
-  } catch (error) {
+  } catch {
     return res.status(500).json({
       success: false,
       code: 500,
@@ -67,10 +79,16 @@ async function loadEndpoint(req, res, next) {
 }
 
 // 入站接收接口（支持 GET 和 POST）
+// 方式1: Token 在 URL 路径中
 router.get('/:token', inboundLimiter, loadEndpoint, inboundController.handleInbound);
 router.post('/:token', inboundLimiter, loadEndpoint, inboundController.handleInbound);
+// 方式2: Token 在 Authorization 头中（更安全）
+router.post('/', inboundLimiter, loadEndpoint, inboundController.handleInbound);
 
 // 测试入站配置（需要认证，在认证路由中处理）
+// 方式1: Token 在 URL 路径中
 router.post('/:token/test', loadEndpoint, inboundController.testInbound);
+// 方式2: Token 在 Authorization 头中（更安全）
+router.post('/test', loadEndpoint, inboundController.testInbound);
 
 module.exports = router;

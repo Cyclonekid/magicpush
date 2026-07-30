@@ -98,7 +98,7 @@ request.interceptors.response.use(
           handleRefreshFail()
           return Promise.reject(error)
         }
-      } catch (err) {
+      } catch {
         handleRefreshFail()
         return Promise.reject(error)
       }

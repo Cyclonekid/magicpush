@@ -107,7 +107,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { checkHealth } from '@/api/auth'
-import { Bell, MessageCircle, Lock, Sparkles } from 'lucide-vue-next'
+import { MessageCircle, Lock, Sparkles } from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()

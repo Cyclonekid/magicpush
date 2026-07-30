@@ -13,18 +13,23 @@ class EndpointModel {
     if (endpoint) {
       try {
         endpoint.inbound_config = JSON.parse(endpoint.inbound_config);
-      } catch (e) {
+      } catch {
         endpoint.inbound_config = null;
       }
       try {
         endpoint.keyword_filter = JSON.parse(endpoint.keyword_filter);
-      } catch (e) {
+      } catch {
         endpoint.keyword_filter = null;
       }
       try {
         endpoint.do_not_disturb = JSON.parse(endpoint.do_not_disturb);
-      } catch (e) {
+      } catch {
         endpoint.do_not_disturb = null;
+      }
+      try {
+        endpoint.content_replace = JSON.parse(endpoint.content_replace);
+      } catch {
+        endpoint.content_replace = null;
       }
     }
     return endpoint;
@@ -39,18 +44,23 @@ class EndpointModel {
     if (endpoint) {
       try {
         endpoint.inbound_config = JSON.parse(endpoint.inbound_config);
-      } catch (e) {
+      } catch {
         endpoint.inbound_config = null;
       }
       try {
         endpoint.keyword_filter = JSON.parse(endpoint.keyword_filter);
-      } catch (e) {
+      } catch {
         endpoint.keyword_filter = null;
       }
       try {
         endpoint.do_not_disturb = JSON.parse(endpoint.do_not_disturb);
-      } catch (e) {
+      } catch {
         endpoint.do_not_disturb = null;
+      }
+      try {
+        endpoint.content_replace = JSON.parse(endpoint.content_replace);
+      } catch {
+        endpoint.content_replace = null;
       }
     }
     return endpoint;
@@ -83,22 +93,29 @@ class EndpointModel {
       if (endpoint.inbound_config) {
         try {
           endpoint.inbound_config = JSON.parse(endpoint.inbound_config);
-        } catch (e) {
+        } catch {
           endpoint.inbound_config = null;
         }
       }
       if (endpoint.keyword_filter) {
         try {
           endpoint.keyword_filter = JSON.parse(endpoint.keyword_filter);
-        } catch (e) {
+        } catch {
           endpoint.keyword_filter = null;
         }
       }
       if (endpoint.do_not_disturb) {
         try {
           endpoint.do_not_disturb = JSON.parse(endpoint.do_not_disturb);
-        } catch (e) {
+        } catch {
           endpoint.do_not_disturb = null;
+        }
+      }
+      if (endpoint.content_replace) {
+        try {
+          endpoint.content_replace = JSON.parse(endpoint.content_replace);
+        } catch {
+          endpoint.content_replace = null;
         }
       }
       return endpoint;
@@ -169,6 +186,10 @@ class EndpointModel {
     if (endpointData.do_not_disturb !== undefined) {
       fields.push('do_not_disturb = ?');
       values.push(endpointData.do_not_disturb ? JSON.stringify(endpointData.do_not_disturb) : null);
+    }
+    if (endpointData.content_replace !== undefined) {
+      fields.push('content_replace = ?');
+      values.push(endpointData.content_replace ? JSON.stringify(endpointData.content_replace) : null);
     }
 
     if (fields.length === 0) return null;
@@ -282,6 +303,20 @@ class EndpointModel {
     );
     stmt.run(
       dndConfig ? JSON.stringify(dndConfig) : null,
+      endpointId
+    );
+    return this.findById(endpointId);
+  }
+
+  /**
+   * 更新内容字符替换配置
+   */
+  static updateContentReplace(endpointId, replaceConfig) {
+    const stmt = db.prepare(
+      "UPDATE endpoints SET content_replace = ?, updated_at = datetime('now', 'localtime') WHERE id = ?"
+    );
+    stmt.run(
+      replaceConfig ? JSON.stringify(replaceConfig) : null,
       endpointId
     );
     return this.findById(endpointId);

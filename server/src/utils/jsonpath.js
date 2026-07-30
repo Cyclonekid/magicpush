@@ -25,7 +25,7 @@ function getValue(obj, path) {
   // 解析路径
   while (current && value !== null && value !== undefined) {
     // 匹配属性名或数组索引
-    const match = current.match(/^\.?([^\.\[\]]+)|^\[(\d+)\]/);
+    const match = current.match(/^\.?([^.[\]]+)|^\[(\d+)\]/);
     
     if (!match) {
       break;
@@ -65,6 +65,38 @@ function unescapeLiteral(str) {
     .replace(/\\\\/g, '\\');
 }
 
+/**
+ * 递归解析 JSON 模板中的 $.xxx 占位符
+ * - 字符串且以 $. 开头 → 视为 JSONPath，从 payload 提取值；找不到返回 null（保留键）
+ * - 字符串且不 $. 开头 → 原样保留
+ * - 对象/数组 → 递归处理
+ * - 其他类型 → 原样保留
+ * @param {any} node - 模板节点
+ * @param {Object} source - 源数据（payload）
+ * @returns {any} - 解析后的模板
+ */
+function resolveTemplate(node, source) {
+  if (Array.isArray(node)) {
+    return node.map((item) => resolveTemplate(item, source));
+  }
+  if (node && typeof node === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(node)) {
+      out[k] = resolveTemplate(v, source);
+    }
+    return out;
+  }
+  if (typeof node === 'string') {
+    const trimmed = node.trim();
+    if (trimmed.startsWith('$.')) {
+      const value = getValue(source, trimmed);
+      return value !== undefined ? value : null;
+    }
+    return node;
+  }
+  return node;
+}
+
 function extractFields(source, mapping, defaults = {}) {
   const result = {};
 
@@ -73,6 +105,29 @@ function extractFields(source, mapping, defaults = {}) {
     for (const [field, path] of Object.entries(mapping)) {
       // 兼容 string 和 array 两种格式
       const paths = Array.isArray(path) ? path : [path];
+
+      // extraData 为单份 JSON 模板：静态部分原样保留，$.xxx 占位符从 payload 解析
+      if (field === 'extraData') {
+        const raw = paths[0];
+        if (raw === '' || raw === null || raw === undefined) continue;
+        let template;
+        if (typeof raw === 'string') {
+          const trimmed = raw.trim();
+          if (trimmed === '') continue;
+          try {
+            template = JSON.parse(trimmed);
+          } catch {
+            // 非法 JSON：作为普通字符串字面量保留
+            template = unescapeLiteral(trimmed);
+          }
+        } else if (raw && typeof raw === 'object') {
+          template = raw;
+        } else {
+          continue;
+        }
+        result.extraData = resolveTemplate(template, source);
+        continue;
+      }
 
       if (paths.length === 1 && typeof paths[0] === 'string' && !paths[0].startsWith('$.')) {
         // 单个固定值（向后兼容）

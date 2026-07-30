@@ -162,18 +162,6 @@ class EndpointService {
   }
 
   /**
-   * 获取接口渠道绑定
-   */
-  static async getEndpointChannels(id, userId) {
-    const endpoint = await EndpointModel.findById(id);
-    if (!endpoint || endpoint.user_id !== userId) {
-      throw new Error('接口不存在');
-    }
-
-    return await EndpointModel.getChannels(id);
-  }
-
-  /**
    * 生成唯一令牌
    */
   static generateToken() {

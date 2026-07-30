@@ -47,7 +47,7 @@ const MAX_SESSIONS = 1000;
  * 各区域的小米云 API 服务器地址
  * @type {Object.<string, string>}
  */
-const REGION_SERVERS = {
+const _REGION_SERVERS = {
   cn: 'https://api.io.mi.com',       // 中国大陆
   de: 'https://de.api.io.mi.com',    // 德国
   us: 'https://us.api.io.mi.com',    // 美国
@@ -140,7 +140,7 @@ function createProxyAgent() {
       return new SocksProxyAgent(proxyUrl);
     }
     return new HttpsProxyAgent(proxyUrl);
-  } catch (e) {
+  } catch {
     logger.warn(`代理配置无效: ${proxyUrl}`);
     return undefined;
   }
@@ -380,9 +380,7 @@ class XiaomiAuthService {
    * @param {{ userId: string, passToken: string }} credentials
    * @returns {Array<{ did: string, name: string, model: string }>}
    */
-  static async getSpeakerDevices(credentials) {
-    const { userId, passToken } = credentials;
-
+  static async getSpeakerDevices(_credentials) {
     logger.info('[XiaomiAuth] 跳过自动获取设备列表，需要用户手动输入设备名称');
 
     // 由于 xiaoii/lib/speaker 的 init() 方法在找不到设备时会崩溃
@@ -397,8 +395,7 @@ class XiaomiAuthService {
    * @param {string} ssecurity - Base64 编码的安全密钥
    * @returns {string} Base64 编码的 Nonce
    */
-  static generateNonce(ssecurity) {
-    const secretBytes = Buffer.from(ssecurity, 'base64');
+  static generateNonce(_ssecurity) {
     const randomBytes = crypto.randomBytes(8);
     const timeBytes = Buffer.alloc(4);
     // 当前分钟数（非秒数）

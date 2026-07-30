@@ -48,14 +48,14 @@ class ClawbotController {
    */
   static async bindChannel(req, res) {
     try {
-      const { token, botId, userId, baseUrl } = req.body;
+      const { token, botId, userId, baseUrl, name } = req.body;
       if (!token || !userId) {
         return ResponseUtil.badRequest(res, '绑定信息不完整，缺少 token 或 userId');
       }
 
       const channel = await ChannelService.createChannel(req.user.userId, {
         channelType: 'wechatclawbot',
-        name: '微信龙虾机器人',
+        name: name || '微信龙虾机器人',
         config: {
           token,
           toUserId: userId,

@@ -1,5 +1,3 @@
-const logger = require('../utils/logger');
-
 /**
  * 消息免打扰服务 - 判断当前时间是否在免打扰时间段内
  */

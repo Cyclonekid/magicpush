@@ -1,5 +1,6 @@
 const axios = require('axios');
 const BaseChannel = require('./base.channel');
+const logger = require('../../utils/logger');
 
 /**
  * 飞书群机器人适配器
@@ -38,7 +39,8 @@ class FeishuChannel extends BaseChannel {
       timestamp: timestamp,
       sign: this.generateSign(timestamp),
       msg_type: msgType,
-      [msgType === 'interactive' ? 'card' : msgType === 'share_chat' ? 'share_chat' : 'content']: content,
+      // 飞书消息体均以消息类型为顶层键：如 post/image/share_chat；interactive 特例为 card
+      [msgType === 'interactive' ? 'card' : msgType]: content,
       ...extra,
     };
   }
@@ -141,11 +143,9 @@ class FeishuChannel extends BaseChannel {
     }
 
     const payload = this._buildSignedPayload('post', {
-      post: {
-        zh_cn: {
-          title: data.title || '消息通知',
-          content: data.content,
-        },
+      zh_cn: {
+        title: data.title || '消息通知',
+        content: data.content,
       },
     });
 
@@ -186,6 +186,7 @@ class FeishuChannel extends BaseChannel {
     }
 
     const payload = this._buildSignedPayload('image', content);
+    // 飞书 image 消息体键名为 image（与 _buildSignedPayload 的 msgType 键一致）
 
     logger.info(`飞书发送图片消息`);
     const response = await axios.post(this.webhookUrl, payload, {

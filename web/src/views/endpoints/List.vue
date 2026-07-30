@@ -5,16 +5,40 @@
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">接口管理</h2>
         <p class="text-gray-500 dark:text-gray-400 mt-1">管理您的推送接口和访问令牌</p>
       </div>
-      <el-button type="primary" @click="showCreateDialog = true">
-        <Plus class="w-4 h-4 mr-1" />
-        新建接口
-      </el-button>
+      <div class="flex items-center gap-2">
+        <el-button @click="toggleAllTokens">
+          <EyeOff v-if="showAllTokens" class="w-4 h-4 mr-1" />
+          <Eye v-else class="w-4 h-4 mr-1" />
+          {{ showAllTokens ? '隐藏全部令牌' : '显示全部令牌' }}
+        </el-button>
+        <el-button type="primary" @click="showCreateDialog = true">
+          <Plus class="w-4 h-4 mr-1" />
+          新建接口
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 搜索框 -->
+    <div class="flex items-center justify-center gap-3">
+      <el-input
+        v-model="searchQuery"
+        placeholder="搜索接口名称、描述、令牌或渠道"
+        clearable
+        class="max-w-md"
+      >
+        <template #prefix>
+          <Search class="w-4 h-4 text-gray-400" />
+        </template>
+      </el-input>
+      <span v-if="searchQuery" class="text-sm text-gray-500 dark:text-gray-400">
+        共 {{ filteredEndpoints.length }} 个匹配结果
+      </span>
     </div>
 
     <!-- 接口列表 -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <div
-        v-for="endpoint in endpoints"
+        v-for="endpoint in filteredEndpoints"
         :key="endpoint.id"
         class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-shadow"
       >
@@ -48,6 +72,10 @@
                   <Shield class="w-4 h-4 mr-2" />
                   关键词过滤
                 </el-dropdown-item>
+                <el-dropdown-item command="contentReplace">
+                  <Replace class="w-4 h-4 mr-2" />
+                  内容替换
+                </el-dropdown-item>
                 <el-dropdown-item command="doNotDisturb">
                   <BellOff class="w-4 h-4 mr-2" />
                   消息免打扰
@@ -70,12 +98,19 @@
         <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs text-gray-500 dark:text-gray-400">访问令牌</span>
-            <el-button text size="small" @click="copyToken(endpoint.token)">
-              <Copy class="w-3 h-3 mr-1" />
-              复制
-            </el-button>
+            <div class="flex items-center gap-1">
+              <el-button text size="small" @click="toggleToken(endpoint)">
+                <EyeOff v-if="isTokenVisible(endpoint)" class="w-3 h-3 mr-1" />
+                <Eye v-else class="w-3 h-3 mr-1" />
+                {{ isTokenVisible(endpoint) ? '隐藏' : '显示' }}
+              </el-button>
+              <el-button text size="small" @click="copyToken(endpoint.token)">
+                <Copy class="w-3 h-3 mr-1" />
+                复制
+              </el-button>
+            </div>
           </div>
-          <code class="text-xs text-gray-700 dark:text-gray-300 break-all">{{ endpoint.token }}</code>
+          <code class="text-xs text-gray-700 dark:text-gray-300 break-all">{{ isTokenVisible(endpoint) ? endpoint.token : maskToken(endpoint.token) }}</code>
         </div>
 
         <!-- 绑定的渠道 / 占位 -->
@@ -128,6 +163,22 @@
           </div>
         </div>
 
+        <!-- 内容替换状态 -->
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <Replace class="w-4 h-4 text-gray-400" />
+              <span class="text-xs text-gray-500 dark:text-gray-400">内容替换</span>
+            </div>
+            <el-button text size="small" @click="openContentReplace(endpoint)">
+              <span v-if="endpoint.content_replace?.enabled" class="text-green-500">
+                已启用 ({{ endpoint.content_replace.rules.length }} 条)
+              </span>
+              <span v-else class="text-gray-400">未配置</span>
+            </el-button>
+          </div>
+        </div>
+
         <!-- 消息免打扰状态 -->
         <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4">
           <div class="flex items-center justify-between">
@@ -160,16 +211,17 @@
     </div>
 
     <!-- 空状态 -->
-    <div v-if="endpoints.length === 0" class="text-center py-16">
+    <div v-if="filteredEndpoints.length === 0" class="text-center py-16">
       <div class="w-20 h-20 mx-auto rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
         <Link class="w-10 h-10 text-gray-400" />
       </div>
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">暂无接口</h3>
-      <p class="text-gray-500 dark:text-gray-400 mb-4">创建您的第一个推送接口</p>
-      <el-button type="primary" @click="showCreateDialog = true">
-        <Plus class="w-4 h-4 mr-1" />
-        新建接口
-      </el-button>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+        {{ searchQuery ? '未找到匹配的接口' : '暂无接口' }}
+      </h3>
+      <p class="text-gray-500 dark:text-gray-400">
+        {{ searchQuery ? '尝试更换搜索关键词' : '创建您的第一个推送接口' }}
+      </p>
+      <el-button v-if="searchQuery" class="mt-4" @click="searchQuery = ''">清除搜索</el-button>
     </div>
 
     <!-- 创建/编辑对话框 -->
@@ -328,6 +380,25 @@
         </div>
 
         <el-divider v-if="inboundForm.enabled && inboundForm.sourceType === 'generic'" />
+
+        <!-- 附加数据 extraData 映射（对所有来源类型生效） -->
+        <div v-if="inboundForm.enabled">
+          <div class="font-medium text-gray-900 dark:text-white mb-3">附加数据 (extraData)</div>
+          <div>
+            <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+              填写一份 JSON 模板（可选）。静态部分原样保留，需要取值处用 $.xxx.yyy 占位，运行时从 payload 解析替换，解析后整体透传给渠道（如图文/卡片等渠道特有参数）
+            </label>
+            <el-input
+              type="textarea"
+              :rows="6"
+              v-model="inboundForm.fieldMapping.extraData"
+              placeholder='如：&#10;{&#10;  "wecom": {&#10;    "channelType": "news",&#10;    "articles": [&#10;      {&#10;        "title": "$.msg.title",&#10;        "description": "$.msg.message",&#10;        "url": "$.msg.url",&#10;        "picurl": "$.msg.picurl"&#10;      }&#10;    ]&#10;  }&#10;}'
+            />
+            <p v-if="extraDataJsonError" class="text-xs text-red-500 mt-1">{{ extraDataJsonError }}</p>
+          </div>
+        </div>
+
+        <el-divider v-if="inboundForm.enabled" />
 
         <!-- 接收地址 -->
         <div v-if="inboundForm.enabled">
@@ -517,6 +588,86 @@
       </template>
     </el-drawer>
 
+    <!-- 内容替换抽屉 -->
+    <el-drawer
+      v-model="showContentReplaceDrawer"
+      title="内容替换"
+      direction="rtl"
+      size="450px"
+    >
+      <div class="p-4 space-y-6">
+        <!-- 启用开关 -->
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="font-medium text-gray-900 dark:text-white">启用内容替换</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">开启后将对推送内容进行字面量替换</div>
+          </div>
+          <el-switch v-model="replaceForm.enabled" />
+        </div>
+
+        <el-divider v-if="replaceForm.enabled" />
+
+        <!-- 规则列表 -->
+        <div v-if="replaceForm.enabled">
+          <div class="font-medium text-gray-900 dark:text-white mb-2">
+            替换规则
+            <span class="text-xs font-normal text-gray-400 ml-2">
+              ({{ replaceForm.rules.length }}/50)
+            </span>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            对推送的 title / content / url / extraData 中的指定字面量进行替换（区分大小写、按顺序级联）；to 留空表示删除该字面量
+          </p>
+          <div class="space-y-2">
+            <div
+              v-for="(rule, index) in replaceForm.rules"
+              :key="index"
+              class="flex items-center gap-2"
+            >
+              <el-input
+                v-model="replaceForm.rules[index].from"
+                placeholder="待替换内容"
+                maxlength="100"
+                size="default"
+              />
+              <span class="text-gray-400 flex-shrink-0">→</span>
+              <el-input
+                v-model="replaceForm.rules[index].to"
+                placeholder="替换为（可空）"
+                maxlength="200"
+                size="default"
+              />
+              <el-button
+                text
+                type="danger"
+                size="default"
+                @click="removeReplaceRule(index)"
+                :disabled="replaceForm.rules.length <= 1"
+              >
+                <X class="w-4 h-4" />
+              </el-button>
+            </div>
+            <el-button
+              v-if="replaceForm.rules.length < 50"
+              class="w-full"
+              plain
+              @click="addReplaceRule"
+            >
+              <Plus class="w-4 h-4 mr-1" />
+              添加规则
+            </el-button>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="showContentReplaceDrawer = false">取消</el-button>
+        <el-button type="primary" :loading="replaceSaving" @click="saveContentReplace">
+          保存配置
+        </el-button>
+      </template>
+    </el-drawer>
+
     <!-- 消息免打扰抽屉 -->
     <el-drawer
       v-model="showDndDrawer"
@@ -636,11 +787,14 @@ import {
   getInboundTemplates,
   updateKeywordFilter,
   updateDoNotDisturb,
+  updateContentReplace,
 } from '@/api/endpoint'
 import { getChannels } from '@/api/channel'
 import {
   Plus,
   Link,
+  Eye,
+  EyeOff,
   MoreVertical,
   Edit,
   Key,
@@ -654,10 +808,15 @@ import {
   Info,
   BellOff,
   Clock,
+  Replace,
+  Search,
 } from 'lucide-vue-next'
 
 const endpoints = ref([])
 const channels = ref([])
+const searchQuery = ref('')
+const showAllTokens = ref(false)
+const tokenVisible = reactive({})
 const showCreateDialog = ref(false)
 const formLoading = ref(false)
 const editingEndpoint = ref(null)
@@ -679,6 +838,16 @@ const keywordForm = reactive({
   enabled: false,
   mode: 'blacklist',
   keywords: [''],
+})
+
+// 内容字符替换相关
+const showContentReplaceDrawer = ref(false)
+const replaceEditingEndpoint = ref(null)
+const replaceSaving = ref(false)
+
+const replaceForm = reactive({
+  enabled: false,
+  rules: [{ from: '', to: '' }],
 })
 
 // 消息免打扰相关
@@ -730,6 +899,7 @@ const inboundForm = reactive({
   fieldMapping: {
     title: '',
     content: '',
+    extraData: '',
   },
   defaultValues: {
     type: 'text',
@@ -762,6 +932,26 @@ const formRules = {
 const formatDate = (date) => {
   return new Date(date).toLocaleString('zh-CN')
 }
+
+// 根据搜索关键词过滤接口（匹配名称、描述、令牌、渠道名）
+const filteredEndpoints = computed(() => {
+  const keyword = searchQuery.value.trim().toLowerCase()
+  if (!keyword) return endpoints.value
+  return endpoints.value.filter((endpoint) => {
+    const name = (endpoint.name || '').toLowerCase()
+    const description = (endpoint.description || '').toLowerCase()
+    const token = (endpoint.token || '').toLowerCase()
+    const channelNames = (endpoint.channels || [])
+      .map((c) => (c.name || '').toLowerCase())
+      .join(' ')
+    return (
+      name.includes(keyword) ||
+      description.includes(keyword) ||
+      token.includes(keyword) ||
+      channelNames.includes(keyword)
+    )
+  })
+})
 
 const generateRandomToken = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -798,7 +988,7 @@ const validateTokenInput = async () => {
         tokenValidation.message = '该令牌已被使用'
       }
     }
-  } catch (error) {
+  } catch {
     tokenValidation.status = false
   }
 }
@@ -829,6 +1019,24 @@ const copyToken = (token) => {
   ElMessage.success('令牌已复制')
 }
 
+const isTokenVisible = (endpoint) => {
+  return showAllTokens.value || !!tokenVisible[endpoint.id]
+}
+
+const toggleToken = (endpoint) => {
+  tokenVisible[endpoint.id] = !tokenVisible[endpoint.id]
+}
+
+const toggleAllTokens = () => {
+  showAllTokens.value = !showAllTokens.value
+}
+
+const maskToken = (token) => {
+  if (!token) return ''
+  if (token.length <= 10) return '*'.repeat(token.length)
+  return token.slice(0, 6) + '*'.repeat(token.length - 10) + token.slice(-4)
+}
+
 const handleCommand = async (command, endpoint) => {
   if (command === 'edit') {
     editingEndpoint.value = endpoint
@@ -854,6 +1062,8 @@ const handleCommand = async (command, endpoint) => {
     handleRegenerateToken(endpoint)
   } else if (command === 'keywordFilter') {
     openKeywordFilter(endpoint)
+  } else if (command === 'contentReplace') {
+    openContentReplace(endpoint)
   } else if (command === 'doNotDisturb') {
     openDoNotDisturb(endpoint)
   } else if (command === 'delete') {
@@ -983,6 +1193,18 @@ const inboundUrl = computed(() => {
   return `${window.location.origin}/api/inbound/${inboundEditingEndpoint.value.token}`
 })
 
+// extraData 实时 JSON 校验（空值视为合法，允许不填）
+const extraDataJsonError = computed(() => {
+  const raw = inboundForm.fieldMapping.extraData?.trim()
+  if (!raw) return ''
+  try {
+    JSON.parse(raw)
+    return ''
+  } catch (e) {
+    return 'extraData 不是合法 JSON：' + e.message
+  }
+})
+
 const openInboundConfig = (endpoint) => {
   inboundEditingEndpoint.value = endpoint
   
@@ -994,6 +1216,7 @@ const openInboundConfig = (endpoint) => {
   inboundForm.fieldMapping = {
     title: Array.isArray(rawMapping.title) ? rawMapping.title.join('\n') : (rawMapping.title || ''),
     content: Array.isArray(rawMapping.content) ? rawMapping.content.join('\n') : (rawMapping.content || ''),
+    extraData: Array.isArray(rawMapping.extraData) ? rawMapping.extraData.join('\n') : (rawMapping.extraData || ''),
   }
   inboundForm.defaultValues = {
     type: endpoint.inbound_config?.defaultValues?.type || 'text',
@@ -1017,6 +1240,18 @@ const saveInboundConfig = async () => {
   
   inboundSaving.value = true
   try {
+    // 校验 extraData 为合法 JSON（空值允许不填）
+    const extraRaw = inboundForm.fieldMapping.extraData?.trim()
+    if (extraRaw) {
+      try {
+        JSON.parse(extraRaw)
+      } catch {
+        ElMessage.error('附加数据 (extraData) 不是合法的 JSON，请检查格式')
+        inboundSaving.value = false
+        return
+      }
+    }
+
     // 将多行字符串转为数组格式提交（向后兼容单值场景）
     const mappingToArray = (val) => {
       if (!val) return ''
@@ -1031,6 +1266,9 @@ const saveInboundConfig = async () => {
       fieldMapping: {
         title: mappingToArray(inboundForm.fieldMapping.title),
         content: mappingToArray(inboundForm.fieldMapping.content),
+        ...(inboundForm.fieldMapping.extraData && inboundForm.fieldMapping.extraData.trim()
+          ? { extraData: inboundForm.fieldMapping.extraData.trim() }
+          : {}),
       },
       defaultValues: inboundForm.defaultValues,
     } : { enabled: false }
@@ -1061,7 +1299,7 @@ const testInbound = async () => {
   let testData
   try {
     testData = JSON.parse(inboundTestData.value)
-  } catch (e) {
+  } catch {
     ElMessage.error('JSON 格式错误')
     return
   }
@@ -1159,6 +1397,76 @@ const saveKeywordFilter = async () => {
     ElMessage.error(error.message || '保存失败')
   } finally {
     keywordSaving.value = false
+  }
+}
+
+// 内容字符替换相关方法
+const openContentReplace = (endpoint) => {
+  replaceEditingEndpoint.value = endpoint
+
+  // 重置表单并回填已有配置
+  if (endpoint.content_replace?.enabled && Array.isArray(endpoint.content_replace.rules) && endpoint.content_replace.rules.length > 0) {
+    replaceForm.enabled = true
+    replaceForm.rules = endpoint.content_replace.rules.map(r => ({ from: r.from, to: r.to || '' }))
+  } else {
+    replaceForm.enabled = false
+    replaceForm.rules = [{ from: '', to: '' }]
+  }
+
+  showContentReplaceDrawer.value = true
+}
+
+const addReplaceRule = () => {
+  if (replaceForm.rules.length < 50) {
+    replaceForm.rules.push({ from: '', to: '' })
+  }
+}
+
+const removeReplaceRule = (index) => {
+  if (replaceForm.rules.length > 1) {
+    replaceForm.rules.splice(index, 1)
+  }
+}
+
+const saveContentReplace = async () => {
+  if (!replaceEditingEndpoint.value) return
+
+  // 启用时校验规则
+  if (replaceForm.enabled) {
+    const validRules = replaceForm.rules.filter(r => r && r.from && r.from.trim())
+    if (validRules.length === 0) {
+      ElMessage.warning('请至少输入一条有效替换规则（待替换内容不能为空）')
+      return
+    }
+  }
+
+  replaceSaving.value = true
+  try {
+    let config = null
+    if (replaceForm.enabled) {
+      const validRules = replaceForm.rules
+        .map(r => ({ from: r.from.trim(), to: r.to != null ? r.to : '' }))
+        .filter(r => r.from)
+      config = {
+        enabled: true,
+        rules: validRules,
+      }
+    }
+
+    const res = await updateContentReplace(replaceEditingEndpoint.value.id, { ...config })
+    if (res.success) {
+      ElMessage.success(replaceForm.enabled ? '内容替换已启用' : '内容替换已关闭')
+      // 更新本地数据
+      const index = endpoints.value.findIndex(e => e.id === replaceEditingEndpoint.value.id)
+      if (index !== -1) {
+        endpoints.value[index].content_replace = config
+      }
+      showContentReplaceDrawer.value = false
+    }
+  } catch (error) {
+    ElMessage.error(error.message || '保存失败')
+  } finally {
+    replaceSaving.value = false
   }
 }
 

@@ -90,8 +90,7 @@ class InboundService {
     let content = payload.content || payload.message || payload.body || payload.text;
     const type = payload.type || 'text';
 
-    // 提取渠道特有字段（向后兼容）
-    const channelType = payload.channelType || null;
+    // 提取渠道特有字段（向后兼容）：extraData 以命名空间方式承载 channelType 等渠道参数
     const extraData = payload.extraData || null;
 
     // 如果没有 content，将整个对象转为 JSON
@@ -103,7 +102,6 @@ class InboundService {
       title: String(title),
       content: String(content),
       type: ['text', 'markdown', 'html'].includes(type) ? type : 'text',
-      channelType,
       extraData,
     };
   }
@@ -113,7 +111,7 @@ class InboundService {
    */
   static enrichMessage(message, sourceType, payload) {
     switch (sourceType) {
-      case 'emby':
+      case 'emby': {
         // 丰富 Emby 消息内容
         const parts = [];
         if (message.content) parts.push(message.content);
@@ -125,6 +123,7 @@ class InboundService {
           message.content = parts.join('\n');
         }
         break;
+      }
 
       case 'grafana':
       case 'prometheus':
@@ -148,7 +147,7 @@ class InboundService {
         }
         break;
 
-      case 'github':
+      case 'github': {
         // 丰富 GitHub 消息
         const ghParts = [message.content];
         if (payload.sender?.login) ghParts.push(`触发者: ${payload.sender.login}`);
@@ -157,6 +156,7 @@ class InboundService {
           message.content = ghParts.join('\n');
         }
         break;
+      }
     }
   }
 

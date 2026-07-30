@@ -19,7 +19,7 @@ class BaseChannel {
    * @param {string} message.type - 消息类型 (text/markdown/html)
    * @returns {Promise<Object>} - 发送结果
    */
-  async send(message) {
+  async send(_message) {
     throw new Error('子类必须实现send方法');
   }
 
@@ -28,7 +28,7 @@ class BaseChannel {
    * @param {Object} config - 渠道配置
    * @returns {Object} - 验证结果 {valid: boolean, message: string}
    */
-  validate(config) {
+  validate(_config) {
     throw new Error('子类必须实现validate方法');
   }
 
@@ -132,7 +132,7 @@ class BaseChannel {
         // HTTP/HTTPS 代理
         return new HttpsProxyAgent(proxyUrl);
       }
-    } catch (e) {
+    } catch {
       return null;
     }
   }

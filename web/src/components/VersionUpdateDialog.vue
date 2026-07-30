@@ -73,8 +73,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { ArrowDown, ExternalLink, FileText } from 'lucide-vue-next'
+import { ArrowDown, ExternalLink } from 'lucide-vue-next'
 import { VERSION } from '@/utils/version'
 
 const props = defineProps({
@@ -96,9 +95,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:visible'])
-
-const router = useRouter()
+defineEmits(['update:visible'])
 
 const currentVersion = computed(() => VERSION.version)
 const isRemoteUpdate = computed(() => !!props.remoteVersion)

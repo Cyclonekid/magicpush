@@ -110,12 +110,13 @@ class PushLogModel {
       response,
       error_message,
       ip,
+      request_id,
     } = logData;
 
     const stmt = db.prepare(`
       INSERT INTO push_logs
-      (user_id, endpoint_id, endpoint_name, channel_id, channel_type, title, content, message_type, status, response, error_message, ip)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (user_id, endpoint_id, endpoint_name, channel_id, channel_type, title, content, message_type, status, response, error_message, ip, request_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -130,10 +131,21 @@ class PushLogModel {
       status,
       response ? JSON.stringify(response) : null,
       error_message || null,
-      ip || null
+      ip || null,
+      request_id || null
     );
 
     return this.findById(result.lastInsertRowid);
+  }
+
+  /**
+   * 根据 request_id 查询推送记录（用于请求与推送日志关联排查）
+   */
+  static findByRequestId(requestId) {
+    const stmt = db.prepare(
+      'SELECT * FROM push_logs WHERE request_id = ? ORDER BY created_at DESC'
+    );
+    return stmt.all(requestId);
   }
 
   /**
@@ -189,7 +201,7 @@ class PushLogModel {
   /**
    * 清理旧记录
    */
-  static cleanup(days = 30) {
+  static cleanup(days = 90) {
     const stmt = db.prepare(
       "DELETE FROM push_logs WHERE created_at < datetime('now', 'localtime', ?)"
     );

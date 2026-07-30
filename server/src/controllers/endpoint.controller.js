@@ -256,7 +256,7 @@ class EndpointController {
         return ResponseUtil.notFound(res, '接口不存在');
       }
 
-      const endpoint = await EndpointModel.updateKeywordFilter(parseInt(id), config);
+      await EndpointModel.updateKeywordFilter(parseInt(id), config);
 
       logger.info(`用户 ${req.user.userId} 更新接口 ${id} 关键词过滤配置`);
       return ResponseUtil.success(res, { keyword_filter: config }, '关键词过滤配置已更新');
@@ -268,13 +268,66 @@ class EndpointController {
   }
 
   /**
+   * 更新内容字符替换配置
+   */
+  static async updateContentReplace(req, res) {
+    try {
+      const { id } = req.params;
+      const { enabled, rules } = req.body;
+
+      let config = null;
+
+      if (enabled) {
+        if (!Array.isArray(rules)) {
+          return ResponseUtil.badRequest(res, 'rules 必须为数组');
+        }
+        // 规则数量上限：1~50 条
+        if (rules.length === 0 || rules.length > 50) {
+          return ResponseUtil.badRequest(res, '替换规则数量为 1~50 条');
+        }
+        const cleaned = [];
+        for (const r of rules) {
+          if (!r || typeof r.from !== 'string' || r.from.length === 0) {
+            return ResponseUtil.badRequest(res, '每条规则 from 为必填非空字符串');
+          }
+          if (r.from.length > 100) {
+            return ResponseUtil.badRequest(res, 'from 最长 100 字符');
+          }
+          if (r.to != null && typeof r.to !== 'string') {
+            return ResponseUtil.badRequest(res, 'to 必须为字符串（可空，表示删除）');
+          }
+          if ((r.to || '').length > 200) {
+            return ResponseUtil.badRequest(res, 'to 最长 200 字符');
+          }
+          cleaned.push({ from: r.from, to: r.to != null ? r.to : '' });
+        }
+        config = { enabled: true, rules: cleaned };
+      }
+
+      // 校验接口是否存在且属于当前用户
+      const existing = await EndpointModel.findById(parseInt(id));
+      if (!existing || existing.user_id !== req.user.userId) {
+        return ResponseUtil.notFound(res, '接口不存在');
+      }
+
+      await EndpointModel.updateContentReplace(parseInt(id), config);
+
+      logger.info(`用户 ${req.user.userId} 更新接口 ${id} 内容替换配置`);
+      return ResponseUtil.success(res, { content_replace: config }, '内容替换配置已更新');
+
+    } catch (error) {
+      logger.error('更新内容替换配置失败:', error);
+      return ResponseUtil.serverError(res, error.message || '更新失败');
+    }
+  }
+
+  /**
    * 更新消息免打扰配置
    */
   static async updateDoNotDisturb(req, res) {
     try {
       const { id } = req.params;
       const { enabled, timeRanges } = req.body;
-      const DoNotDisturbService = require('../services/doNotDisturb.service');
 
       let config = null;
 
@@ -317,7 +370,7 @@ class EndpointController {
         return ResponseUtil.notFound(res, '接口不存在');
       }
 
-      const endpoint = await EndpointModel.updateDoNotDisturb(parseInt(id), config);
+      await EndpointModel.updateDoNotDisturb(parseInt(id), config);
 
       logger.info(`用户 ${req.user.userId} 更新接口 ${id} 免打扰配置`);
       return ResponseUtil.success(res, { do_not_disturb: config }, '免打扰配置已更新');
