@@ -54,11 +54,11 @@ jobs:
         with:
           node-version: 20
 
-      # 步骤3：安装 pnpm（docs 使用 pnpm 管理依赖）
+      # 步骤3：安装 pnpm
+      # 不指定 version，让 pnpm 依据根目录 package.json 中的 packageManager 字段
+      # （pnpm@10.33.4）自动安装对应版本，避免与 Action 配置的版本冲突。
       - name: 安装 pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       # 步骤4：安装依赖（使用 pnpm-lock.yaml 精确还原）
       - name: 安装依赖
