@@ -28,9 +28,10 @@ concurrency:
 # 例如仓库名为 magicpush，则访问地址为 https://<username>.github.io/magicpush/
 #
 # DOCS_CHANNEL 固定为 stable：本工作流只在 main 分支触发，产出的是正式版文档，不展示开发版标识。
-# 开发版文档由 EdgeOne 关联 dev 分支自动构建，其构建环境需将 DOCS_CHANNEL 设为 dev，
-# 文档站据此在顶部横幅与导航标题旁展示「开发版」标识以区分正式版。
-# 渠道判定逻辑见 website/.vitepress/channel.ts。
+# 开发版文档由 EdgeOne 关联 dev 分支自动构建。渠道判定优先级见 website/.vitepress/channel.ts：
+#   DOCS_CHANNEL → CI 分支变量 → .git/HEAD → changelog 顶格版本 vs version.json 比较 → 默认 stable。
+# 因此即便 EdgeOne dev 构建未显式设置 DOCS_CHANNEL=dev，也会依据分支 / 未发布 changelog 自动识别为开发版；
+# 显式设置 DOCS_CHANNEL=dev 可确保判定稳定。开发版会展示顶部横幅、导航「开发版」徽标、标题后缀与 noindex。
 env:
   VITEPRESS_BASE: /magicpush
   DOCS_CHANNEL: stable
@@ -80,7 +81,7 @@ jobs:
           enablement: true
 
       # 步骤7：上传构建产物
-      # 注意：路径相对仓库根目录，VitePress 输出在 docs/.vitepress/dist
+      # 注意：路径相对仓库根目录，VitePress 输出在 website/.vitepress/dist
       - name: 上传产物
         uses: actions/upload-pages-artifact@v3
         with:

@@ -1,12 +1,10 @@
-<script setup>
-import { inject } from 'vue'
-
-// 由主题入口 app.provide('isDevDocs', ...) 注入，仅在 dev 渠道构建时为 true
-const isDev = inject('isDevDocs', false)
+<script setup lang="ts">
+// 由 config.js 的 vite.define 在构建期注入（'dev' | 'stable'），stable 构建下该分支被折叠消除
+const CHANNEL = __DOCS_CHANNEL__
 </script>
 
 <template>
-  <span v-if="isDev" class="dev-badge">开发版</span>
+  <span v-if="CHANNEL === 'dev'" class="dev-badge">开发版</span>
 </template>
 
 <style scoped>
