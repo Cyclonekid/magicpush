@@ -1,18 +1,37 @@
 import { defineConfig } from 'vitepress'
 
+const siteDomain = 'https://magicpush.160621.xyz'
+const siteTitle = 'MagicPush 魔法推送'
+const siteDescription = '支持多种消息渠道的推送服务管理平台，通过标准化 REST API 将消息推送到微信、Telegram、飞书、钉钉、邮件、小爱音箱等 20+ 通知渠道'
+const siteKeywords = 'MagicPush, 魔法推送, 消息推送, 推送服务, REST API, 微信推送, Telegram, 飞书, 钉钉, 邮件推送, 多渠道推送, 开源推送平台'
+const ogImage = `${siteDomain}/logo.png`
+
 export default defineConfig({
   base: process.env.VITE_BASE_PATH || '/',
+  cleanUrls: true,
   ignoreDeadLinks: true,
-  title: 'MagicPush 魔法推送',
-  description: '支持多种消息渠道的推送服务管理平台，通过标准化 REST API 将消息推送到微信、Telegram、飞书、钉钉、邮件、小爱音箱等 20+ 通知渠道',
+  title: siteTitle,
+  titleTemplate: ':title | MagicPush',
+  description: siteDescription,
 
   head: [
     ['link', { rel: 'icon', type: 'image/png', href: '/logo.png' }],
+    ['link', { rel: 'canonical', href: siteDomain }],
+    ['meta', { charset: 'utf-8' }],
+    ['meta', { name: 'viewport', content: 'width=device-width, initial-scale=1.0' }],
+    ['meta', { name: 'description', content: siteDescription }],
+    ['meta', { name: 'keywords', content: siteKeywords }],
+    ['meta', { name: 'author', content: 'magiccode1412' }],
+    ['meta', { name: 'robots', content: 'index, follow' }],
+    ['meta', { property: 'og:site_name', content: siteTitle }],
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: 'MagicPush 魔法推送' }],
-    ['meta', { property: 'og:description', content: '支持 20+ 消息渠道的统一推送服务管理平台' }],
-    ['meta', { property: 'og:image', content: '/logo.png' }],
-    ['meta', { name: 'twitter:card', content: 'summary_large_image' }]
+    ['meta', { property: 'og:title', content: siteTitle }],
+    ['meta', { property: 'og:description', content: siteDescription }],
+    ['meta', { property: 'og:url', content: siteDomain }],
+    ['meta', { property: 'og:image', content: ogImage }],
+    ['meta', { property: 'og:image:width', content: '512' }],
+    ['meta', { property: 'og:image:height', content: '512' }],
+    ['meta', { property: 'og:image:alt', content: `${siteTitle} Logo` }]
   ],
 
   themeConfig: {
@@ -148,6 +167,17 @@ export default defineConfig({
     footer: {
       message: '基于 MIT 许可证开源',
       copyright: '&copy; 2026 magiccode1412. All rights reserved.'
+    }
+  },
+
+  sitemap: {
+    hostname: siteDomain,
+    transformItems(items) {
+      return items.map((item) => {
+        item.changefreq = item.url === '' ? 'daily' : 'weekly'
+        item.priority = item.url === '' ? 1.0 : 0.7
+        return item
+      })
     }
   },
 
