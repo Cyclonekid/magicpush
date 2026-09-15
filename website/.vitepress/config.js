@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import { isDev } from './channel'
 
 const siteDomain = 'https://magicpush.160621.xyz'
 const siteTitle = 'MagicPush 魔法推送'
@@ -182,6 +183,11 @@ export default defineConfig({
   },
 
   vite: {
+    // 将构建渠道判定编译期注入客户端全局常量，供自定义主题组件条件渲染使用。
+    // stable 构建下条件分支会被折叠消除，不影响正式版体积与渲染路径。
+    define: {
+      __IS_DEV_DOCS__: JSON.stringify(isDev)
+    },
     server: {
       host: '0.0.0.0',
       allowedHosts: true
